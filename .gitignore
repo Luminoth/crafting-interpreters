@@ -1,3 +1,2 @@
-/target
-trace-*.json
 golox/golox
+loxrs/target
