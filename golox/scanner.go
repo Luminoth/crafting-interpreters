@@ -6,6 +6,25 @@ import (
 	"unicode"
 )
 
+var keywords = map[string]TokenType{
+	"and":    And,
+	"or":     Or,
+	"if":     If,
+	"else":   Else,
+	"class":  Class,
+	"super":  Super,
+	"this":   This,
+	"true":   True,
+	"false":  False,
+	"fun":    Fun,
+	"for":    For,
+	"while":  While,
+	"nil":    Nil,
+	"print":  Print,
+	"return": Return,
+	"var":    Var,
+}
+
 type Scanner struct {
 	Tokens []Token `json:"tokens"`
 
@@ -121,9 +140,11 @@ func (s *Scanner) scanToken() bool {
 		return false
 
 	default:
-		// number literals
+		// other literals
 		if unicode.IsDigit(ch) {
 			s.numberLiteral()
+		} else if IsAlpha(ch) {
+			s.identifier()
 		} else {
 			reportError(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
 		}
@@ -226,6 +247,23 @@ func (s *Scanner) numberLiteral() {
 		return
 	}
 	s.addTokenLiteral(Number, value)
+}
+
+func (s *Scanner) identifier() {
+	for {
+		ch := s.peek()
+		if !IsAlphaNumeric(ch) {
+			break
+		}
+		s.advance()
+	}
+
+	text := s.lexeme()
+	tokenType, ok := keywords[text]
+	if !ok {
+		tokenType = Identifier
+	}
+	s.addToken(tokenType)
 }
 
 func (s *Scanner) lexeme() string {
