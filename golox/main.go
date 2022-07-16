@@ -36,6 +36,11 @@ func runFile(filename string) (err error) {
 	}
 
 	run(string(bytes))
+
+	if hadError {
+		os.Exit(65)
+	}
+
 	return
 }
 
@@ -46,7 +51,11 @@ func runPrompt() (err error) {
 		if !scanner.Scan() {
 			return scanner.Err()
 		}
-		run(scanner.Text())
+
+		line := scanner.Text()
+		run(line)
+
+		hadError = false
 	}
 
 }
