@@ -221,6 +221,8 @@ func (s *Scanner) multiComment() {
 }
 
 func (s *Scanner) stringLiteral() {
+	// TODO: handle escape characters
+
 	for {
 		ch := s.peek()
 		if ch == '"' || ch == 0 {
