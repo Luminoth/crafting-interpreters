@@ -1,6 +1,6 @@
 package main
 
-type TokenType int
+type TokenType uint
 
 // TODO: use stringer to generate this
 func (t TokenType) String() string {
@@ -87,5 +87,5 @@ type Token struct {
 	Type    TokenType   `json:"type"`
 	Lexeme  string      `json:"lexeme,omitempty"`
 	Literal interface{} `json:"literal,omitempty"`
-	Line    int         `json:"line"`
+	Line    uint        `json:"line"`
 }

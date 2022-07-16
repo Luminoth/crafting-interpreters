@@ -49,6 +49,7 @@ func runPrompt() (err error) {
 	for {
 		fmt.Print("> ")
 		if !scanner.Scan() {
+			fmt.Println()
 			return scanner.Err()
 		}
 

@@ -7,20 +7,18 @@ type Scanner struct {
 
 	source []rune
 
-	Start   int `json:"start"`
-	Current int `json:"current"`
-	Line    int `json:"line"`
+	Start   uint `json:"start"`
+	Current uint `json:"current"`
+	Line    uint `json:"line"`
 }
 
 func (s *Scanner) ScanTokens() {
 	s.reset()
 
 	for {
-		if s.isAtEnd() {
+		if !s.scanToken() {
 			break
 		}
-
-		s.scanToken()
 	}
 
 	s.Tokens = append(s.Tokens, Token{
@@ -37,7 +35,7 @@ func (s *Scanner) reset() {
 	s.Line = 1
 }
 
-func (s *Scanner) scanToken() {
+func (s *Scanner) scanToken() bool {
 	switch ch := s.advance(); ch {
 	// single character tokens
 	case '(':
@@ -86,12 +84,20 @@ func (s *Scanner) scanToken() {
 		} else {
 			s.addToken(Greater)
 		}
+	case 0:
+		return false
 	default:
 		reportError(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
 	}
+
+	return true
 }
 
 func (s *Scanner) advance() rune {
+	if s.isAtEnd() {
+		return 0
+	}
+
 	c := s.source[s.Current]
 	s.Current += 1
 	return c
@@ -125,7 +131,7 @@ func (s *Scanner) addTokenLiteral(tokenType TokenType, literal interface{}) {
 }
 
 func (s *Scanner) isAtEnd() bool {
-	return s.Current >= len(s.source)
+	return s.Current >= uint(len(s.source))
 }
 
 func NewScanner(source string) Scanner {
