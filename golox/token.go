@@ -2,59 +2,90 @@ package main
 
 type TokenType int
 
+// TODO: use stringer to generate this
+func (t TokenType) String() string {
+	return [...]string{
+		"EOF",
+
+		"LeftParen", "RightParen",
+		"LeftBrace", "RightBrace",
+		"Comma", "Dot",
+		"Minus", "Plus",
+		"Semicolon", "Slash", "Star",
+
+		"Bang", "BangEqual",
+		"Equal", "EqualEqual",
+		"Greater", "GreaterEqual",
+		"Less", "LessEqual",
+
+		"Identifier", "String", "Number",
+
+		"And", "Or",
+		"If", "Else",
+		"Class", "Super", "This",
+		"True", "False",
+		"Fun",
+		"For", "While",
+		"Nil",
+		"Print",
+		"Return",
+		"Var",
+	}[t]
+}
+
 const (
+	EOF TokenType = 0
+
 	// single character tokens
-	LEFT_PAREN  TokenType = 0
-	RIGHT_PAREN TokenType = 1
-	LEFT_BRACE  TokenType = 2
-	RIGHT_BRACE TokenType = 3
-	COMMA       TokenType = 4
-	DOT         TokenType = 5
-	MINUS       TokenType = 6
-	PLUS        TokenType = 7
-	SEMICOLON   TokenType = 8
-	SLASH       TokenType = 9
-	STAR        TokenType = 10
+	LeftParen  TokenType = 1
+	RightParen TokenType = 2
+	LeftBrace  TokenType = 3
+	RightBrace TokenType = 4
+	Comma      TokenType = 5
+	Dot        TokenType = 6
+	Minus      TokenType = 7
+	Plus       TokenType = 8
+	Semicolon  TokenType = 9
+	Slash      TokenType = 10
+	Star       TokenType = 11
 
 	// one or two character tokens
-	BANG          TokenType = 11
-	BANG_EQUAL    TokenType = 12
-	EQUAL         TokenType = 13
-	EQUAL_EQUAL   TokenType = 14
-	GREATER       TokenType = 15
-	GREATER_EQUAL TokenType = 16
-	LESS          TokenType = 17
-	LESS_EQUAL    TokenType = 18
+	Bang         TokenType = 12
+	BangEqual    TokenType = 13
+	Equal        TokenType = 14
+	EqualEqual   TokenType = 15
+	Greater      TokenType = 16
+	GreaterEqual TokenType = 17
+	Less         TokenType = 18
+	LessEqual    TokenType = 19
 
 	// literals
-	IDENTIFIER TokenType = 19
-	STRING     TokenType = 20
-	NUMBER     TokenType = 21
+	Identifier TokenType = 20
+	String     TokenType = 21
+	Number     TokenType = 22
 
 	// keywords
-	AND    TokenType = 22
-	CLASS  TokenType = 23
-	ELSE   TokenType = 24
-	FALSE  TokenType = 25
-	FUN    TokenType = 26
-	FOR    TokenType = 27
-	IF     TokenType = 28
-	NIL    TokenType = 29
-	OR     TokenType = 30
-	PRINT  TokenType = 31
-	RETURN TokenType = 32
-	SUPER  TokenType = 33
-	THIS   TokenType = 34
-	TRUE   TokenType = 35
-	VAR    TokenType = 36
-	WHILE  TokenType = 37
-
-	EOF TokenType = -1
+	And    TokenType = 23
+	Or     TokenType = 24
+	If     TokenType = 25
+	Else   TokenType = 26
+	Class  TokenType = 27
+	Super  TokenType = 28
+	This   TokenType = 29
+	True   TokenType = 30
+	False  TokenType = 31
+	Fun    TokenType = 32
+	For    TokenType = 33
+	While  TokenType = 34
+	Nil    TokenType = 35
+	Print  TokenType = 36
+	Return TokenType = 37
+	Var    TokenType = 38
 )
 
 type Token struct {
 	Type    TokenType   `json:"type"`
-	Lexeme  string      `json:"lexeme"`
-	Literal interface{} `json:"literal"`
+	Lexeme  string      `json:"lexeme,omitempty"`
+	Literal interface{} `json:"literal,omitempty"`
 	Line    int         `json:"line"`
 }

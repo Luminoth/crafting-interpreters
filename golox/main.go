@@ -62,9 +62,9 @@ func runPrompt() (err error) {
 
 func run(source string) {
 	scanner := NewScanner(source)
-	tokens := scanner.ScanTokens()
+	scanner.ScanTokens()
 
-	for _, token := range tokens {
+	for _, token := range scanner.Tokens {
 		fmt.Println(token)
 	}
 }
