@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"unicode"
 )
 
 type Scanner struct {
@@ -105,7 +107,7 @@ func (s *Scanner) scanToken() bool {
 
 	// literals
 	case '"':
-		s.string()
+		s.stringLiteral()
 
 	// ignore whitespace
 	case ' ', '\r', '\t':
@@ -119,7 +121,12 @@ func (s *Scanner) scanToken() bool {
 		return false
 
 	default:
-		reportError(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
+		// number literals
+		if unicode.IsDigit(ch) {
+			s.numberLiteral()
+		} else {
+			reportError(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
+		}
 	}
 
 	return true
@@ -130,6 +137,13 @@ func (s *Scanner) peek() rune {
 		return 0
 	}
 	return s.source[s.Current]
+}
+
+func (s *Scanner) peekNext() rune {
+	if int(s.Current+1) >= len(s.source) {
+		return 0
+	}
+	return s.source[s.Current+1]
 }
 
 func (s *Scanner) advance() rune {
@@ -155,7 +169,7 @@ func (s *Scanner) match(expected rune) bool {
 	return true
 }
 
-func (s *Scanner) string() {
+func (s *Scanner) stringLiteral() {
 	for {
 		ch := s.peek()
 		if ch == '"' || ch == 0 {
@@ -179,9 +193,39 @@ func (s *Scanner) string() {
 	s.advance()
 
 	// trim the quotes from the value
-	value := s.source[s.Start+1 : s.Current-1]
+	value := string(s.source[s.Start+1 : s.Current-1])
 	s.addTokenLiteral(String, value)
+}
 
+func (s *Scanner) numberLiteral() {
+	for {
+		ch := s.peek()
+		if !unicode.IsDigit(ch) {
+			break
+		}
+		s.advance()
+	}
+
+	// check for fractional
+	if s.peek() == '.' && unicode.IsDigit(s.peekNext()) {
+		// consume the '.'
+		s.advance()
+
+		for {
+			ch := s.peek()
+			if !unicode.IsDigit(ch) {
+				break
+			}
+			s.advance()
+		}
+	}
+
+	value, err := strconv.ParseFloat(s.lexeme(), 64)
+	if err != nil {
+		reportError(s.Line, fmt.Sprintf("Invalid number literal '%s': %s", s.lexeme(), err.Error()))
+		return
+	}
+	s.addTokenLiteral(Number, value)
 }
 
 func (s *Scanner) lexeme() string {
