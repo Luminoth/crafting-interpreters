@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Scanner struct {
 	Tokens []Token `json:"tokens"`
@@ -61,6 +63,20 @@ func (s *Scanner) scanToken() bool {
 	case '*':
 		s.addToken(Star)
 
+	// special handling for slash (division and comments)
+	case '/':
+		if s.match('/') {
+			for {
+				ch := s.peek()
+				if ch == '\n' || ch == 0 {
+					break
+				}
+				s.advance()
+			}
+		} else {
+			s.addToken(Slash)
+		}
+
 	// one or two character tokens
 	case '!':
 		if s.match('=') {
@@ -87,26 +103,16 @@ func (s *Scanner) scanToken() bool {
 			s.addToken(Greater)
 		}
 
-	// special handling for slash (division and comments)
-	case '/':
-		if s.match('/') {
-			for {
-				n := s.peek()
-				if n == '\n' || n == 0 {
-					break
-				}
-				s.advance()
-			}
-		} else {
-			s.addToken(Slash)
-		}
+	// literals
+	case '"':
+		s.string()
 
 	// ignore whitespace
 	case ' ', '\r', '\t':
 
 	// line counter
 	case '\n':
-		s.Line += 1
+		s.Line++
 
 	// EOF
 	case 0:
@@ -132,7 +138,7 @@ func (s *Scanner) advance() rune {
 	}
 
 	c := s.source[s.Current]
-	s.Current += 1
+	s.Current++
 	return c
 }
 
@@ -145,8 +151,42 @@ func (s *Scanner) match(expected rune) bool {
 		return false
 	}
 
-	s.Current += 1
+	s.Current++
 	return true
+}
+
+func (s *Scanner) string() {
+	for {
+		ch := s.peek()
+		if ch == '"' || ch == 0 {
+			break
+		}
+
+		// allow multiline strings
+		if ch == '\n' {
+			s.Line++
+		}
+
+		s.advance()
+	}
+
+	if s.isAtEnd() {
+		reportError(s.Line, fmt.Sprintf("Unterminated string literal '%s'", s.lexeme()))
+		return
+	}
+
+	// consume the closing '"'
+	s.advance()
+
+	// trim the quotes from the value
+	value := s.source[s.Start+1 : s.Current-1]
+	s.addTokenLiteral(String, value)
+
+}
+
+func (s *Scanner) lexeme() string {
+	end := Min(len(s.source), int(s.Current))
+	return string(s.source[s.Start:end])
 }
 
 func (s *Scanner) addToken(tokenType TokenType) {
@@ -154,17 +194,16 @@ func (s *Scanner) addToken(tokenType TokenType) {
 }
 
 func (s *Scanner) addTokenLiteral(tokenType TokenType, literal interface{}) {
-	lexeme := string(s.source[s.Start:s.Current])
 	s.Tokens = append(s.Tokens, Token{
 		Type:    tokenType,
-		Lexeme:  lexeme,
+		Lexeme:  s.lexeme(),
 		Literal: literal,
 		Line:    s.Line,
 	})
 }
 
 func (s *Scanner) isAtEnd() bool {
-	return s.Current >= uint(len(s.source))
+	return int(s.Current) >= len(s.source)
 }
 
 func NewScanner(source string) Scanner {
