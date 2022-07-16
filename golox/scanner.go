@@ -16,6 +16,7 @@ func (s *Scanner) ScanTokens() {
 	s.reset()
 
 	for {
+		s.Start = s.Current
 		if !s.scanToken() {
 			break
 		}
@@ -37,6 +38,7 @@ func (s *Scanner) reset() {
 
 func (s *Scanner) scanToken() bool {
 	switch ch := s.advance(); ch {
+
 	// single character tokens
 	case '(':
 		s.addToken(LeftParen)
@@ -84,13 +86,44 @@ func (s *Scanner) scanToken() bool {
 		} else {
 			s.addToken(Greater)
 		}
+
+	// special handling for slash (division and comments)
+	case '/':
+		if s.match('/') {
+			for {
+				n := s.peek()
+				if n == '\n' || n == 0 {
+					break
+				}
+				s.advance()
+			}
+		} else {
+			s.addToken(Slash)
+		}
+
+	// ignore whitespace
+	case ' ', '\r', '\t':
+
+	// line counter
+	case '\n':
+		s.Line += 1
+
+	// EOF
 	case 0:
 		return false
+
 	default:
 		reportError(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
 	}
 
 	return true
+}
+
+func (s *Scanner) peek() rune {
+	if s.isAtEnd() {
+		return 0
+	}
+	return s.source[s.Current]
 }
 
 func (s *Scanner) advance() rune {
