@@ -87,13 +87,9 @@ func (s *Scanner) scanToken() bool {
 	// special handling for slash (division and comments)
 	case '/':
 		if s.match('/') {
-			for {
-				ch := s.peek()
-				if ch == '\n' || ch == 0 {
-					break
-				}
-				s.advance()
-			}
+			s.singleComment()
+		} else if s.match('*') {
+			s.multiComment()
 		} else {
 			s.addToken(Slash)
 		}
@@ -188,6 +184,40 @@ func (s *Scanner) match(expected rune) bool {
 
 	s.Current++
 	return true
+}
+
+func (s *Scanner) singleComment() {
+	for {
+		ch := s.peek()
+		if ch == '\n' || ch == 0 {
+			break
+		}
+		s.advance()
+	}
+}
+
+func (s *Scanner) multiComment() {
+	for {
+		ch := s.peek()
+		if (ch == '*' && s.peekNext() == '/') || ch == 0 {
+			break
+		}
+
+		if ch == '\n' {
+			s.Line++
+		}
+
+		s.advance()
+	}
+
+	if s.isAtEnd() {
+		reportError(s.Line, fmt.Sprintf("Unterminated multi-line comment '%s'", s.lexeme()))
+		return
+	}
+
+	// consume the closing '*/'
+	s.advance()
+	s.advance()
 }
 
 func (s *Scanner) stringLiteral() {
