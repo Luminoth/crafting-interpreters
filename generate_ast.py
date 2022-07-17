@@ -49,50 +49,14 @@ EXPRESSIONS = [
 ]
 
 
-def generate_go_expression_visitor_acceptor(f: io.TextIOWrapper, expression: ExpressionDef):
-    # type
-    f.write('\n')
-    f.write(f'type {expression.name}ExpressionAcceptor[T any] struct {{\n')
-    f.write(f'Expression *{expression.name}Expression\n')
-    f.write('}\n')
-
-    # constructor
-    f.write('\n')
-    f.write(
-        f'func New{expression.name}ExpressionAcceptor[T any](expression *{expression.name}Expression) *{expression.name}ExpressionAcceptor[T] {{\n')
-    f.write(f'return &{expression.name}ExpressionAcceptor[T]{{\n')
-    f.write(f'Expression: expression,\n')
-    f.write('}\n')
-    f.write('}\n')
-
-    # acceptor
-    f.write('\n')
-    f.write(
-        f'func(a *{expression.name}ExpressionAcceptor[T]) Accept(visitor ExpressionVisitor[T]) T {{\n')
-    f.write(f'return visitor.Visit{expression.name}Expression(a.Expression)\n')
-    f.write('}\n')
-
-
 def generate_go_visitors(f: io.TextIOWrapper):
     # visitor interface
     f.write('\n')
-    f.write('type ExpressionVisitor[T any] interface {\n')
+    f.write('type ExpressionVisitor interface {\n')
     for expression in EXPRESSIONS:
-        f.write(f'Visit{expression.name}Expression(expression *{expression.name}Expression) T\n')
+        f.write(
+            f'Visit{expression.name}Expression(expression *{expression.name}Expression) interface{{}}\n')
     f.write('}\n')
-
-    # Go doesn't support generics in method receivers
-    # but we can use a facilitator to get around that
-    # https://rakyll.org/generics-facilititators/
-    f.write("""
-type ExpressionVisitorFacilitator[T any] interface {
-    Accept(visitor ExpressionVisitor[T]) T
-}
-""")
-
-    # acceptors
-    for expression in EXPRESSIONS:
-        generate_go_expression_visitor_acceptor(f, expression)
 
 
 def generate_go_expression(f: io.TextIOWrapper, expression: ExpressionDef):
@@ -109,6 +73,12 @@ def generate_go_expression(f: io.TextIOWrapper, expression: ExpressionDef):
         f.write(f'{name.capitalize()} {type}\n')
     f.write('}\n')
 
+    # visitor interface
+    f.write(
+        f'func (e *{expression.name}Expression) Accept(visitor ExpressionVisitor) interface{{}} {{\n')
+    f.write(f'return visitor.Visit{expression.name}Expression(e)\n')
+    f.write('}\n')
+
 
 def generate_go():
     file_path = SUPPORTED_LANGUAGES['go'].output_file_path
@@ -121,6 +91,7 @@ def generate_go():
         # expression interface
         f.write("""
 type Expression interface {
+    Accept(visitor ExpressionVisitor) interface{}
 }
 """)
 
