@@ -49,7 +49,54 @@ EXPRESSIONS = [
 ]
 
 
+def generate_go_expression_visitor_acceptor(f: io.TextIOWrapper, expression: ExpressionDef):
+    # type
+    f.write('\n')
+    f.write(f'type {expression.name}ExpressionAcceptor[T any] struct {{\n')
+    f.write(f'Expression *{expression.name}Expression\n')
+    f.write('}\n')
+
+    # constructor
+    f.write('\n')
+    f.write(
+        f'func New{expression.name}ExpressionAcceptor[T any](expression *{expression.name}Expression) *{expression.name}ExpressionAcceptor[T] {{\n')
+    f.write(f'return &{expression.name}ExpressionAcceptor[T]{{\n')
+    f.write(f'Expression: expression,\n')
+    f.write('}\n')
+    f.write('}\n')
+
+    # acceptor
+    f.write('\n')
+    f.write(
+        f'func(a *{expression.name}ExpressionAcceptor[T]) Accept(visitor ExpressionVisitor[T]) T {{\n')
+    f.write(f'return visitor.Visit{expression.name}Expression(a.Expression)\n')
+    f.write('}\n')
+
+
+def generate_go_visitors(f: io.TextIOWrapper):
+    # visitor interface
+    f.write('\n')
+    f.write('type ExpressionVisitor[T any] interface {\n')
+    for expression in EXPRESSIONS:
+        f.write(f'Visit{expression.name}Expression(expression *{expression.name}Expression) T\n')
+    f.write('}\n')
+
+    # Go doesn't support generics in method receivers
+    # but we can use a facilitator to get around that
+    # https://rakyll.org/generics-facilititators/
+    f.write("""
+type ExpressionVisitorFacilitator[T any] interface {
+    Accept(visitor ExpressionVisitor[T]) T
+}
+""")
+
+    # acceptors
+    for expression in EXPRESSIONS:
+        generate_go_expression_visitor_acceptor(f, expression)
+
+
 def generate_go_expression(f: io.TextIOWrapper, expression: ExpressionDef):
+    # expression type
     f.write('\n')
     f.write(f'type {expression.name}Expression struct {{\n')
     for name, type in expression.fields.items():
@@ -76,6 +123,9 @@ type Expression interface {
         # expressions
         for expression in EXPRESSIONS:
             generate_go_expression(f, expression)
+
+        # visitors
+        generate_go_visitors(f)
 
     # format the file
     format_cmd = f'{SUPPORTED_LANGUAGES["go"].format_cmd} {file_path}'
