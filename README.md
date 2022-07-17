@@ -2,11 +2,13 @@
 
 ## Lox
 
-### Builtins
+### Features
+
+#### Builtins
 
 * print
 
-### Types
+#### Types
 
 * Dynamic typing
 * Booleans
@@ -18,7 +20,7 @@
 * Strings
 * Nil
 
-### Expressions
+#### Expressions
 
 * Arithmetic
   * Addition
@@ -48,6 +50,17 @@
   * Fields
   * Single Inheritence
 
-### Standard Library
+#### Standard Library
 
 * clock()
+
+### Grammar
+
+```
+expression -> literal | unary | binary | grouping ;
+literal -> NUMBER | STRING | "true" | "false" | "nil" ;
+grouping -> "(" expression ")" ;
+unary -> ( "-" | "!" ) expression ;
+binary -> expression operator expression ;
+operator -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/" ;
+```
