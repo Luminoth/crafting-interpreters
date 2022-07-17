@@ -5,7 +5,7 @@ type Expression interface {
 
 type BinaryExpression struct {
 	Left     Expression
-	Operator Token
+	Operator *Token
 	Right    Expression
 }
 
@@ -18,7 +18,7 @@ type LiteralExpression struct {
 }
 
 type UnaryExpression struct {
-	Operator Token
+	Operator *Token
 	Right    Expression
 }
 

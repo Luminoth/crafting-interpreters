@@ -26,7 +26,7 @@ var keywords = map[string]TokenType{
 }
 
 type Scanner struct {
-	Tokens []Token `json:"tokens"`
+	Tokens []*Token `json:"tokens"`
 
 	source []rune
 
@@ -45,14 +45,14 @@ func (s *Scanner) ScanTokens() {
 		}
 	}
 
-	s.Tokens = append(s.Tokens, Token{
+	s.Tokens = append(s.Tokens, &Token{
 		Type: EOF,
 		Line: s.Line,
 	})
 }
 
 func (s *Scanner) reset() {
-	s.Tokens = []Token{}
+	s.Tokens = []*Token{}
 
 	s.Start = 0
 	s.Current = 0
@@ -308,7 +308,7 @@ func (s *Scanner) addToken(tokenType TokenType) {
 }
 
 func (s *Scanner) addTokenLiteral(tokenType TokenType, literal interface{}) {
-	s.Tokens = append(s.Tokens, Token{
+	s.Tokens = append(s.Tokens, &Token{
 		Type:    tokenType,
 		Lexeme:  s.lexeme(),
 		Literal: literal,
@@ -322,7 +322,7 @@ func (s *Scanner) isAtEnd() bool {
 
 func NewScanner(source string) Scanner {
 	return Scanner{
-		Tokens: []Token{},
+		Tokens: []*Token{},
 		source: []rune(source),
 		Line:   1,
 	}

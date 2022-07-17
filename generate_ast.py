@@ -100,8 +100,12 @@ def generate_go_expression(f: io.TextIOWrapper, expression: ExpressionDef):
     f.write('\n')
     f.write(f'type {expression.name}Expression struct {{\n')
     for name, type in expression.fields.items():
-        if type == 'Object':
-            type = 'interface{}'
+        # do some type overriding
+        match type:
+            case 'Object':
+                type = 'interface{}'
+            case 'Token':
+                type = '*Token'
         f.write(f'{name.capitalize()} {type}\n')
     f.write('}\n')
 
