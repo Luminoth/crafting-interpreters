@@ -247,7 +247,7 @@ func (s *Scanner) stringLiteral() {
 
 	// trim the quotes from the value
 	value := string(s.source[s.Start+1 : s.Current-1])
-	s.addTokenLiteral(String, value)
+	s.addTokenLiteral(String, NewStringLiteral(value))
 }
 
 func (s *Scanner) numberLiteral() {
@@ -278,7 +278,7 @@ func (s *Scanner) numberLiteral() {
 		reportError(s.Line, fmt.Sprintf("Invalid number literal '%s': %s", s.lexeme(), err.Error()))
 		return
 	}
-	s.addTokenLiteral(Number, value)
+	s.addTokenLiteral(Number, NewNumberLiteral(value))
 }
 
 func (s *Scanner) identifier() {
@@ -304,10 +304,10 @@ func (s *Scanner) lexeme() string {
 }
 
 func (s *Scanner) addToken(tokenType TokenType) {
-	s.addTokenLiteral(tokenType, nil)
+	s.addTokenLiteral(tokenType, LiteralValue{})
 }
 
-func (s *Scanner) addTokenLiteral(tokenType TokenType, literal interface{}) {
+func (s *Scanner) addTokenLiteral(tokenType TokenType, literal LiteralValue) {
 	s.Tokens = append(s.Tokens, &Token{
 		Type:    tokenType,
 		Lexeme:  s.lexeme(),

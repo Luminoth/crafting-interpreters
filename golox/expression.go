@@ -23,7 +23,7 @@ func (e *GroupingExpression) Accept(visitor ExpressionVisitor) interface{} {
 }
 
 type LiteralExpression struct {
-	Value interface{}
+	Value LiteralValue
 }
 
 func (e *LiteralExpression) Accept(visitor ExpressionVisitor) interface{} {

@@ -15,7 +15,7 @@ func TestMExpressionPrinter(t *testing.T) {
 				Lexeme: "-",
 			},
 			Right: &LiteralExpression{
-				Value: 123,
+				Value: NewNumberLiteral(123),
 			},
 		},
 		Operator: &Token{
@@ -24,7 +24,7 @@ func TestMExpressionPrinter(t *testing.T) {
 		},
 		Right: &GroupingExpression{
 			Expression: &LiteralExpression{
-				Value: 45.67,
+				Value: NewNumberLiteral(45.67),
 			},
 		},
 	}

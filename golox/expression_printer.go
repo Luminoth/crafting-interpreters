@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -21,10 +22,17 @@ func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpressi
 }
 
 func (p *ExpressionPrinter) VisitLiteralExpression(expression *LiteralExpression) interface{} {
-	if expression.Value == nil {
+	if expression.Value.Type == LiteralTypeNone {
 		return "nil"
+	} else if expression.Value.Type == LiteralTypeNumber {
+		return expression.Value.NumberValue
+	} else if expression.Value.Type == LiteralTypeString {
+		return expression.Value.StringValue
 	}
-	return fmt.Sprintf("%v", expression.Value)
+
+	fmt.Printf("Unsupported literal type %v", expression.Value.Type)
+	os.Exit(1)
+	return nil
 }
 
 func (p *ExpressionPrinter) VisitUnaryExpression(expression *UnaryExpression) interface{} {

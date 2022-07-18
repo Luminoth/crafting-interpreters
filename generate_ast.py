@@ -67,7 +67,7 @@ def generate_go_expression(f: io.TextIOWrapper, expression: ExpressionDef):
         # do some type overriding
         match type:
             case 'Object':
-                type = 'interface{}'
+                type = 'LiteralValue'
             case 'Token':
                 type = '*Token'
         f.write(f'{name.capitalize()} {type}\n')

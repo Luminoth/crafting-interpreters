@@ -83,9 +83,38 @@ const (
 	Var    TokenType = 38
 )
 
+type LiteralType int
+
+const (
+	LiteralTypeNone   LiteralType = 0
+	LiteralTypeNumber LiteralType = 1
+	LiteralTypeString LiteralType = 2
+)
+
+type LiteralValue struct {
+	Type LiteralType `json:"type"`
+
+	NumberValue float64 `json:"number"`
+	StringValue string  `json:"string"`
+}
+
+func NewNumberLiteral(value float64) LiteralValue {
+	return LiteralValue{
+		Type:        LiteralTypeNumber,
+		NumberValue: value,
+	}
+}
+
+func NewStringLiteral(value string) LiteralValue {
+	return LiteralValue{
+		Type:        LiteralTypeNumber,
+		StringValue: value,
+	}
+}
+
 type Token struct {
-	Type    TokenType   `json:"type"`
-	Lexeme  string      `json:"lexeme,omitempty"`
-	Literal interface{} `json:"literal,omitempty"`
-	Line    uint        `json:"line"`
+	Type    TokenType    `json:"type"`
+	Lexeme  string       `json:"lexeme,omitempty"`
+	Literal LiteralValue `json:"literal,omitempty"`
+	Line    uint         `json:"line"`
 }
