@@ -10,32 +10,32 @@ type ExpressionPrinter struct {
 }
 
 func (p *ExpressionPrinter) Print(expression Expression) string {
-	return fmt.Sprintf("%v", expression.Accept(p))
+	return expression.AcceptString(p)
 }
 
-func (p *ExpressionPrinter) VisitBinaryExpression(expression *BinaryExpression) interface{} {
+func (p *ExpressionPrinter) VisitBinaryExpressionString(expression *BinaryExpression) string {
 	return p.parenthesize(expression.Operator.Lexeme, expression.Left, expression.Right)
 }
 
-func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpression) interface{} {
+func (p *ExpressionPrinter) VisitGroupingExpressionString(expression *GroupingExpression) string {
 	return p.parenthesize("group", expression.Expression)
 }
 
-func (p *ExpressionPrinter) VisitLiteralExpression(expression *LiteralExpression) interface{} {
+func (p *ExpressionPrinter) VisitLiteralExpressionString(expression *LiteralExpression) string {
 	if expression.Value.Type == LiteralTypeNone {
 		return "nil"
 	} else if expression.Value.Type == LiteralTypeNumber {
-		return expression.Value.NumberValue
+		return fmt.Sprintf("%g", expression.Value.NumberValue)
 	} else if expression.Value.Type == LiteralTypeString {
 		return expression.Value.StringValue
 	}
 
 	fmt.Printf("Unsupported literal type %v", expression.Value.Type)
 	os.Exit(1)
-	return nil
+	return ""
 }
 
-func (p *ExpressionPrinter) VisitUnaryExpression(expression *UnaryExpression) interface{} {
+func (p *ExpressionPrinter) VisitUnaryExpressionString(expression *UnaryExpression) string {
 	return p.parenthesize(expression.Operator.Lexeme, expression.Right)
 }
 
@@ -46,7 +46,7 @@ func (p *ExpressionPrinter) parenthesize(name string, expressions ...Expression)
 	builder.WriteString(name)
 	for _, expression := range expressions {
 		builder.WriteRune(' ')
-		builder.WriteString(fmt.Sprintf("%v", expression.Accept(p)))
+		builder.WriteString(expression.AcceptString(p))
 	}
 	builder.WriteRune(')')
 

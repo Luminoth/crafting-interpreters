@@ -55,7 +55,7 @@ def generate_go_visitors(f: io.TextIOWrapper):
     f.write('type ExpressionVisitor interface {\n')
     for expression in EXPRESSIONS:
         f.write(
-            f'Visit{expression.name}Expression(expression *{expression.name}Expression) interface{{}}\n')
+            f'Visit{expression.name}ExpressionString(expression *{expression.name}Expression) string\n')
     f.write('}\n')
 
 
@@ -75,8 +75,8 @@ def generate_go_expression(f: io.TextIOWrapper, expression: ExpressionDef):
 
     # visitor interface
     f.write(
-        f'func (e *{expression.name}Expression) Accept(visitor ExpressionVisitor) interface{{}} {{\n')
-    f.write(f'return visitor.Visit{expression.name}Expression(e)\n')
+        f'func (e *{expression.name}Expression) AcceptString(visitor ExpressionVisitor) string {{\n')
+    f.write(f'return visitor.Visit{expression.name}ExpressionString(e)\n')
     f.write('}\n')
 
 
@@ -91,7 +91,7 @@ def generate_go():
         # expression interface
         f.write("""
 type Expression interface {
-    Accept(visitor ExpressionVisitor) interface{}
+    AcceptString(visitor ExpressionVisitor) string
 }
 """)
 
