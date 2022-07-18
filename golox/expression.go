@@ -39,7 +39,11 @@ func (e *UnaryExpression) AcceptString(visitor ExpressionVisitor[string]) string
 	return visitor.VisitUnaryExpression(e)
 }
 
-type ExpressionVisitor[T any] interface {
+type ExpressionVisitorConstraint interface {
+	string
+}
+
+type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
 	VisitBinaryExpression(expression *BinaryExpression) T
 	VisitGroupingExpression(expression *GroupingExpression) T
 	VisitLiteralExpression(expression *LiteralExpression) T

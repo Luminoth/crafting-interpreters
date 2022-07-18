@@ -50,9 +50,16 @@ EXPRESSIONS = [
 
 
 def generate_go_visitors(f: io.TextIOWrapper):
+    # visitor type constraint
+    f.write("""
+type ExpressionVisitorConstraint interface {
+    string
+}
+""")
+
     # visitor interface
     f.write('\n')
-    f.write('type ExpressionVisitor[T any] interface {\n')
+    f.write('type ExpressionVisitor[T ExpressionVisitorConstraint] interface {\n')
     for expression in EXPRESSIONS:
         f.write(
             f'Visit{expression.name}Expression(expression *{expression.name}Expression) T\n')
