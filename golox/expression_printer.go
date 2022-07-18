@@ -13,15 +13,15 @@ func (p *ExpressionPrinter) Print(expression Expression) string {
 	return expression.AcceptString(p)
 }
 
-func (p *ExpressionPrinter) VisitBinaryExpressionString(expression *BinaryExpression) string {
+func (p *ExpressionPrinter) VisitBinaryExpression(expression *BinaryExpression) string {
 	return p.parenthesize(expression.Operator.Lexeme, expression.Left, expression.Right)
 }
 
-func (p *ExpressionPrinter) VisitGroupingExpressionString(expression *GroupingExpression) string {
+func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpression) string {
 	return p.parenthesize("group", expression.Expression)
 }
 
-func (p *ExpressionPrinter) VisitLiteralExpressionString(expression *LiteralExpression) string {
+func (p *ExpressionPrinter) VisitLiteralExpression(expression *LiteralExpression) string {
 	if expression.Value.Type == LiteralTypeNone {
 		return "nil"
 	} else if expression.Value.Type == LiteralTypeNumber {
@@ -35,7 +35,7 @@ func (p *ExpressionPrinter) VisitLiteralExpressionString(expression *LiteralExpr
 	return ""
 }
 
-func (p *ExpressionPrinter) VisitUnaryExpressionString(expression *UnaryExpression) string {
+func (p *ExpressionPrinter) VisitUnaryExpression(expression *UnaryExpression) string {
 	return p.parenthesize(expression.Operator.Lexeme, expression.Right)
 }
 
