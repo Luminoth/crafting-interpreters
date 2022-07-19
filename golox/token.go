@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"os"
+)
+
 type TokenType uint
 
 // TODO: use stringer to generate this
@@ -86,9 +91,10 @@ const (
 type LiteralType int
 
 const (
-	LiteralTypeNone   LiteralType = 0
+	LiteralTypeNil    LiteralType = 0
 	LiteralTypeNumber LiteralType = 1
 	LiteralTypeString LiteralType = 2
+	LiteralTypeBool   LiteralType = 3
 )
 
 type LiteralValue struct {
@@ -96,6 +102,29 @@ type LiteralValue struct {
 
 	NumberValue float64 `json:"number"`
 	StringValue string  `json:"string"`
+	BoolValue   bool    `json:"bool"`
+}
+
+func (v LiteralValue) String() string {
+	if v.Type == LiteralTypeNil {
+		return "nil"
+	} else if v.Type == LiteralTypeNumber {
+		return fmt.Sprintf("%g", v.NumberValue)
+	} else if v.Type == LiteralTypeString {
+		return v.StringValue
+	} else if v.Type == LiteralTypeBool {
+		return fmt.Sprintf("%t", v.BoolValue)
+	}
+
+	fmt.Printf("Unsupported literal type %v", v.Type)
+	os.Exit(1)
+	return ""
+}
+
+func NewNilLiteral() LiteralValue {
+	return LiteralValue{
+		Type: LiteralTypeNil,
+	}
 }
 
 func NewNumberLiteral(value float64) LiteralValue {
@@ -107,8 +136,15 @@ func NewNumberLiteral(value float64) LiteralValue {
 
 func NewStringLiteral(value string) LiteralValue {
 	return LiteralValue{
-		Type:        LiteralTypeNumber,
+		Type:        LiteralTypeString,
 		StringValue: value,
+	}
+}
+
+func NewBoolLiteral(value bool) LiteralValue {
+	return LiteralValue{
+		Type:      LiteralTypeBool,
+		BoolValue: value,
 	}
 }
 
