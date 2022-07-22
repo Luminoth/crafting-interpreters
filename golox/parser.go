@@ -17,80 +17,45 @@ func NewParser(tokens []*Token) Parser {
 	}
 }
 
+// TODO: this name could be better
+type expressionGetter func() Expression
+
+func (p *Parser) binaryExpression(g expressionGetter, terminals ...TokenType) Expression {
+	expression := g()
+	for {
+		if !p.match(terminals...) {
+			break
+		}
+
+		operator := p.previous()
+		right := g()
+		expression = &BinaryExpression{
+			Left:     expression,
+			Operator: operator,
+			Right:    right,
+		}
+	}
+	return expression
+}
+
 func (p *Parser) expression() Expression {
 	return p.equality()
 }
 
 func (p *Parser) equality() Expression {
-	expression := p.comparison()
-	for {
-		if !p.match(BangEqual, EqualEqual) {
-			break
-		}
-
-		operator := p.previous()
-		right := p.comparison()
-		expression = &BinaryExpression{
-			Left:     expression,
-			Operator: operator,
-			Right:    right,
-		}
-	}
-	return expression
+	return p.binaryExpression(p.comparison, BangEqual, EqualEqual)
 }
 
 func (p *Parser) comparison() Expression {
-	expression := p.term()
-	for {
-		if !p.match(Greater, GreaterEqual, Less, LessEqual) {
-			break
-		}
-
-		operator := p.previous()
-		right := p.term()
-		expression = &BinaryExpression{
-			Left:     expression,
-			Operator: operator,
-			Right:    right,
-		}
-	}
-	return expression
+	return p.binaryExpression(p.term, Greater, GreaterEqual, Less, LessEqual)
 }
 
 func (p *Parser) term() Expression {
-	expression := p.factor()
-	for {
-		if !p.match(Minus, Plus) {
-			break
-		}
-
-		operator := p.previous()
-		right := p.factor()
-		expression = &BinaryExpression{
-			Left:     expression,
-			Operator: operator,
-			Right:    right,
-		}
-	}
-	return expression
+	return p.binaryExpression(p.factor, Minus, Plus)
 }
 
 func (p *Parser) factor() Expression {
-	expression := p.unary()
-	for {
-		if !p.match(Slash, Star) {
-			break
-		}
-
-		operator := p.previous()
-		right := p.unary()
-		expression = &BinaryExpression{
-			Left:     expression,
-			Operator: operator,
-			Right:    right,
-		}
-	}
-	return expression
+	return p.binaryExpression(p.unary, Slash, Star)
 }
 
 func (p *Parser) unary() Expression {
@@ -140,6 +105,7 @@ func (p *Parser) primary() Expression {
 
 	if p.match(LeftParen) {
 		expression := p.expression()
+		//TODO:
 		//p.consume(RightParen, "Expect ')' after expression.")
 		return &GroupingExpression{
 			Expression: expression,
