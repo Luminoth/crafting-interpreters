@@ -17,18 +17,15 @@ func NewParser(tokens []*Token) Parser {
 	}
 }
 
-// TODO: this name could be better
-type expressionGetter func() Expression
-
-func (p *Parser) binaryExpression(g expressionGetter, terminals ...TokenType) Expression {
-	expression := g()
+func (p *Parser) binaryExpression(operand func() Expression, tokenTypes ...TokenType) Expression {
+	expression := operand()
 	for {
-		if !p.match(terminals...) {
+		if !p.match(tokenTypes...) {
 			break
 		}
 
 		operator := p.previous()
-		right := g()
+		right := operand()
 		expression = &BinaryExpression{
 			Left:     expression,
 			Operator: operator,
