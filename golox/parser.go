@@ -127,7 +127,7 @@ func (p *Parser) primary() (expr Expression, err error) {
 			return
 		}
 
-		_, err = p.consume(RightParen, "expect ')' after expression.")
+		_, err = p.consume(RightParen, "Expect ')' after expression.")
 		if err != nil {
 			return
 		}
