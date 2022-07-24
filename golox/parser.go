@@ -22,7 +22,7 @@ type Parser struct {
 
 func NewParser(tokens []*Token) Parser {
 	return Parser{
-		Tokens: []*Token{},
+		Tokens: tokens,
 	}
 }
 

@@ -154,3 +154,7 @@ type Token struct {
 	Literal LiteralValue `json:"literal,omitempty"`
 	Line    uint         `json:"line"`
 }
+
+func (t Token) String() string {
+	return fmt.Sprintf("[%d] %s '%s' '%s'", t.Line, t.Type, t.Lexeme, t.Literal)
+}

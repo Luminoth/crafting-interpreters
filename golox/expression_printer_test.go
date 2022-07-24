@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestMExpressionPrinter(t *testing.T) {
+func TestExpressionPrinter(t *testing.T) {
 	// -123 * (45.67)
 	expectedResult := "(* (- 123) (group 45.67))"
 
