@@ -1,9 +1,18 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 )
+
+type ParserError struct {
+	Message string `json:"message"`
+
+	Tokens []*Token `json:"tokens"`
+}
+
+func (e *ParserError) Error() string {
+	return e.Message
+}
 
 type Parser struct {
 	Tokens []*Token `json:"tokens"`
@@ -138,7 +147,7 @@ func (p *Parser) primary() (expr Expression, err error) {
 		return
 	}
 
-	err = fmt.Errorf("unexpected primary token %v", p.peek())
+	err = p.error(p.peek(), "Unexpected primary token.")
 	return
 }
 
@@ -195,5 +204,8 @@ func (p *Parser) error(token *Token, message string) error {
 		report(token.Line, fmt.Sprintf(" at '%s'", token.Lexeme), message)
 	}
 
-	return errors.New("parse error")
+	return &ParserError{
+		Message: message,
+		Tokens:  []*Token{token},
+	}
 }
