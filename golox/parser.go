@@ -147,7 +147,7 @@ func (p *Parser) primary() (expr Expression, err error) {
 		return
 	}
 
-	err = p.error(p.peek(), "Unexpected primary token.")
+	err = p.error(p.peek(), "Expect expression.")
 	return
 }
 
