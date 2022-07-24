@@ -26,6 +26,14 @@ func NewParser(tokens []*Token) Parser {
 	}
 }
 
+func (p *Parser) Parse() (expr Expression) {
+	expr, err := p.expression()
+	if err != nil {
+		return nil
+	}
+	return
+}
+
 func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes ...TokenType) (expr Expression, err error) {
 	expr, err = operand()
 	if err != nil {
@@ -207,5 +215,41 @@ func (p *Parser) error(token *Token, message string) error {
 	return &ParserError{
 		Message: message,
 		Tokens:  []*Token{token},
+	}
+}
+
+func (p *Parser) synchronize() {
+	p.advance()
+	for {
+		if p.isAtEnd() {
+			break
+		}
+
+		// did we just end an expression?
+		if p.previous().Type == Semicolon {
+			return
+		}
+
+		// are we at the start of a new statement?
+		switch p.peek().Type {
+		case Class:
+			fallthrough
+		case For:
+			fallthrough
+		case Fun:
+			fallthrough
+		case If:
+			fallthrough
+		case Print:
+			fallthrough
+		case Return:
+			fallthrough
+		case Var:
+			fallthrough
+		case While:
+			return
+		}
+
+		p.advance()
 	}
 }

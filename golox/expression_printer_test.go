@@ -29,8 +29,7 @@ func TestMExpressionPrinter(t *testing.T) {
 		},
 	}
 
-	printer := ExpressionPrinter{}
-	result := printer.Print(&expression)
+	result := (&ExpressionPrinter{}).Print(&expression)
 	if result != expectedResult {
 		t.Fatalf("Print failed - expected %s, got %s", expectedResult, result)
 	}

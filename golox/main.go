@@ -65,7 +65,12 @@ func run(source string) {
 	scanner := NewScanner(source)
 	scanner.ScanTokens()
 
-	for _, token := range scanner.Tokens {
-		fmt.Println(token)
+	parser := NewParser(scanner.Tokens)
+	expression := parser.Parse()
+
+	if hadError {
+		return
 	}
+
+	fmt.Println((&ExpressionPrinter{}).Print(expression))
 }
