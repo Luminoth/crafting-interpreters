@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"os"
 )
 
 type Parser struct {
@@ -17,101 +17,129 @@ func NewParser(tokens []*Token) Parser {
 	}
 }
 
-func (p *Parser) binaryExpression(operand func() Expression, tokenTypes ...TokenType) Expression {
-	expression := operand()
+func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes ...TokenType) (expr Expression, err error) {
+	expr, err = operand()
+	if err != nil {
+		return
+	}
+
 	for {
 		if !p.match(tokenTypes...) {
 			break
 		}
 
 		operator := p.previous()
-		right := operand()
-		expression = &BinaryExpression{
-			Left:     expression,
+
+		right, innerErr := operand()
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		expr = &BinaryExpression{
+			Left:     expr,
 			Operator: operator,
 			Right:    right,
 		}
 	}
-	return expression
+	return
 }
 
-func (p *Parser) expression() Expression {
+func (p *Parser) expression() (Expression, error) {
 	return p.equality()
 }
 
-func (p *Parser) equality() Expression {
+func (p *Parser) equality() (Expression, error) {
 	return p.binaryExpression(p.comparison, BangEqual, EqualEqual)
 }
 
-func (p *Parser) comparison() Expression {
+func (p *Parser) comparison() (Expression, error) {
 	return p.binaryExpression(p.term, Greater, GreaterEqual, Less, LessEqual)
 }
 
-func (p *Parser) term() Expression {
+func (p *Parser) term() (Expression, error) {
 	return p.binaryExpression(p.factor, Minus, Plus)
 }
 
-func (p *Parser) factor() Expression {
+func (p *Parser) factor() (expr Expression, err error) {
 	return p.binaryExpression(p.unary, Slash, Star)
 }
 
-func (p *Parser) unary() Expression {
+func (p *Parser) unary() (expr Expression, err error) {
 	if !p.match(Bang, Minus) {
 		return p.primary()
 	}
 
 	operator := p.previous()
-	right := p.unary()
-	return &UnaryExpression{
+
+	right, err := p.unary()
+	if err != nil {
+		return
+	}
+
+	expr = &UnaryExpression{
 		Operator: operator,
 		Right:    right,
 	}
-
+	return
 }
 
-func (p *Parser) primary() Expression {
+func (p *Parser) primary() (expr Expression, err error) {
 	if p.match(False) {
-		return &LiteralExpression{
+		expr = &LiteralExpression{
 			Value: NewBoolLiteral(false),
 		}
+		return
 	}
 
 	if p.match(True) {
-		return &LiteralExpression{
+		expr = &LiteralExpression{
 			Value: NewBoolLiteral(true),
 		}
+		return
 	}
 
 	if p.match(Nil) {
-		return &LiteralExpression{
+		expr = &LiteralExpression{
 			Value: NewNilLiteral(),
 		}
+		return
 	}
 
 	if p.match(Number) {
-		return &LiteralExpression{
+		expr = &LiteralExpression{
 			Value: NewNumberLiteral(p.previous().Literal.NumberValue),
 		}
+		return
 	}
 
 	if p.match(String) {
-		return &LiteralExpression{
+		expr = &LiteralExpression{
 			Value: NewStringLiteral(p.previous().Literal.StringValue),
 		}
+		return
 	}
 
 	if p.match(LeftParen) {
-		expression := p.expression()
-		//TODO:
-		//p.consume(RightParen, "Expect ')' after expression.")
-		return &GroupingExpression{
+		expression, innerErr := p.expression()
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		_, err = p.consume(RightParen, "expect ')' after expression.")
+		if err != nil {
+			return
+		}
+
+		expr = &GroupingExpression{
 			Expression: expression,
 		}
+		return
 	}
 
-	fmt.Printf("Unexpected primary token %v", p.peek())
-	os.Exit(1)
-	return nil
+	err = fmt.Errorf("unexpected primary token %v", p.peek())
+	return
 }
 
 func (p *Parser) peek() *Token {
@@ -135,6 +163,16 @@ func (p *Parser) match(tokenTypes ...TokenType) bool {
 	return false
 }
 
+func (p *Parser) consume(tokenType TokenType, message string) (token *Token, err error) {
+	if p.check(tokenType) {
+		token = p.advance()
+		return
+	}
+
+	err = p.error(p.peek(), message)
+	return
+}
+
 func (p *Parser) advance() *Token {
 	if !p.isAtEnd() {
 		p.Current++
@@ -148,4 +186,14 @@ func (p *Parser) previous() *Token {
 
 func (p *Parser) isAtEnd() bool {
 	return p.peek().Type == EOF
+}
+
+func (p *Parser) error(token *Token, message string) error {
+	if token.Type == EOF {
+		report(token.Line, " at end", message)
+	} else {
+		report(token.Line, fmt.Sprintf(" at '%s'", token.Lexeme), message)
+	}
+
+	return errors.New("parse error")
 }

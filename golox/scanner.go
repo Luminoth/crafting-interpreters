@@ -142,7 +142,7 @@ func (s *Scanner) scanToken() bool {
 		} else if IsAlpha(ch) {
 			s.identifier()
 		} else {
-			reportError(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
+			s.error(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
 		}
 	}
 
@@ -211,7 +211,7 @@ func (s *Scanner) multiComment() {
 	}
 
 	if s.isAtEnd() {
-		reportError(s.Line, fmt.Sprintf("Unterminated multi-line comment '%s'", s.lexeme()))
+		s.error(s.Line, fmt.Sprintf("Unterminated multi-line comment '%s'", s.lexeme()))
 		return
 	}
 
@@ -238,7 +238,7 @@ func (s *Scanner) stringLiteral() {
 	}
 
 	if s.isAtEnd() {
-		reportError(s.Line, fmt.Sprintf("Unterminated string literal '%s'", s.lexeme()))
+		s.error(s.Line, fmt.Sprintf("Unterminated string literal '%s'", s.lexeme()))
 		return
 	}
 
@@ -275,7 +275,7 @@ func (s *Scanner) numberLiteral() {
 
 	value, err := strconv.ParseFloat(s.lexeme(), 64)
 	if err != nil {
-		reportError(s.Line, fmt.Sprintf("Invalid number literal '%s': %s", s.lexeme(), err.Error()))
+		s.error(s.Line, fmt.Sprintf("Invalid number literal '%s': %s", s.lexeme(), err.Error()))
 		return
 	}
 	s.addTokenLiteral(Number, NewNumberLiteral(value))
@@ -318,6 +318,10 @@ func (s *Scanner) addTokenLiteral(tokenType TokenType, literal LiteralValue) {
 
 func (s *Scanner) isAtEnd() bool {
 	return int(s.Current) >= len(s.source)
+}
+
+func (s *Scanner) error(line uint, message string) {
+	report(line, "", message)
 }
 
 func NewScanner(source string) Scanner {
