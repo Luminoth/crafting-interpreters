@@ -58,7 +58,7 @@ def generate_go_visitors(f: io.TextIOWrapper):
     # visitor type constraint
     f.write("""
 type ExpressionVisitorConstraint interface {
-    string
+    string | Value
 }
 """)
 
@@ -90,6 +90,11 @@ def generate_go_expression(f: io.TextIOWrapper, expression: ExpressionDef):
         f'func (e *{expression.name}Expression) AcceptString(visitor ExpressionVisitor[string]) string {{\n')
     f.write(f'return visitor.Visit{expression.name}Expression(e)\n')
     f.write('}\n')
+    f.write('\n')
+    f.write(
+        f'func (e *{expression.name}Expression) AcceptValue(visitor ExpressionVisitor[Value]) Value {{\n')
+    f.write(f'return visitor.Visit{expression.name}Expression(e)\n')
+    f.write('}\n')
 
 
 def generate_go():
@@ -105,6 +110,7 @@ def generate_go():
         f.write("""
 type Expression interface {
     AcceptString(visitor ExpressionVisitor[string]) string
+    AcceptValue(visitor ExpressionVisitor[Value]) Value
 }
 """)
 
