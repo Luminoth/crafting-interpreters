@@ -17,6 +17,7 @@ func (t TokenType) String() string {
 		"Comma", "Dot",
 		"Minus", "Plus",
 		"Semicolon", "Slash", "Star",
+		"Question", "Colon",
 
 		"Bang", "BangEqual",
 		"Equal", "EqualEqual",
@@ -53,39 +54,41 @@ const (
 	Semicolon  TokenType = 9
 	Slash      TokenType = 10
 	Star       TokenType = 11
+	Question   TokenType = 12
+	Colon      TokenType = 13
 
 	// one or two character tokens
-	Bang         TokenType = 12
-	BangEqual    TokenType = 13
-	Equal        TokenType = 14
-	EqualEqual   TokenType = 15
-	Greater      TokenType = 16
-	GreaterEqual TokenType = 17
-	Less         TokenType = 18
-	LessEqual    TokenType = 19
+	Bang         TokenType = 14
+	BangEqual    TokenType = 15
+	Equal        TokenType = 16
+	EqualEqual   TokenType = 17
+	Greater      TokenType = 18
+	GreaterEqual TokenType = 19
+	Less         TokenType = 20
+	LessEqual    TokenType = 21
 
 	// literals
-	Identifier TokenType = 20
-	String     TokenType = 21
-	Number     TokenType = 22
+	Identifier TokenType = 22
+	String     TokenType = 23
+	Number     TokenType = 24
 
 	// keywords
-	And    TokenType = 23
-	Or     TokenType = 24
-	If     TokenType = 25
-	Else   TokenType = 26
-	Class  TokenType = 27
-	Super  TokenType = 28
-	This   TokenType = 29
-	True   TokenType = 30
-	False  TokenType = 31
-	Fun    TokenType = 32
-	For    TokenType = 33
-	While  TokenType = 34
-	Nil    TokenType = 35
-	Print  TokenType = 36
-	Return TokenType = 37
-	Var    TokenType = 38
+	And    TokenType = 25
+	Or     TokenType = 26
+	If     TokenType = 27
+	Else   TokenType = 28
+	Class  TokenType = 29
+	Super  TokenType = 30
+	This   TokenType = 31
+	True   TokenType = 32
+	False  TokenType = 33
+	Fun    TokenType = 34
+	For    TokenType = 35
+	While  TokenType = 36
+	Nil    TokenType = 37
+	Print  TokenType = 38
+	Return TokenType = 39
+	Var    TokenType = 40
 )
 
 type LiteralType int

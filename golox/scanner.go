@@ -83,6 +83,10 @@ func (s *Scanner) scanToken() bool {
 		s.addToken(Semicolon)
 	case '*':
 		s.addToken(Star)
+	case '?':
+		s.addToken(Question)
+	case ':':
+		s.addToken(Colon)
 
 	// special handling for slash (division and comments)
 	case '/':

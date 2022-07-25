@@ -50,13 +50,14 @@ func simpleErrorScanTest(t *testing.T, source string) Scanner {
 }
 
 func TestSingleTokens(t *testing.T) {
-	source := "( ){ } , . - + ; / *"
+	source := "( ){ } , . - + ; / * ? :"
 	expectedTokens := []TokenType{
 		LeftParen, RightParen,
 		LeftBrace, RightBrace,
 		Comma, Dot,
 		Minus, Plus,
 		Semicolon, Slash, Star,
+		Question, Colon,
 	}
 
 	simpleScanTest(t, source, expectedTokens, 1)
