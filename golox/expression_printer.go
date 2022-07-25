@@ -19,16 +19,16 @@ func (p *ExpressionPrinter) VisitTernaryExpression(expression *TernaryExpression
 	return p.parenthesize("ternary", expression.Condition, expression.True, expression.False)
 }
 
+func (p *ExpressionPrinter) VisitUnaryExpression(expression *UnaryExpression) string {
+	return p.parenthesize(expression.Operator.Lexeme, expression.Right)
+}
+
 func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpression) string {
 	return p.parenthesize("group", expression.Expression)
 }
 
 func (p *ExpressionPrinter) VisitLiteralExpression(expression *LiteralExpression) string {
 	return expression.Value.String()
-}
-
-func (p *ExpressionPrinter) VisitUnaryExpression(expression *UnaryExpression) string {
-	return p.parenthesize(expression.Operator.Lexeme, expression.Right)
 }
 
 func (p *ExpressionPrinter) parenthesize(name string, expressions ...Expression) string {
