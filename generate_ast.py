@@ -144,8 +144,7 @@ def main(args: argparse.Namespace):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='AST codegen')
 
-    subparsers = parser.add_subparsers(help='Command help', dest='command')
-    subparsers.required = True
+    subparsers = parser.add_subparsers(dest='command', help='sub-command help', required=True)
 
     subparser = subparsers.add_parser('generate')
     subparser.add_argument('--languages', choices=SUPPORTED_LANGUAGES.keys(), default=SUPPORTED_LANGUAGES.keys(),
