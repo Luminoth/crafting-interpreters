@@ -42,6 +42,23 @@ func (v Value) String() string {
 	return ""
 }
 
+func NewValue(literal LiteralValue) Value {
+	switch literal.Type {
+	case LiteralTypeNil:
+		return NewNilValue()
+	case LiteralTypeNumber:
+		return NewNumberValue(literal.NumberValue)
+	case LiteralTypeString:
+		return NewStringValue(literal.StringValue)
+	case LiteralTypeBool:
+		return NewBoolValue(literal.BoolValue)
+	}
+
+	fmt.Printf("Unsupported literal type %v", literal.Type)
+	os.Exit(1)
+	return NewNilValue()
+}
+
 func NewNilValue() Value {
 	return Value{
 		Type: ValueTypeNil,
