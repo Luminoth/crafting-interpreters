@@ -63,7 +63,11 @@ func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes
 }
 
 func (p *Parser) expression() (Expression, error) {
-	return p.equality()
+	return p.comma()
+}
+
+func (p *Parser) comma() (Expression, error) {
+	return p.binaryExpression(p.equality, Comma)
 }
 
 func (p *Parser) equality() (Expression, error) {

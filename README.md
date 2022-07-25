@@ -1,6 +1,7 @@
 # Crafting Interpreters
 
 * https://github.com/munificent/craftinginterpreters
+* https://en.cppreference.com/w/c/language/operator_precedence
 
 ## Lox
 
@@ -72,7 +73,8 @@ operator -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/" ;
 #### Unambiguous
 
 ```
-expressino -> equality ;
+expression -> comma ;
+comma -> equality ( "," equality )* ;
 equality -> comparison ( ( "!=" | "==" ) comparison )* ;
 comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term -> factor ( ( "-" | "+" ) factor )* ;
