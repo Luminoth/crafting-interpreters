@@ -2,6 +2,8 @@
 
 * https://github.com/munificent/craftinginterpreters
 * https://en.cppreference.com/w/c/language/operator_precedence
+* https://github.com/fsacer/FailLang
+  * Interesting expansion on Lox
 
 ## Lox
 
