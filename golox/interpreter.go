@@ -13,6 +13,10 @@ func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) Value 
 	right := i.evaluate(expression.Right)
 
 	switch expression.Operator.Type {
+	case Comma:
+		fmt.Println("TODO: comma operator")
+		os.Exit(1)
+		return NewNilValue()
 	case Greater:
 		return NewBoolValue(left.NumberValue > right.NumberValue)
 	case GreaterEqual:
@@ -49,9 +53,13 @@ func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) Value 
 }
 
 func (i *Interpreter) VisitTernaryExpression(expression *TernaryExpression) Value {
-	fmt.Printf("TODO: ternary expressions")
-	os.Exit(1)
-	return NewNilValue()
+	condition := i.evaluate(expression.Condition)
+
+	if i.isTruthy(condition) {
+		return i.evaluate(expression.True)
+	} else {
+		return i.evaluate(expression.False)
+	}
 }
 
 func (i *Interpreter) VisitUnaryExpression(expression *UnaryExpression) Value {
