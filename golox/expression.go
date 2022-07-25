@@ -15,6 +15,16 @@ func (e *BinaryExpression) AcceptString(visitor ExpressionVisitor[string]) strin
 	return visitor.VisitBinaryExpression(e)
 }
 
+type TernaryExpression struct {
+	Condition Expression
+	True      Expression
+	False     Expression
+}
+
+func (e *TernaryExpression) AcceptString(visitor ExpressionVisitor[string]) string {
+	return visitor.VisitTernaryExpression(e)
+}
+
 type GroupingExpression struct {
 	Expression Expression
 }
@@ -46,6 +56,7 @@ type ExpressionVisitorConstraint interface {
 
 type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
 	VisitBinaryExpression(expression *BinaryExpression) T
+	VisitTernaryExpression(expression *TernaryExpression) T
 	VisitGroupingExpression(expression *GroupingExpression) T
 	VisitLiteralExpression(expression *LiteralExpression) T
 	VisitUnaryExpression(expression *UnaryExpression) T

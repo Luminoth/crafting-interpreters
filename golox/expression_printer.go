@@ -15,6 +15,10 @@ func (p *ExpressionPrinter) VisitBinaryExpression(expression *BinaryExpression) 
 	return p.parenthesize(expression.Operator.Lexeme, expression.Left, expression.Right)
 }
 
+func (p *ExpressionPrinter) VisitTernaryExpression(expression *TernaryExpression) string {
+	return p.parenthesize("ternary", expression.Condition, expression.True, expression.False)
+}
+
 func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpression) string {
 	return p.parenthesize("group", expression.Expression)
 }

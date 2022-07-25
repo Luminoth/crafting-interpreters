@@ -59,22 +59,10 @@
 
 ### Grammar
 
-#### Ambiguous
-
-```
-expression -> literal | unary | binary | grouping ;
-literal -> NUMBER | STRING | "true" | "false" | "nil" ;
-grouping -> "(" expression ")" ;
-unary -> ( "-" | "!" ) expression ;
-binary -> expression operator expression ;
-operator -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/" ;
-```
-
-#### Unambiguous
-
 ```
 expression -> comma ;
-comma -> equality ( "," equality )* ;
+comma -> ternary ( "," ternary )* ;
+ternary -> equality ( "?" expression ":" ternary )? ;
 equality -> comparison ( ( "!=" | "==" ) comparison )* ;
 comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term -> factor ( ( "-" | "+" ) factor )* ;
@@ -84,3 +72,15 @@ unary   -> ( "!" | "-" ) unary
 primary -> NUMBER | STRING | "true" | "false" | "nil"
         | "(" expression ")" ;
 ```
+
+### Precedence
+
+| Name       | Operators | Associates |
+| ---------- | --------- |----------- |
+| Unary      | ! -       | Right      |
+| Factor     | / *       | Left       |
+| Term       | - +       | Left       |
+| Comparison | > >= < <= | Left       |
+| Equality   | == !=     | Left       |
+| Ternary    | ?:        | Right      |
+| Comma      | ,         | Left       |

@@ -67,7 +67,40 @@ func (p *Parser) expression() (Expression, error) {
 }
 
 func (p *Parser) comma() (Expression, error) {
-	return p.binaryExpression(p.equality, Comma)
+	return p.binaryExpression(p.ternary, Comma)
+}
+
+func (p *Parser) ternary() (expr Expression, err error) {
+	expr, err = p.equality()
+	if err != nil {
+		return
+	}
+
+	if !p.match(Question) {
+		return
+	}
+
+	left, err := p.expression()
+	if err != nil {
+		return
+	}
+
+	_, err = p.consume(Colon, "Expect ':' after expression.")
+	if err != nil {
+		return
+	}
+
+	right, err := p.ternary()
+	if err != nil {
+		return
+	}
+
+	expr = &TernaryExpression{
+		Condition: expr,
+		True:      left,
+		False:     right,
+	}
+	return
 }
 
 func (p *Parser) equality() (Expression, error) {

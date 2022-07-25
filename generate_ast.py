@@ -36,6 +36,11 @@ EXPRESSIONS = [
         'operator': 'Token',
         'right': 'Expression',
     }),
+    ExpressionDef('Ternary', {
+        'condition': 'Expression',
+        'true': 'Expression',
+        'false': 'Expression',
+    }),
     ExpressionDef('Grouping', {
         'expression': 'Expression',
     }),
