@@ -14,9 +14,7 @@ func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) Value 
 
 	switch expression.Operator.Type {
 	case Comma:
-		fmt.Println("TODO: comma operator")
-		os.Exit(1)
-		return NewNilValue()
+		return right
 	case Greater:
 		return NewBoolValue(left.NumberValue > right.NumberValue)
 	case GreaterEqual:
