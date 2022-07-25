@@ -41,15 +41,15 @@ EXPRESSIONS = [
         'true': 'Expression',
         'false': 'Expression',
     }),
+    ExpressionDef('Unary', {
+        'operator': 'Token',
+        'right': 'Expression',
+    }),
     ExpressionDef('Grouping', {
         'expression': 'Expression',
     }),
     ExpressionDef('Literal', {
         'value': 'Object',
-    }),
-    ExpressionDef('Unary', {
-        'operator': 'Token',
-        'right': 'Expression',
     }),
 ]
 

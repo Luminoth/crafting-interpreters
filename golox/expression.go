@@ -34,6 +34,19 @@ func (e *TernaryExpression) AcceptValue(visitor ExpressionVisitor[Value]) Value 
 	return visitor.VisitTernaryExpression(e)
 }
 
+type UnaryExpression struct {
+	Operator *Token
+	Right    Expression
+}
+
+func (e *UnaryExpression) AcceptString(visitor ExpressionVisitor[string]) string {
+	return visitor.VisitUnaryExpression(e)
+}
+
+func (e *UnaryExpression) AcceptValue(visitor ExpressionVisitor[Value]) Value {
+	return visitor.VisitUnaryExpression(e)
+}
+
 type GroupingExpression struct {
 	Expression Expression
 }
@@ -58,19 +71,6 @@ func (e *LiteralExpression) AcceptValue(visitor ExpressionVisitor[Value]) Value 
 	return visitor.VisitLiteralExpression(e)
 }
 
-type UnaryExpression struct {
-	Operator *Token
-	Right    Expression
-}
-
-func (e *UnaryExpression) AcceptString(visitor ExpressionVisitor[string]) string {
-	return visitor.VisitUnaryExpression(e)
-}
-
-func (e *UnaryExpression) AcceptValue(visitor ExpressionVisitor[Value]) Value {
-	return visitor.VisitUnaryExpression(e)
-}
-
 type ExpressionVisitorConstraint interface {
 	string | Value
 }
@@ -78,7 +78,7 @@ type ExpressionVisitorConstraint interface {
 type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
 	VisitBinaryExpression(expression *BinaryExpression) T
 	VisitTernaryExpression(expression *TernaryExpression) T
+	VisitUnaryExpression(expression *UnaryExpression) T
 	VisitGroupingExpression(expression *GroupingExpression) T
 	VisitLiteralExpression(expression *LiteralExpression) T
-	VisitUnaryExpression(expression *UnaryExpression) T
 }
