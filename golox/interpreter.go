@@ -91,8 +91,14 @@ func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value
 	case Plus:
 		if left.Type == ValueTypeNumber && right.Type == ValueTypeNumber {
 			value = NewNumberValue(left.NumberValue + right.NumberValue)
-		} else if left.Type == ValueTypeString && right.Type == ValueTypeString {
-			value = NewStringValue(left.StringValue + right.StringValue)
+		} else if left.Type == ValueTypeString {
+			if right.Type == ValueTypeString {
+				value = NewStringValue(left.StringValue + right.StringValue)
+			} else {
+				value = NewStringValue(left.StringValue + right.String())
+			}
+		} else if right.Type == ValueTypeString {
+			value = NewStringValue(left.String() + right.StringValue)
 		} else {
 			err = &RuntimeError{
 				Message: "Operands must be two numbers or two strings.",
