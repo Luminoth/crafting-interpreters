@@ -42,21 +42,21 @@ func (v Value) String() string {
 	return ""
 }
 
-func NewValue(literal LiteralValue) Value {
+func NewValue(literal LiteralValue) (value Value, err error) {
 	switch literal.Type {
 	case LiteralTypeNil:
-		return NewNilValue()
+		value = NewNilValue()
 	case LiteralTypeNumber:
-		return NewNumberValue(literal.NumberValue)
+		value = NewNumberValue(literal.NumberValue)
 	case LiteralTypeString:
-		return NewStringValue(literal.StringValue)
+		value = NewStringValue(literal.StringValue)
 	case LiteralTypeBool:
-		return NewBoolValue(literal.BoolValue)
+		value = NewBoolValue(literal.BoolValue)
+	default:
+		err = fmt.Errorf("unsupported literal type %v", literal.Type)
 	}
 
-	fmt.Printf("Unsupported literal type %v", literal.Type)
-	os.Exit(1)
-	return NewNilValue()
+	return
 }
 
 func NewNilValue() Value {

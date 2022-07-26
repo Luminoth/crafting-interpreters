@@ -2,137 +2,228 @@ package main
 
 import (
 	"fmt"
-	"os"
 )
+
+type InterpreterError struct {
+	Message string `json:"message"`
+
+	Token *Token `json:"tokens"`
+}
+
+func (e *InterpreterError) Error() string {
+	return e.Message
+}
 
 type Interpreter struct {
 }
 
-func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) Value {
-	left := i.evaluate(expression.Left)
-	right := i.evaluate(expression.Right)
+func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value Value, err error) {
+	left, err := i.evaluate(expression.Left)
+	if err != nil {
+		return
+	}
+
+	right, err := i.evaluate(expression.Right)
+	if err != nil {
+		return
+	}
 
 	switch expression.Operator.Type {
 	case Comma:
-		return right
+		value = right
 	case Greater:
-		return NewBoolValue(left.NumberValue > right.NumberValue)
+		err = i.checkNumberOperands(expression.Operator, left, right)
+		if err != nil {
+			return
+		}
+		value = NewBoolValue(left.NumberValue > right.NumberValue)
 	case GreaterEqual:
-		return NewBoolValue(left.NumberValue >= right.NumberValue)
+		err = i.checkNumberOperands(expression.Operator, left, right)
+		if err != nil {
+			return
+		}
+		value = NewBoolValue(left.NumberValue >= right.NumberValue)
 	case Less:
-		return NewBoolValue(left.NumberValue < right.NumberValue)
+		err = i.checkNumberOperands(expression.Operator, left, right)
+		if err != nil {
+			return
+		}
+		value = NewBoolValue(left.NumberValue < right.NumberValue)
 	case LessEqual:
-		return NewBoolValue(left.NumberValue <= right.NumberValue)
+		err = i.checkNumberOperands(expression.Operator, left, right)
+		if err != nil {
+			return
+		}
+		value = NewBoolValue(left.NumberValue <= right.NumberValue)
 	case BangEqual:
-		return NewBoolValue(!i.isEqual(left, right))
+		isEqual, innerErr := i.isEqual(left, right)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+		value = NewBoolValue(!isEqual)
 	case EqualEqual:
-		return NewBoolValue(i.isEqual(left, right))
+		isEqual, innerErr := i.isEqual(left, right)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+		value = NewBoolValue(isEqual)
 	case Minus:
-		return NewNumberValue(left.NumberValue - right.NumberValue)
+		err = i.checkNumberOperands(expression.Operator, left, right)
+		if err != nil {
+			return
+		}
+		value = NewNumberValue(left.NumberValue - right.NumberValue)
 	case Plus:
 		if left.Type == ValueTypeNumber && right.Type == ValueTypeNumber {
-			return NewNumberValue(left.NumberValue + right.NumberValue)
+			value = NewNumberValue(left.NumberValue + right.NumberValue)
 		} else if left.Type == ValueTypeString && right.Type == ValueTypeString {
-			return NewStringValue(left.StringValue + right.StringValue)
+			value = NewStringValue(left.StringValue + right.StringValue)
 		} else {
-			fmt.Printf("Unsupported plus operand types %v, %v", left.Type, right.Type)
-			os.Exit(1)
-			return NewNilValue()
+			err = &InterpreterError{
+				Message: "Operands must be two numbers or two strings.",
+				Token:   expression.Operator,
+			}
 		}
 	case Slash:
-		return NewNumberValue(left.NumberValue / right.NumberValue)
+		err = i.checkNumberOperands(expression.Operator, left, right)
+		if err != nil {
+			return
+		}
+		value = NewNumberValue(left.NumberValue / right.NumberValue)
 	case Star:
-		return NewNumberValue(left.NumberValue * right.NumberValue)
+		err = i.checkNumberOperands(expression.Operator, left, right)
+		if err != nil {
+			return
+		}
+		value = NewNumberValue(left.NumberValue * right.NumberValue)
+	default:
+		err = fmt.Errorf("unsupported binary operator type %v", expression.Operator.Type)
 	}
 
-	fmt.Printf("Unsupported binary operator type %v", expression.Operator.Type)
-	os.Exit(1)
-	return NewNilValue()
+	return
 }
 
-func (i *Interpreter) VisitTernaryExpression(expression *TernaryExpression) Value {
-	condition := i.evaluate(expression.Condition)
+func (i *Interpreter) VisitTernaryExpression(expression *TernaryExpression) (value Value, err error) {
+	condition, err := i.evaluate(expression.Condition)
+	if err != nil {
+		return
+	}
 
-	if i.isTruthy(condition) {
+	isTruthy, err := i.isTruthy(condition)
+	if err != nil {
+		return
+	}
+
+	if isTruthy {
 		return i.evaluate(expression.True)
 	} else {
 		return i.evaluate(expression.False)
 	}
 }
 
-func (i *Interpreter) VisitUnaryExpression(expression *UnaryExpression) Value {
-	right := i.evaluate(expression.Right)
+func (i *Interpreter) VisitUnaryExpression(expression *UnaryExpression) (value Value, err error) {
+	right, err := i.evaluate(expression.Right)
+	if err != nil {
+		return
+	}
 
 	switch expression.Operator.Type {
 	case Minus:
-		return NewNumberValue(-right.NumberValue)
+		err = i.checkNumberOperands(expression.Operator, right)
+		if err != nil {
+			return
+		}
+		value = NewNumberValue(-right.NumberValue)
 	case Bang:
-		return NewBoolValue(!i.isTruthy(right))
+		isTruthy, innerErr := i.isTruthy(right)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+		value = NewBoolValue(!isTruthy)
+	default:
+		err = fmt.Errorf("unsupported unary operator type %v", expression.Operator.Type)
 	}
 
-	fmt.Printf("Unsupported unary operator type %v", expression.Operator.Type)
-	os.Exit(1)
-	return NewNilValue()
+	return
 }
 
-func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) Value {
+func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (value Value, err error) {
 	return i.evaluate(expression.Expression)
 }
 
-func (i *Interpreter) VisitLiteralExpression(expression *LiteralExpression) Value {
+func (i *Interpreter) VisitLiteralExpression(expression *LiteralExpression) (value Value, err error) {
 	return NewValue(expression.Value)
 }
 
-func (i *Interpreter) isEqual(left Value, right Value) bool {
+func (i *Interpreter) isEqual(left Value, right Value) (ok bool, err error) {
 	switch left.Type {
 	case ValueTypeNil:
-		return right.Type == ValueTypeNil
+		ok = right.Type == ValueTypeNil
 	case ValueTypeAny:
 		if right.Type == ValueTypeAny {
-			return left.AnyValue == right.AnyValue
+			ok = left.AnyValue == right.AnyValue
+		} else {
+			ok = false
 		}
-		return false
 	case ValueTypeString:
 		if right.Type == ValueTypeString {
-			return left.StringValue == right.StringValue
+			ok = left.StringValue == right.StringValue
+		} else {
+			ok = false
 		}
-		return false
 	case ValueTypeNumber:
 		if right.Type == ValueTypeNumber {
-			return left.NumberValue == right.NumberValue
+			ok = left.NumberValue == right.NumberValue
+		} else {
+			ok = false
 		}
-		return false
 	case ValueTypeBool:
 		if right.Type == ValueTypeBool {
-			return left.BoolValue == right.BoolValue
+			ok = left.BoolValue == right.BoolValue
+		} else {
+			ok = false
 		}
-		return false
+	default:
+		err = fmt.Errorf("unsupported equality value type %v", left.Type)
 	}
 
-	fmt.Printf("Unsupported equality value type %v", left.Type)
-	os.Exit(1)
-	return false
+	return
 }
 
-func (i *Interpreter) isTruthy(value Value) bool {
+func (i *Interpreter) isTruthy(value Value) (ok bool, err error) {
 	switch value.Type {
 	case ValueTypeNil:
-		return false
+		ok = false
 	case ValueTypeAny:
-		return true
+		ok = true
 	case ValueTypeString:
-		return true
+		ok = true
 	case ValueTypeNumber:
-		return true
+		ok = true
 	case ValueTypeBool:
-		return value.BoolValue
+		ok = value.BoolValue
+	default:
+		err = fmt.Errorf("unsupported truthy value type %v", value.Type)
 	}
 
-	fmt.Printf("Unsupported truthy value type %v", value.Type)
-	os.Exit(1)
-	return false
+	return
 }
 
-func (i *Interpreter) evaluate(expression Expression) Value {
+func (i *Interpreter) evaluate(expression Expression) (value Value, err error) {
 	return expression.AcceptValue(i)
+}
+
+func (i *Interpreter) checkNumberOperands(operator *Token, values ...Value) error {
+	for _, value := range values {
+		if value.Type != ValueTypeNumber {
+			return &InterpreterError{
+				Message: "Operand must be a number.",
+				Token:   operator,
+			}
+		}
+	}
+	return nil
 }

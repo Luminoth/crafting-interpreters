@@ -67,7 +67,7 @@ type ExpressionVisitorConstraint interface {
     f.write('type ExpressionVisitor[T ExpressionVisitorConstraint] interface {\n')
     for expression in EXPRESSIONS:
         f.write(
-            f'Visit{expression.name}Expression(expression *{expression.name}Expression) T\n')
+            f'Visit{expression.name}Expression(expression *{expression.name}Expression) (T, error)\n')
     f.write('}\n')
 
 
@@ -87,12 +87,12 @@ def generate_go_expression(f: io.TextIOWrapper, expression: ExpressionDef):
 
     # visitor interface
     f.write(
-        f'func (e *{expression.name}Expression) AcceptString(visitor ExpressionVisitor[string]) string {{\n')
+        f'func (e *{expression.name}Expression) AcceptString(visitor ExpressionVisitor[string]) (string, error) {{\n')
     f.write(f'return visitor.Visit{expression.name}Expression(e)\n')
     f.write('}\n')
     f.write('\n')
     f.write(
-        f'func (e *{expression.name}Expression) AcceptValue(visitor ExpressionVisitor[Value]) Value {{\n')
+        f'func (e *{expression.name}Expression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, error) {{\n')
     f.write(f'return visitor.Visit{expression.name}Expression(e)\n')
     f.write('}\n')
 
@@ -109,8 +109,8 @@ def generate_go():
         # expression interface
         f.write("""
 type Expression interface {
-    AcceptString(visitor ExpressionVisitor[string]) string
-    AcceptValue(visitor ExpressionVisitor[Value]) Value
+    AcceptString(visitor ExpressionVisitor[string]) (string, error)
+    AcceptValue(visitor ExpressionVisitor[Value]) (Value, error)
 }
 """)
 

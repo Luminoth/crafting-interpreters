@@ -29,7 +29,11 @@ func TestExpressionPrinter(t *testing.T) {
 		},
 	}
 
-	result := (&ExpressionPrinter{}).Print(&expression)
+	result, err := (&ExpressionPrinter{}).Print(&expression)
+	if err != nil {
+		t.Fatalf("Print failed: %s", err)
+	}
+
 	if result != expectedResult {
 		t.Fatalf("Print failed - expected %s, got %s", expectedResult, result)
 	}
