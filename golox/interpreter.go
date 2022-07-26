@@ -4,17 +4,29 @@ import (
 	"fmt"
 )
 
-type InterpreterError struct {
+type RuntimeError struct {
 	Message string `json:"message"`
 
 	Token *Token `json:"tokens"`
 }
 
-func (e *InterpreterError) Error() string {
+func (e *RuntimeError) Error() string {
 	return e.Message
 }
 
 type Interpreter struct {
+}
+
+func NewInterpreter() Interpreter {
+	return Interpreter{}
+}
+
+func (i *Interpreter) Interpret(expression Expression) {
+	value, err := i.evaluate(expression)
+	if err != nil {
+		runtimeError(err)
+	}
+	fmt.Println(value)
 }
 
 func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value Value, err error) {
@@ -81,7 +93,7 @@ func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value
 		} else if left.Type == ValueTypeString && right.Type == ValueTypeString {
 			value = NewStringValue(left.StringValue + right.StringValue)
 		} else {
-			err = &InterpreterError{
+			err = &RuntimeError{
 				Message: "Operands must be two numbers or two strings.",
 				Token:   expression.Operator,
 			}
@@ -219,7 +231,7 @@ func (i *Interpreter) evaluate(expression Expression) (value Value, err error) {
 func (i *Interpreter) checkNumberOperands(operator *Token, values ...Value) error {
 	for _, value := range values {
 		if value.Type != ValueTypeNumber {
-			return &InterpreterError{
+			return &RuntimeError{
 				Message: "Operand must be a number.",
 				Token:   operator,
 			}

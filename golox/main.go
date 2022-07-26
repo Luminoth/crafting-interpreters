@@ -41,6 +41,10 @@ func runFile(filename string) (err error) {
 		os.Exit(65)
 	}
 
+	if hadRuntimeError {
+		os.Exit(70)
+	}
+
 	return
 }
 
@@ -57,6 +61,7 @@ func runPrompt() (err error) {
 		run(line)
 
 		hadError = false
+		hadRuntimeError = false
 	}
 
 }
@@ -65,6 +70,8 @@ func run(source string) {
 	scanner := NewScanner(source)
 	scanner.ScanTokens()
 
+	//fmt.Println(scanner.Tokens)
+
 	parser := NewParser(scanner.Tokens)
 	expression := parser.Parse()
 
@@ -72,5 +79,8 @@ func run(source string) {
 		return
 	}
 
-	fmt.Println((&ExpressionPrinter{}).Print(expression))
+	//fmt.Println((&ExpressionPrinter{}).Print(expression))
+
+	interpreter := NewInterpreter()
+	interpreter.Interpret(expression)
 }

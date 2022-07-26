@@ -31,6 +31,14 @@ func (p *Parser) Parse() (expr Expression) {
 	if err != nil {
 		return nil
 	}
+
+	// TODO: temporary hack (not in the book)
+	// until we have statements (I think?)
+	if !p.isAtEnd() {
+		p.error(p.peek(), "Expected end of file.")
+		return nil
+	}
+
 	return
 }
 
