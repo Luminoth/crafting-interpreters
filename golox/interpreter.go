@@ -25,8 +25,9 @@ func (i *Interpreter) Interpret(expression Expression) {
 	value, err := i.evaluate(expression)
 	if err != nil {
 		runtimeError(err)
+	} else {
+		fmt.Println(value)
 	}
-	fmt.Println(value)
 }
 
 func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value Value, err error) {
@@ -103,7 +104,15 @@ func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value
 		if err != nil {
 			return
 		}
-		value = NewNumberValue(left.NumberValue / right.NumberValue)
+
+		if right.NumberValue == 0.0 {
+			err = &RuntimeError{
+				Message: "Illegal divide by zero.",
+				Token:   expression.Operator,
+			}
+		} else {
+			value = NewNumberValue(left.NumberValue / right.NumberValue)
+		}
 	case Star:
 		err = i.checkNumberOperands(expression.Operator, left, right)
 		if err != nil {
