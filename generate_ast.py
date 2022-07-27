@@ -50,6 +50,9 @@ STATEMENTS = [
 
 class Generator(ABC):
     def __init__(self, output_dir: str, extension: str, format_cmd: str):
+        # TODO: instead of passing anything into this we can just use
+        # some more abstract properties and methods for them
+
         self.__format_cmd = format_cmd
 
         self.__expression_output_file_path = os.path.join(output_dir, f'expression.{extension}')
@@ -76,7 +79,7 @@ class Generator(ABC):
     def _generate_definition(self, type: str, ast_def: ASTDef, f: io.TextIOWrapper):
         pass
 
-    def _generate_definitions(self, type: str, file_path: str, ast_defs: List[ASTDef]):
+    def __generate_definitions(self, type: str, file_path: str, ast_defs: List[ASTDef]):
         print(f'Generating {self.language} {type}s to "{file_path}" ...')
 
         with open(file_path, 'w', encoding='utf-8') as f:
@@ -93,17 +96,17 @@ class Generator(ABC):
         print(f'Formatting output "{format_cmd}" ...')
         os.system(format_cmd)
 
-    def _generate_expressions(self):
-        self._generate_definitions(
+    def __generate_expressions(self):
+        self.__generate_definitions(
             "Expression", self.__expression_output_file_path, EXPRESSIONS)
 
-    def _generate_statements(self):
-        self._generate_definitions(
+    def __generate_statements(self):
+        self.__generate_definitions(
             "Statement", self.__statement_output_file_path, STATEMENTS)
 
     def generate(self):
-        self._generate_expressions()
-        self._generate_statements()
+        self.__generate_expressions()
+        self.__generate_statements()
 
 
 class GoGenerator(Generator):
