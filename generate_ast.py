@@ -4,7 +4,7 @@ import argparse
 import io
 import os
 import sys
-from typing import Any, Dict, List
+from typing import Dict, List
 
 
 class LanguageConfig:
@@ -71,7 +71,7 @@ STATEMENTS = [
 ]
 
 
-def generate_go_visitors(type: str, defs: List[Any], f: io.TextIOWrapper):
+def generate_go_visitors(type: str, defs: List[ExpressionDef | StatementDef], f: io.TextIOWrapper):
     # visitor type constraint
     f.write(f"""
 type {type}VisitorConstraint interface {{
@@ -88,7 +88,7 @@ type {type}VisitorConstraint interface {{
     f.write('}\n')
 
 
-def generate_go_definition(type: str, d: Any, f: io.TextIOWrapper):
+def generate_go_definition(type: str, d: ExpressionDef | StatementDef, f: io.TextIOWrapper):
     # type
     f.write('\n')
     f.write(f'type {d.name}{type} struct {{\n')
@@ -114,7 +114,7 @@ def generate_go_definition(type: str, d: Any, f: io.TextIOWrapper):
     f.write('}\n')
 
 
-def generate_go_definitions(type: str, file_path: str, defs: List[Any]):
+def generate_go_definitions(type: str, file_path: str, defs: List[ExpressionDef | StatementDef]):
     print(f'Generating Go {type}s to "{file_path}" ...')
 
     with open(file_path, 'w', encoding='utf-8') as f:
