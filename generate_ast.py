@@ -25,53 +25,47 @@ SUPPORTED_LANGUAGES = {
 }
 
 
-class ExpressionDef:
+class ASTDef:
     def __init__(self, name: str, fields: Dict[str, str]):
         self.name = name
         self.fields = fields
 
 
 EXPRESSIONS = [
-    ExpressionDef('Binary', {
+    ASTDef('Binary', {
         'left': 'Expression',
         'operator': 'Token',
         'right': 'Expression',
     }),
-    ExpressionDef('Ternary', {
+    ASTDef('Ternary', {
         'condition': 'Expression',
         'true': 'Expression',
         'false': 'Expression',
     }),
-    ExpressionDef('Unary', {
+    ASTDef('Unary', {
         'operator': 'Token',
         'right': 'Expression',
     }),
-    ExpressionDef('Grouping', {
+    ASTDef('Grouping', {
         'expression': 'Expression',
     }),
-    ExpressionDef('Literal', {
+    ASTDef('Literal', {
         'value': 'Object',
     }),
 ]
 
 
-class StatementDef:
-    def __init__(self, name: str, fields: Dict[str, str]):
-        self.name = name
-        self.fields = fields
-
-
 STATEMENTS = [
-    StatementDef('Expression', {
+    ASTDef('Expression', {
         'expression': 'Expression',
     }),
-    StatementDef('Print', {
+    ASTDef('Print', {
         'expression': 'Expression',
     }),
 ]
 
 
-def generate_go_visitors(type: str, defs: List[ExpressionDef | StatementDef], f: io.TextIOWrapper):
+def generate_go_visitors(type: str, ast_defs: List[ASTDef], f: io.TextIOWrapper):
     # visitor type constraint
     f.write(f"""
 type {type}VisitorConstraint interface {{
@@ -82,39 +76,39 @@ type {type}VisitorConstraint interface {{
     # visitor interface
     f.write('\n')
     f.write(f'type {type}Visitor[T {type}VisitorConstraint] interface {{\n')
-    for d in defs:
+    for ast_def in ast_defs:
         f.write(
-            f'Visit{d.name}{type}({type.lower()} *{d.name}{type}) (T, error)\n')
+            f'Visit{ast_def.name}{type}({type.lower()} *{ast_def.name}{type}) (T, error)\n')
     f.write('}\n')
 
 
-def generate_go_definition(type: str, d: ExpressionDef | StatementDef, f: io.TextIOWrapper):
+def generate_go_definition(type: str, ast_def: ASTDef, f: io.TextIOWrapper):
     # type
     f.write('\n')
-    f.write(f'type {d.name}{type} struct {{\n')
-    for name, t in d.fields.items():
+    f.write(f'type {ast_def.name}{type} struct {{\n')
+    for field_name, field_type in ast_def.fields.items():
         # do some type overriding
-        match t:
+        match field_type:
             case 'Object':
-                t = 'LiteralValue'
+                field_type = 'LiteralValue'
             case 'Token':
-                t = '*Token'
-        f.write(f'{name.capitalize()} {t}\n')
+                field_type = '*Token'
+        f.write(f'{field_name.capitalize()} {field_type}\n')
     f.write('}\n')
 
     # visitor interface
     f.write(
-        f'func (e *{d.name}{type}) AcceptString(visitor {type}Visitor[string]) (string, error) {{\n')
-    f.write(f'return visitor.Visit{d.name}{type}(e)\n')
+        f'func (e *{ast_def.name}{type}) AcceptString(visitor {type}Visitor[string]) (string, error) {{\n')
+    f.write(f'return visitor.Visit{ast_def.name}{type}(e)\n')
     f.write('}\n')
     f.write('\n')
     f.write(
-        f'func (e *{d.name}{type}) AcceptValue(visitor {type}Visitor[Value]) (Value, error) {{\n')
-    f.write(f'return visitor.Visit{d.name}{type}(e)\n')
+        f'func (e *{ast_def.name}{type}) AcceptValue(visitor {type}Visitor[Value]) (Value, error) {{\n')
+    f.write(f'return visitor.Visit{ast_def.name}{type}(e)\n')
     f.write('}\n')
 
 
-def generate_go_definitions(type: str, file_path: str, defs: List[ExpressionDef | StatementDef]):
+def generate_go_definitions(type: str, file_path: str, defs: List[ASTDef]):
     print(f'Generating Go {type}s to "{file_path}" ...')
 
     with open(file_path, 'w', encoding='utf-8') as f:
