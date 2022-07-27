@@ -146,6 +146,8 @@ type {type} interface {{
 def generate_go():
     generate_go_definitions(
         "Expression", SUPPORTED_LANGUAGES['go'].expression_output_file_path, EXPRESSIONS)
+    generate_go_definitions(
+        "Statement", SUPPORTED_LANGUAGES['go'].statement_output_file_path, STATEMENTS)
 
 
 def generate(languages: List[str]):
