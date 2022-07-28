@@ -196,7 +196,7 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers(dest='command', help='sub-command help', required=True)
 
     subparser = subparsers.add_parser('generate')
-    subparser.add_argument('--languages', choices=GENERATORS.keys(), default=GENERATORS.keys(),
+    subparser.add_argument('--languages', nargs='+', choices=GENERATORS.keys(), default=GENERATORS.keys(),
                            help='Which languages to generate for')
 
     args = parser.parse_args()
