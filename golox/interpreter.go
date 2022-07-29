@@ -31,11 +31,12 @@ func (i *Interpreter) InterpretProgram(statements []Statement) {
 	}
 }
 
-func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (any, error) {
-	return i.evaluate(statement.Expression)
+func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (err error) {
+	_, err = i.evaluate(statement.Expression)
+	return
 }
 
-func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (_ any, err error) {
+func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (err error) {
 	value, err := i.evaluate(statement.Expression)
 	if err != nil {
 		return
@@ -45,9 +46,8 @@ func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (_ any, err
 	return
 }
 
-func (i *Interpreter) execute(statement Statement) (err error) {
-	_, err = statement.AcceptAny(i)
-	return
+func (i *Interpreter) execute(statement Statement) error {
+	return statement.Accept(i)
 }
 
 func (i *Interpreter) InterpretExpression(expression Expression) {

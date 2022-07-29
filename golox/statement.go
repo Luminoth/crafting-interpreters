@@ -2,14 +2,14 @@
 package main
 
 type Statement interface {
-	AcceptAny(visitor StatementVisitor[any]) (any, error)
+	Accept(visitor StatementVisitor) error
 }
 
 type ExpressionStatement struct {
 	Expression Expression
 }
 
-func (e *ExpressionStatement) AcceptAny(visitor StatementVisitor[any]) (any, error) {
+func (e *ExpressionStatement) Accept(visitor StatementVisitor) error {
 	return visitor.VisitExpressionStatement(e)
 }
 
@@ -17,15 +17,11 @@ type PrintStatement struct {
 	Expression Expression
 }
 
-func (e *PrintStatement) AcceptAny(visitor StatementVisitor[any]) (any, error) {
+func (e *PrintStatement) Accept(visitor StatementVisitor) error {
 	return visitor.VisitPrintStatement(e)
 }
 
-type StatementVisitorConstraint interface {
-	any
-}
-
-type StatementVisitor[T StatementVisitorConstraint] interface {
-	VisitExpressionStatement(statement *ExpressionStatement) (T, error)
-	VisitPrintStatement(statement *PrintStatement) (T, error)
+type StatementVisitor interface {
+	VisitExpressionStatement(statement *ExpressionStatement) error
+	VisitPrintStatement(statement *PrintStatement) error
 }
