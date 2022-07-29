@@ -21,7 +21,36 @@ func NewInterpreter() Interpreter {
 	return Interpreter{}
 }
 
-func (i *Interpreter) Interpret(expression Expression) {
+func (i *Interpreter) InterpretProgram(statements []Statement) {
+	for _, statement := range statements {
+		err := i.execute(statement)
+		if err != nil {
+			runtimeError(err)
+			return
+		}
+	}
+}
+
+func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (any, error) {
+	return i.evaluate(statement.Expression)
+}
+
+func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (_ any, err error) {
+	value, err := i.evaluate(statement.Expression)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(value)
+	return
+}
+
+func (i *Interpreter) execute(statement Statement) (err error) {
+	_, err = statement.AcceptAny(i)
+	return
+}
+
+func (i *Interpreter) InterpretExpression(expression Expression) {
 	value, err := i.evaluate(expression)
 	if err != nil {
 		runtimeError(err)
@@ -177,11 +206,11 @@ func (i *Interpreter) VisitUnaryExpression(expression *UnaryExpression) (value V
 	return
 }
 
-func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (value Value, err error) {
+func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {
 	return i.evaluate(expression.Expression)
 }
 
-func (i *Interpreter) VisitLiteralExpression(expression *LiteralExpression) (value Value, err error) {
+func (i *Interpreter) VisitLiteralExpression(expression *LiteralExpression) (Value, error) {
 	return NewValue(expression.Value)
 }
 
@@ -239,7 +268,7 @@ func (i *Interpreter) isTruthy(value Value) (ok bool, err error) {
 	return
 }
 
-func (i *Interpreter) evaluate(expression Expression) (value Value, err error) {
+func (i *Interpreter) evaluate(expression Expression) (Value, error) {
 	return expression.AcceptValue(i)
 }
 

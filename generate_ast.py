@@ -37,6 +37,7 @@ EXPRESSIONS = [
     }),
 ]
 
+EXPRESSION_CONSTRAINTS = ['string', 'Value']
 
 STATEMENTS = [
     ASTDef('Expression', {
@@ -46,6 +47,12 @@ STATEMENTS = [
         'expression': 'Expression',
     }),
 ]
+
+STATEMENT_CONSTRAINTS = ['any']
+
+
+# TODO: instead of generating AcceptAny we should generate a non-generic Accept since here "any" means "void"
+# TODO: constraints are a Go thing and shouldn't leak into other languages
 
 
 class Generator(ABC):
@@ -68,28 +75,28 @@ class Generator(ABC):
         pass
 
     @abstractmethod
-    def _write_interface(self, type: str, f: io.TextIOWrapper):
+    def _write_interface(self, type: str, constraints: List[str], f: io.TextIOWrapper):
         pass
 
     @abstractmethod
-    def _generate_visitors(self, type: str, ast_defs: List[ASTDef], f: io.TextIOWrapper):
+    def _generate_visitors(self, type: str, ast_defs: List[ASTDef], constraints: List[str], f: io.TextIOWrapper):
         pass
 
     @abstractmethod
-    def _generate_definition(self, type: str, ast_def: ASTDef, f: io.TextIOWrapper):
+    def _generate_definition(self, type: str, ast_def: ASTDef, constraints: List[str], f: io.TextIOWrapper):
         pass
 
-    def __generate_definitions(self, type: str, file_path: str, ast_defs: List[ASTDef]):
+    def __generate_definitions(self, type: str, file_path: str, ast_defs: List[ASTDef], constraints: List[str]):
         print(f'Generating {self.language} {type}s to "{file_path}" ...')
 
         with open(file_path, 'w', encoding='utf-8') as f:
             self._write_header(type, f)
-            self._write_interface(type, f)
+            self._write_interface(type, constraints, f)
 
             for ast_def in ast_defs:
-                self._generate_definition(type, ast_def, f)
+                self._generate_definition(type, ast_def, constraints, f)
 
-            self._generate_visitors(type, ast_defs, f)
+            self._generate_visitors(type, ast_defs, constraints, f)
 
         # format the file
         format_cmd = f'{self.__format_cmd} {file_path}'
@@ -98,11 +105,11 @@ class Generator(ABC):
 
     def __generate_expressions(self):
         self.__generate_definitions(
-            "Expression", self.__expression_output_file_path, EXPRESSIONS)
+            "Expression", self.__expression_output_file_path, EXPRESSIONS, EXPRESSION_CONSTRAINTS)
 
     def __generate_statements(self):
         self.__generate_definitions(
-            "Statement", self.__statement_output_file_path, STATEMENTS)
+            "Statement", self.__statement_output_file_path, STATEMENTS, STATEMENT_CONSTRAINTS)
 
     def generate(self):
         self.__generate_expressions()
@@ -122,19 +129,18 @@ class GoGenerator(Generator):
 package main
 """)
 
-    def _write_interface(self, type: str, f: io.TextIOWrapper):
-        f.write(f"""
-type {type} interface {{
-    AcceptString(visitor {type}Visitor[string]) (string, error)
-    AcceptValue(visitor {type}Visitor[Value]) (Value, error)
-}}
-""")
+    def _write_interface(self, type: str, constraints: List[str], f: io.TextIOWrapper):
+        f.write(f'\ntype {type} interface {{')
+        for constraint in constraints:
+            f.write(
+                f'Accept{constraint.capitalize()}(visitor {type}Visitor[{constraint}]) ({constraint}, error)\n')
+        f.write('}\n')
 
-    def _generate_visitors(self, type: str, ast_defs: List[ASTDef], f: io.TextIOWrapper):
+    def _generate_visitors(self, type: str, ast_defs: List[ASTDef], constraints: List[str], f: io.TextIOWrapper):
         # visitor type constraint
         f.write(f"""
 type {type}VisitorConstraint interface {{
-    string | Value
+    {' | '.join(constraints)}
 }}
 """)
 
@@ -145,7 +151,7 @@ type {type}VisitorConstraint interface {{
                 f'Visit{ast_def.name}{type}({type.lower()} *{ast_def.name}{type}) (T, error)\n')
         f.write('}\n')
 
-    def _generate_definition(self, type: str, ast_def: ASTDef, f: io.TextIOWrapper):
+    def _generate_definition(self, type: str, ast_def: ASTDef, constraints: List[str], f: io.TextIOWrapper):
         # type
         f.write(f'\ntype {ast_def.name}{type} struct {{\n')
         for field_name, field_type in ast_def.fields.items():
@@ -159,12 +165,9 @@ type {type}VisitorConstraint interface {{
         f.write('}\n')
 
         # visitor interface
-        f.write(f"""
-func (e *{ast_def.name}{type}) AcceptString(visitor {type}Visitor[string]) (string, error) {{
-    return visitor.Visit{ast_def.name}{type}(e)
-}}
-
-func (e *{ast_def.name}{type}) AcceptValue(visitor {type}Visitor[Value]) (Value, error) {{
+        for constraint in constraints:
+            f.write(f"""
+func (e *{ast_def.name}{type}) Accept{constraint.capitalize()}(visitor {type}Visitor[{constraint}]) ({constraint}, error) {{
     return visitor.Visit{ast_def.name}{type}(e)
 }}
 """)

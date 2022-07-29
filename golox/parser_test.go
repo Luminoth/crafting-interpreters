@@ -48,7 +48,7 @@ func TestBinaryExpression(t *testing.T) {
 	}
 
 	parser := NewParser(tokens)
-	expression := parser.Parse()
+	expression := parser.ParseExpression()
 
 	result, err := (&ExpressionPrinter{}).Print(expression)
 	if err != nil {

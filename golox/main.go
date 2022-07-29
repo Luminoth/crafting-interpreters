@@ -73,7 +73,8 @@ func run(source string) {
 	//fmt.Println(scanner.Tokens)
 
 	parser := NewParser(scanner.Tokens)
-	expression := parser.Parse()
+	//expression := parser.ParseExpression()
+	statements := parser.ParseProgram()
 
 	if hadError {
 		return
@@ -82,5 +83,6 @@ func run(source string) {
 	//fmt.Println((&ExpressionPrinter{}).Print(expression))
 
 	interpreter := NewInterpreter()
-	interpreter.Interpret(expression)
+	//interpreter.InterpretExpression(expression)
+	interpreter.InterpretProgram(statements)
 }

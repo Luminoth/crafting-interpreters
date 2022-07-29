@@ -26,14 +26,26 @@ func NewParser(tokens []*Token) Parser {
 	}
 }
 
-func (p *Parser) Parse() (expr Expression) {
+func (p *Parser) ParseProgram() (statements []Statement) {
+	for {
+		if p.isAtEnd() {
+			break
+		}
+
+		// TODO: ignoring errors for now I guess?
+		statement, _ := p.statement()
+		statements = append(statements, statement)
+	}
+
+	return
+}
+
+func (p *Parser) ParseExpression() (expr Expression) {
 	expr, err := p.expression()
 	if err != nil {
 		return nil
 	}
 
-	// TODO: temporary hack (not in the book)
-	// until we have statements (I think?)
 	if !p.isAtEnd() {
 		p.error(p.peek(), "Expected end of file.")
 		return nil
@@ -66,6 +78,47 @@ func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes
 			Operator: operator,
 			Right:    right,
 		}
+	}
+	return
+}
+
+func (p *Parser) statement() (Statement, error) {
+	if p.match(Print) {
+		return p.printStatement()
+	}
+	return p.expressionStatement()
+}
+
+func (p *Parser) printStatement() (statement Statement, err error) {
+	value, err := p.expression()
+	if err != nil {
+		return
+	}
+
+	_, err = p.consume(Semicolon, "Expect ';' after value.")
+	if err != nil {
+		return
+	}
+
+	statement = &PrintStatement{
+		Expression: value,
+	}
+	return
+}
+
+func (p *Parser) expressionStatement() (statement Statement, err error) {
+	value, err := p.expression()
+	if err != nil {
+		return
+	}
+
+	_, err = p.consume(Semicolon, "Expect ';' after expression.")
+	if err != nil {
+		return
+	}
+
+	statement = &ExpressionStatement{
+		Expression: value,
 	}
 	return
 }
