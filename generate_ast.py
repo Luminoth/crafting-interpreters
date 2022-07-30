@@ -35,6 +35,9 @@ EXPRESSIONS = [
     ASTDef('Literal', {
         'value': 'Object',
     }),
+    ASTDef('Variable', {
+        'name': 'Token',
+    }),
 ]
 
 STATEMENTS = [
@@ -43,6 +46,10 @@ STATEMENTS = [
     }),
     ASTDef('Print', {
         'expression': 'Expression',
+    }),
+    ASTDef('Var', {
+        'name': 'Token',
+        'initializer': 'Expression',
     }),
 ]
 

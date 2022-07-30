@@ -71,6 +71,18 @@ func (e *LiteralExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value
 	return visitor.VisitLiteralExpression(e)
 }
 
+type VariableExpression struct {
+	Name *Token
+}
+
+func (e *VariableExpression) AcceptString(visitor ExpressionVisitor[string]) (string, error) {
+	return visitor.VisitVariableExpression(e)
+}
+
+func (e *VariableExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, error) {
+	return visitor.VisitVariableExpression(e)
+}
+
 type ExpressionVisitorConstraint interface {
 	string | Value
 }
@@ -81,4 +93,5 @@ type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
 	VisitUnaryExpression(expression *UnaryExpression) (T, error)
 	VisitGroupingExpression(expression *GroupingExpression) (T, error)
 	VisitLiteralExpression(expression *LiteralExpression) (T, error)
+	VisitVariableExpression(expression *VariableExpression) (T, error)
 }

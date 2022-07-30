@@ -15,10 +15,13 @@ func (e *RuntimeError) Error() string {
 }
 
 type Interpreter struct {
+	Environment Environment `json:"environment"`
 }
 
 func NewInterpreter() Interpreter {
-	return Interpreter{}
+	return Interpreter{
+		Environment: NewEnvironment(),
+	}
 }
 
 func (i *Interpreter) InterpretProgram(statements []Statement) {
@@ -43,6 +46,19 @@ func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (err error)
 	}
 
 	fmt.Println(value)
+	return
+}
+
+func (i *Interpreter) VisitVarStatement(statement *VarStatement) (err error) {
+	var value Value
+	if statement.Initializer != nil {
+		value, err = i.evaluate(statement.Initializer)
+		if err != nil {
+			return
+		}
+	}
+
+	i.Environment.Define(statement.Name.Lexeme, value)
 	return
 }
 
@@ -212,6 +228,10 @@ func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (V
 
 func (i *Interpreter) VisitLiteralExpression(expression *LiteralExpression) (Value, error) {
 	return NewValue(expression.Value)
+}
+
+func (i *Interpreter) VisitVariableExpression(expression *VariableExpression) (Value, error) {
+	return i.Environment.Get(expression.Name)
 }
 
 func (i *Interpreter) isEqual(left Value, right Value) (ok bool, err error) {

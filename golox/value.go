@@ -37,7 +37,7 @@ func (v Value) String() string {
 		return fmt.Sprintf("%t", v.BoolValue)
 	}
 
-	fmt.Printf("Unsupported value type %v", v.Type)
+	fmt.Printf("Unsupported value type %v\n", v.Type)
 	os.Exit(1)
 	return ""
 }

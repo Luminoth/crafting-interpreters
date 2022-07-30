@@ -32,8 +32,8 @@ func (p *Parser) ParseProgram() (statements []Statement) {
 			break
 		}
 
-		// TODO: ignoring errors for now I guess?
-		statement, _ := p.statement()
+		statement := p.declaration()
+		// TODO: statement can be nil here but we aren't handling it ...
 		statements = append(statements, statement)
 	}
 
@@ -54,30 +54,46 @@ func (p *Parser) ParseExpression() (expr Expression) {
 	return
 }
 
-func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes ...TokenType) (expr Expression, err error) {
-	expr, err = operand()
+func (p *Parser) declaration() (statement Statement) {
+	var err error
+
+	if p.match(Var) {
+		statement, err = p.variableDeclaration()
+	} else {
+		statement, err = p.statement()
+	}
+
+	if err != nil {
+		p.synchronize()
+		return nil
+	}
+
+	return statement
+}
+
+func (p *Parser) variableDeclaration() (statement Statement, err error) {
+	name, err := p.consume(Identifier, "Expect variable name.")
 	if err != nil {
 		return
 	}
 
-	for {
-		if !p.match(tokenTypes...) {
-			break
-		}
-
-		operator := p.previous()
-
-		right, innerErr := operand()
-		if innerErr != nil {
-			err = innerErr
+	var initializer Expression
+	if p.match(Equal) {
+		initializer, err = p.expression()
+		if err != nil {
 			return
 		}
+	}
 
-		expr = &BinaryExpression{
-			Left:     expr,
-			Operator: operator,
-			Right:    right,
-		}
+	_, err = p.consume(Semicolon, "Expect ';' after variable declaration.")
+	//_, err = p.consumeSafe(Semicolon)
+	if err != nil {
+		return
+	}
+
+	statement = &VarStatement{
+		Name:        name,
+		Initializer: initializer,
 	}
 	return
 }
@@ -127,6 +143,34 @@ func (p *Parser) expressionStatement() (statement Statement, err error) {
 
 func (p *Parser) expression() (Expression, error) {
 	return p.comma()
+}
+
+func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes ...TokenType) (expr Expression, err error) {
+	expr, err = operand()
+	if err != nil {
+		return
+	}
+
+	for {
+		if !p.match(tokenTypes...) {
+			break
+		}
+
+		operator := p.previous()
+
+		right, innerErr := operand()
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		expr = &BinaryExpression{
+			Left:     expr,
+			Operator: operator,
+			Right:    right,
+		}
+	}
+	return
 }
 
 func (p *Parser) comma() (Expression, error) {
@@ -233,6 +277,13 @@ func (p *Parser) primary() (expr Expression, err error) {
 	if p.match(String) {
 		expr = &LiteralExpression{
 			Value: NewStringLiteral(p.previous().Literal.StringValue),
+		}
+		return
+	}
+
+	if p.match(Identifier) {
+		expr = &VariableExpression{
+			Name: p.previous(),
 		}
 		return
 	}

@@ -15,7 +15,7 @@ func runtimeError(err error) {
 	if runtimeError, ok := err.(*RuntimeError); ok {
 		fmt.Printf("%s\n[line %d]\n", runtimeError.Error(), runtimeError.Token.Line)
 	} else {
-		fmt.Printf("%s", err.Error())
+		fmt.Printf("%s\n", err.Error())
 
 	}
 

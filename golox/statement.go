@@ -21,7 +21,17 @@ func (e *PrintStatement) Accept(visitor StatementVisitor) error {
 	return visitor.VisitPrintStatement(e)
 }
 
+type VarStatement struct {
+	Name        *Token
+	Initializer Expression
+}
+
+func (e *VarStatement) Accept(visitor StatementVisitor) error {
+	return visitor.VisitVarStatement(e)
+}
+
 type StatementVisitor interface {
 	VisitExpressionStatement(statement *ExpressionStatement) error
 	VisitPrintStatement(statement *PrintStatement) error
+	VisitVarStatement(statement *VarStatement) error
 }

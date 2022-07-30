@@ -31,6 +31,10 @@ func (p *ExpressionPrinter) VisitLiteralExpression(expression *LiteralExpression
 	return expression.Value.String(), nil
 }
 
+func (p *ExpressionPrinter) VisitVariableExpression(expression *VariableExpression) (string, error) {
+	return expression.Name.Lexeme, nil
+}
+
 func (p *ExpressionPrinter) parenthesize(name string, expressions ...Expression) (string, error) {
 	builder := strings.Builder{}
 

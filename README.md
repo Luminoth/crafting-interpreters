@@ -62,7 +62,10 @@
 ### Grammar
 
 ```
-program                 -> statement* EOF ;
+program                 -> declaration* EOF ;
+declaration             -> variable_declaration
+                        | statement ;
+variable_declaration    -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement               -> expression_statement
                         | print_statement ;
 expression_statement    -> expression ";" ;
@@ -76,8 +79,10 @@ term                    -> factor ( ( "-" | "+" ) factor )* ;
 factor                  -> unary ( ( "/" | "*" ) unary )* ;
 unary                   -> ( "!" | "-" ) unary
                         | primary ;
-primary                 -> NUMBER | STRING | "true" | "false" | "nil"
-                        | "(" expression ")" ;
+primary                 -> NUMBER | STRING
+                        | "true" | "false" | "nil"
+                        | "(" expression ")"
+                        | IDENTIFIER ;
 ```
 
 ### Precedence
