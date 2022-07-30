@@ -96,6 +96,7 @@ func (p *Parser) printStatement() (statement Statement, err error) {
 	}
 
 	_, err = p.consume(Semicolon, "Expect ';' after value.")
+	//_, err = p.consumeSafe(Semicolon)
 	if err != nil {
 		return
 	}
@@ -113,6 +114,7 @@ func (p *Parser) expressionStatement() (statement Statement, err error) {
 	}
 
 	_, err = p.consume(Semicolon, "Expect ';' after expression.")
+	//_, err = p.consumeSafe(Semicolon)
 	if err != nil {
 		return
 	}
@@ -287,6 +289,22 @@ func (p *Parser) consume(tokenType TokenType, message string) (token *Token, err
 	err = p.error(p.peek(), message)
 	return
 }
+
+/*func (p *Parser) consumeSafe(tokenType TokenType) (token *Token, err error) {
+	if p.check(tokenType) {
+		token = p.advance()
+		return
+	}
+
+	// didn't find the token, so insert it
+	p.Tokens = Insert(p.Tokens, int(p.Current), &Token{
+		Type: tokenType,
+		// TODO: can we fill in anything else?
+	})
+
+	token = p.advance()
+	return
+}*/
 
 func (p *Parser) advance() *Token {
 	if !p.isAtEnd() {

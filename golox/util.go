@@ -20,3 +20,13 @@ func IsAlpha(ch rune) bool {
 func IsAlphaNumeric(ch rune) bool {
 	return unicode.IsLetter(ch) || ch == '_' || unicode.IsDigit(ch)
 }
+
+func Insert[T any](a []T, index int, value T) []T {
+	if len(a) == index {
+		return append(a, value)
+	}
+
+	a = append(a[:index+1], a[index:]...)
+	a[index] = value
+	return a
+}
