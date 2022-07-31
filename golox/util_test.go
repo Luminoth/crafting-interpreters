@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestMin(t *testing.T) {
 	if Min(1, 2) != 1 {
@@ -73,5 +76,14 @@ func TestAlphaNumeric(t *testing.T) {
 
 	if IsAlphaNumeric('!') {
 		t.Fatal("IsAlphaNumeric('!')")
+	}
+}
+
+func TestInsert(t *testing.T) {
+	a := []int{1, 2, 3, 4}
+	a = Insert(a, 2, 10)
+
+	if !reflect.DeepEqual(a, []int{1, 2, 10, 3, 4}) {
+		t.Fatalf("Insert(%v)", a)
 	}
 }

@@ -66,12 +66,13 @@ func (i *Interpreter) execute(statement Statement) error {
 	return statement.Accept(i)
 }
 
-func (i *Interpreter) InterpretExpression(expression Expression) {
+func (i *Interpreter) InterpretExpression(expression Expression) string {
 	value, err := i.evaluate(expression)
 	if err != nil {
 		runtimeError(err)
+		return ""
 	} else {
-		fmt.Println(value)
+		return value.String()
 	}
 }
 

@@ -91,7 +91,7 @@ func run(interpreter *Interpreter, source string) {
 	if *printExpressions {
 		//fmt.Println((&ExpressionPrinter{}).Print(expression))
 	} else {
-		//interpreter.InterpretExpression(expression)
+		//fmt.Println(interpreter.InterpretExpression(expression))
 		interpreter.InterpretProgram(statements)
 	}
 }

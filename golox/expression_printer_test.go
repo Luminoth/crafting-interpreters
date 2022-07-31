@@ -8,7 +8,7 @@ func TestExpressionPrinter(t *testing.T) {
 	// -123 * (45.67)
 	expectedResult := "(* (- 123) (group 45.67))"
 
-	expression := BinaryExpression{
+	expression := &BinaryExpression{
 		Left: &UnaryExpression{
 			Operator: &Token{
 				Type:   Minus,
@@ -29,7 +29,7 @@ func TestExpressionPrinter(t *testing.T) {
 		},
 	}
 
-	result, err := (&ExpressionPrinter{}).Print(&expression)
+	result, err := (&ExpressionPrinter{}).Print(expression)
 	if err != nil {
 		t.Fatalf("Print failed: %s", err)
 	}

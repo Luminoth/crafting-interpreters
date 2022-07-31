@@ -18,7 +18,7 @@ func TestDefine(t *testing.T) {
 	}
 }
 
-func TestReefine(t *testing.T) {
+func TestRedefine(t *testing.T) {
 	environment := NewEnvironment()
 
 	token := &Token{Lexeme: "foo"}

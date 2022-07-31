@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestBinaryExpression(t *testing.T) {
+func TestParseBinaryExpression(t *testing.T) {
 	// -123 * (45.67)
 	expectedResult := "(* (- 123) (group 45.67))"
 
