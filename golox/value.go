@@ -27,13 +27,21 @@ type Value struct {
 func (v Value) String() string {
 	if v.Type == ValueTypeNil {
 		return "nil"
-	} else if v.Type == ValueTypeAny {
+	}
+
+	if v.Type == ValueTypeAny {
 		return fmt.Sprintf("%v", v.AnyValue)
-	} else if v.Type == ValueTypeNumber {
+	}
+
+	if v.Type == ValueTypeNumber {
 		return fmt.Sprintf("%g", v.NumberValue)
-	} else if v.Type == ValueTypeString {
+	}
+
+	if v.Type == ValueTypeString {
 		return v.StringValue
-	} else if v.Type == ValueTypeBool {
+	}
+
+	if v.Type == ValueTypeBool {
 		return fmt.Sprintf("%t", v.BoolValue)
 	}
 

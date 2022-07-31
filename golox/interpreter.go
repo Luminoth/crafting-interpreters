@@ -71,9 +71,9 @@ func (i *Interpreter) InterpretExpression(expression Expression) string {
 	if err != nil {
 		runtimeError(err)
 		return ""
-	} else {
-		return value.String()
 	}
+
+	return value.String()
 }
 
 func (i *Interpreter) VisitAssignExpression(expression *AssignExpression) (value Value, err error) {

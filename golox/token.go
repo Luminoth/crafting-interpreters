@@ -111,11 +111,17 @@ type LiteralValue struct {
 func (v LiteralValue) String() string {
 	if v.Type == LiteralTypeNil {
 		return "nil"
-	} else if v.Type == LiteralTypeNumber {
+	}
+
+	if v.Type == LiteralTypeNumber {
 		return fmt.Sprintf("%g", v.NumberValue)
-	} else if v.Type == LiteralTypeString {
+	}
+
+	if v.Type == LiteralTypeString {
 		return v.StringValue
-	} else if v.Type == LiteralTypeBool {
+	}
+
+	if v.Type == LiteralTypeBool {
 		return fmt.Sprintf("%t", v.BoolValue)
 	}
 
