@@ -1,0 +1,12 @@
+var a = 1 + 2 > 5 ? "3 > 5 ???" : "3 <= 5 !!!";
+print a;
+
+var b = 1 + 2 < 5 ? "3 < 5 !!!" : "3 >= 5 ???";
+print b;
+
+var c = 1 + 2 < 5
+    ? 5 + 6 < 12
+        ? "got the right branch"
+        : "failed the second branch"
+    : "failed the first branch";
+print c;

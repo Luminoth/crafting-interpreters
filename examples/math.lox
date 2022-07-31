@@ -1,0 +1,7 @@
+print 1 + 2 + 3;    // 5
+print 2 * 3 / 25;   // 0.24
+
+// divide by 0 will fail
+//print 1 / 0;
+
+print -1 * 30 - 5 + 12; // -23
