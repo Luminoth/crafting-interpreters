@@ -75,6 +75,20 @@ func (i *Interpreter) InterpretExpression(expression Expression) {
 	}
 }
 
+func (i *Interpreter) VisitAssignExpression(expression *AssignExpression) (value Value, err error) {
+	value, err = i.evaluate(expression.Value)
+	if err != nil {
+		return
+	}
+
+	err = i.Environment.Assign(expression.Name, value)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value Value, err error) {
 	left, err := i.evaluate(expression.Left)
 	if err != nil {

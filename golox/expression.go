@@ -6,6 +6,19 @@ type Expression interface {
 	AcceptValue(visitor ExpressionVisitor[Value]) (Value, error)
 }
 
+type AssignExpression struct {
+	Name  *Token
+	Value Expression
+}
+
+func (e *AssignExpression) AcceptString(visitor ExpressionVisitor[string]) (string, error) {
+	return visitor.VisitAssignExpression(e)
+}
+
+func (e *AssignExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, error) {
+	return visitor.VisitAssignExpression(e)
+}
+
 type BinaryExpression struct {
 	Left     Expression
 	Operator *Token
@@ -88,6 +101,7 @@ type ExpressionVisitorConstraint interface {
 }
 
 type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
+	VisitAssignExpression(expression *AssignExpression) (T, error)
 	VisitBinaryExpression(expression *BinaryExpression) (T, error)
 	VisitTernaryExpression(expression *TernaryExpression) (T, error)
 	VisitUnaryExpression(expression *UnaryExpression) (T, error)

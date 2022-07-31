@@ -71,7 +71,9 @@ statement               -> expression_statement
 expression_statement    -> expression ";" ;
 print_statement         -> "print" expression ";" ;
 expression              -> comma ;
-comma                   -> ternary ( "," ternary )* ;
+comma                   -> assignment ( "," assignment )* ;
+assignment              -> IDENTIFIER "=" assignment
+                        | ternary ;
 ternary                 -> equality ( "?" expression ":" ternary )? ;
 equality                -> comparison ( ( "!=" | "==" ) comparison )* ;
 comparison              -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -95,4 +97,5 @@ primary                 -> NUMBER | STRING
 | Comparison | > >= < <= | Left       |
 | Equality   | == !=     | Left       |
 | Ternary    | ?:        | Right      |
+| Assignment | =         | Right      |
 | Comma      | ,         | Left       |

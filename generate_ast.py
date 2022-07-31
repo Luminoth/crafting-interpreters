@@ -15,6 +15,10 @@ class ASTDef:
 
 
 EXPRESSIONS = [
+    ASTDef('Assign', {
+        'name': 'Token',
+        'value': 'Expression',
+    }),
     ASTDef('Binary', {
         'left': 'Expression',
         'operator': 'Token',

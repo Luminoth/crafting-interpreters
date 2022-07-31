@@ -174,7 +174,35 @@ func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes
 }
 
 func (p *Parser) comma() (Expression, error) {
-	return p.binaryExpression(p.ternary, Comma)
+	return p.binaryExpression(p.assignment, Comma)
+}
+
+func (p *Parser) assignment() (expr Expression, err error) {
+	expr, err = p.ternary()
+	if err != nil {
+		return
+	}
+
+	if p.match(Equal) {
+		equals := p.previous()
+		value, innerErr := p.assignment()
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		if v, ok := expr.(*VariableExpression); ok {
+			expr = &AssignExpression{
+				Name:  v.Name,
+				Value: value,
+			}
+			return
+		}
+
+		p.error(equals, "Invalid assignment target.")
+	}
+
+	return
 }
 
 func (p *Parser) ternary() (expr Expression, err error) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -9,6 +10,14 @@ type ExpressionPrinter struct {
 
 func (p *ExpressionPrinter) Print(expression Expression) (string, error) {
 	return expression.AcceptString(p)
+}
+
+func (p *ExpressionPrinter) VisitAssignExpression(expression *AssignExpression) (string, error) {
+	v, err := expression.Value.AcceptString(p)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("(assign %s %s)", expression.Name.Lexeme, v), nil
 }
 
 func (p *ExpressionPrinter) VisitBinaryExpression(expression *BinaryExpression) (string, error) {
