@@ -8,7 +8,11 @@ import (
 	"os"
 )
 
+var printExpressions *bool
+
 func main() {
+	printExpressions = flag.Bool("print", false, "Print expressions rather than evaluate them")
+
 	flag.Parse()
 
 	if len(flag.Args()) > 1 {
@@ -84,8 +88,10 @@ func run(interpreter *Interpreter, source string) {
 		return
 	}
 
-	//fmt.Println((&ExpressionPrinter{}).Print(expression))
-
-	//interpreter.InterpretExpression(expression)
-	interpreter.InterpretProgram(statements)
+	if *printExpressions {
+		//fmt.Println((&ExpressionPrinter{}).Print(expression))
+	} else {
+		//interpreter.InterpretExpression(expression)
+		interpreter.InterpretProgram(statements)
+	}
 }

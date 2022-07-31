@@ -17,7 +17,7 @@ func (p *ExpressionPrinter) VisitAssignExpression(expression *AssignExpression) 
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("(assign %s %s)", expression.Name.Lexeme, v), nil
+	return fmt.Sprintf("(= %s %s)", expression.Name.Lexeme, v), nil
 }
 
 func (p *ExpressionPrinter) VisitBinaryExpression(expression *BinaryExpression) (string, error) {
