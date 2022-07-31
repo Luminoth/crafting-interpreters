@@ -67,9 +67,11 @@ declaration             -> variable_declaration
                         | statement ;
 variable_declaration    -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement               -> expression_statement
-                        | print_statement ;
+                        | print_statement
+                        | block ;
 expression_statement    -> expression ";" ;
 print_statement         -> "print" expression ";" ;
+block                   -> "{" declaration* "}" ;
 expression              -> comma ;
 comma                   -> assignment ( "," assignment )* ;
 assignment              -> IDENTIFIER "=" assignment

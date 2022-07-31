@@ -55,6 +55,9 @@ STATEMENTS = [
         'name': 'Token',
         'initializer': 'Expression',
     }),
+    ASTDef('Block', {
+        'statements': 'List[Statement]',
+    }),
 ]
 
 
@@ -179,6 +182,8 @@ type {type}VisitorConstraint interface {{
                     field_type = 'LiteralValue'
                 case 'Token':
                     field_type = '*Token'
+                case 'List[Statement]':
+                    field_type = '[]Statement'
             f.write(f'{field_name.capitalize()} {field_type}\n')
         f.write('}\n')
 

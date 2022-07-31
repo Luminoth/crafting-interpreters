@@ -8,13 +8,13 @@ type Environment struct {
 	Enclosing *Environment `json:"enclosing,omitempty"`
 }
 
-func NewEnvironment() Environment {
-	return Environment{
+func NewEnvironment() *Environment {
+	return &Environment{
 		Values: map[string]Value{},
 	}
 }
 
-func NewEnvironmentScope(enclosing *Environment) (environment Environment) {
+func NewEnvironmentScope(enclosing *Environment) (environment *Environment) {
 	environment = NewEnvironment()
 	environment.Enclosing = enclosing
 	return

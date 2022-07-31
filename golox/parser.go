@@ -98,10 +98,24 @@ func (p *Parser) variableDeclaration() (statement Statement, err error) {
 	return
 }
 
-func (p *Parser) statement() (Statement, error) {
+func (p *Parser) statement() (statement Statement, err error) {
 	if p.match(Print) {
 		return p.printStatement()
 	}
+
+	if p.match(LeftBrace) {
+		statements, innerErr := p.block()
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		statement = &BlockStatement{
+			Statements: statements,
+		}
+		return
+	}
+
 	return p.expressionStatement()
 }
 
@@ -120,6 +134,23 @@ func (p *Parser) printStatement() (statement Statement, err error) {
 	statement = &PrintStatement{
 		Expression: value,
 	}
+	return
+}
+
+func (p *Parser) block() (statements []Statement, err error) {
+	for {
+		if p.check(RightBrace) || p.isAtEnd() {
+			break
+		}
+
+		statements = append(statements, p.declaration())
+	}
+
+	_, err = p.consume(RightBrace, "Expect '}' after block.")
+	if err != nil {
+		return
+	}
+
 	return
 }
 

@@ -15,7 +15,9 @@ func (e *RuntimeError) Error() string {
 }
 
 type Interpreter struct {
-	Environment Environment `json:"environment"`
+	// NOTE: an alternative to this is to pass the environment
+	// to each Visit() method, letting the stack handle block scope cleanup
+	Environment *Environment `json:"environment"`
 }
 
 func NewInterpreter() Interpreter {
@@ -49,6 +51,10 @@ func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (err error)
 	return
 }
 
+func (i *Interpreter) VisitBlockStatement(statement *BlockStatement) error {
+	return i.executeBlock(statement.Statements, NewEnvironmentScope(i.Environment))
+}
+
 func (i *Interpreter) VisitVarStatement(statement *VarStatement) (err error) {
 	var value Value
 	if statement.Initializer != nil {
@@ -64,6 +70,23 @@ func (i *Interpreter) VisitVarStatement(statement *VarStatement) (err error) {
 
 func (i *Interpreter) execute(statement Statement) error {
 	return statement.Accept(i)
+}
+
+func (i *Interpreter) executeBlock(statements []Statement, environment *Environment) (err error) {
+	previous := i.Environment
+	i.Environment = environment
+	defer func() {
+		i.Environment = previous
+	}()
+
+	for _, statement := range statements {
+		err = i.execute(statement)
+		if err != nil {
+			return
+		}
+	}
+
+	return
 }
 
 func (i *Interpreter) InterpretExpression(expression Expression) string {

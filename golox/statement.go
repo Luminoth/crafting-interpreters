@@ -30,8 +30,17 @@ func (e *VarStatement) Accept(visitor StatementVisitor) error {
 	return visitor.VisitVarStatement(e)
 }
 
+type BlockStatement struct {
+	Statements []Statement
+}
+
+func (e *BlockStatement) Accept(visitor StatementVisitor) error {
+	return visitor.VisitBlockStatement(e)
+}
+
 type StatementVisitor interface {
 	VisitExpressionStatement(statement *ExpressionStatement) error
 	VisitPrintStatement(statement *PrintStatement) error
 	VisitVarStatement(statement *VarStatement) error
+	VisitBlockStatement(statement *BlockStatement) error
 }
