@@ -2,14 +2,14 @@
 package main
 
 type Statement interface {
-	Accept(visitor StatementVisitor) error
+	Accept(visitor StatementVisitor) (*Value, error)
 }
 
 type ExpressionStatement struct {
 	Expression Expression
 }
 
-func (e *ExpressionStatement) Accept(visitor StatementVisitor) error {
+func (e *ExpressionStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitExpressionStatement(e)
 }
 
@@ -17,7 +17,7 @@ type PrintStatement struct {
 	Expression Expression
 }
 
-func (e *PrintStatement) Accept(visitor StatementVisitor) error {
+func (e *PrintStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitPrintStatement(e)
 }
 
@@ -26,7 +26,7 @@ type VarStatement struct {
 	Initializer Expression
 }
 
-func (e *VarStatement) Accept(visitor StatementVisitor) error {
+func (e *VarStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitVarStatement(e)
 }
 
@@ -34,13 +34,13 @@ type BlockStatement struct {
 	Statements []Statement
 }
 
-func (e *BlockStatement) Accept(visitor StatementVisitor) error {
+func (e *BlockStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitBlockStatement(e)
 }
 
 type StatementVisitor interface {
-	VisitExpressionStatement(statement *ExpressionStatement) error
-	VisitPrintStatement(statement *PrintStatement) error
-	VisitVarStatement(statement *VarStatement) error
-	VisitBlockStatement(statement *BlockStatement) error
+	VisitExpressionStatement(statement *ExpressionStatement) (*Value, error)
+	VisitPrintStatement(statement *PrintStatement) (*Value, error)
+	VisitVarStatement(statement *VarStatement) (*Value, error)
+	VisitBlockStatement(statement *BlockStatement) (*Value, error)
 }

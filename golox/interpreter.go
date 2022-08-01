@@ -26,53 +26,62 @@ func NewInterpreter() Interpreter {
 	}
 }
 
-func (i *Interpreter) InterpretProgram(statements []Statement) {
+func (i *Interpreter) Interpret(statements []Statement) (value *Value) {
 	for _, statement := range statements {
-		err := i.execute(statement)
+		v, err := i.execute(statement)
 		if err != nil {
 			runtimeError(err)
-			return
+			return nil
 		}
+		value = v
 	}
-}
 
-func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (err error) {
-	_, err = i.evaluate(statement.Expression)
 	return
 }
 
-func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (err error) {
-	value, err := i.evaluate(statement.Expression)
+func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (value *Value, err error) {
+	v, err := i.evaluate(statement.Expression)
 	if err != nil {
 		return
 	}
 
-	fmt.Println(value)
+	value = &v
 	return
 }
 
-func (i *Interpreter) VisitBlockStatement(statement *BlockStatement) error {
+func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (value *Value, err error) {
+	v, err := i.evaluate(statement.Expression)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(v)
+	return
+}
+
+func (i *Interpreter) VisitBlockStatement(statement *BlockStatement) (*Value, error) {
 	return i.executeBlock(statement.Statements, NewEnvironmentScope(i.Environment))
 }
 
-func (i *Interpreter) VisitVarStatement(statement *VarStatement) (err error) {
-	var value Value
+func (i *Interpreter) VisitVarStatement(statement *VarStatement) (value *Value, err error) {
+	var v Value
 	if statement.Initializer != nil {
-		value, err = i.evaluate(statement.Initializer)
+		v, err = i.evaluate(statement.Initializer)
 		if err != nil {
 			return
 		}
 	}
 
-	i.Environment.Define(statement.Name.Lexeme, value)
+	i.Environment.Define(statement.Name.Lexeme, v)
+	value = &v
 	return
 }
 
-func (i *Interpreter) execute(statement Statement) error {
+func (i *Interpreter) execute(statement Statement) (*Value, error) {
 	return statement.Accept(i)
 }
 
-func (i *Interpreter) executeBlock(statements []Statement, environment *Environment) (err error) {
+func (i *Interpreter) executeBlock(statements []Statement, environment *Environment) (value *Value, err error) {
 	previous := i.Environment
 	i.Environment = environment
 	defer func() {
@@ -80,23 +89,13 @@ func (i *Interpreter) executeBlock(statements []Statement, environment *Environm
 	}()
 
 	for _, statement := range statements {
-		err = i.execute(statement)
+		value, err = i.execute(statement)
 		if err != nil {
 			return
 		}
 	}
 
 	return
-}
-
-func (i *Interpreter) InterpretExpression(expression Expression) string {
-	value, err := i.evaluate(expression)
-	if err != nil {
-		runtimeError(err)
-		return ""
-	}
-
-	return value.String()
 }
 
 func (i *Interpreter) VisitAssignExpression(expression *AssignExpression) (value Value, err error) {

@@ -26,7 +26,7 @@ func NewParser(tokens []*Token) Parser {
 	}
 }
 
-func (p *Parser) ParseProgram() (statements []Statement) {
+func (p *Parser) Parse() (statements []Statement) {
 	for {
 		if p.isAtEnd() {
 			break
@@ -35,20 +35,6 @@ func (p *Parser) ParseProgram() (statements []Statement) {
 		statement := p.declaration()
 		// TODO: statement can be nil here but we aren't handling it ...
 		statements = append(statements, statement)
-	}
-
-	return
-}
-
-func (p *Parser) ParseExpression() (expr Expression) {
-	expr, err := p.expression()
-	if err != nil {
-		return nil
-	}
-
-	if !p.isAtEnd() {
-		p.error(p.peek(), "Expected end of file.")
-		return nil
 	}
 
 	return

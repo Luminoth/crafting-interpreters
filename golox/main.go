@@ -8,11 +8,7 @@ import (
 	"os"
 )
 
-var printExpressions *bool
-
 func main() {
-	printExpressions = flag.Bool("print", false, "Print expressions rather than evaluate them")
-
 	flag.Parse()
 
 	if len(flag.Args()) > 1 {
@@ -41,7 +37,7 @@ func runFile(filename string) (err error) {
 
 	interpreter := NewInterpreter()
 
-	run(&interpreter, string(bytes))
+	run(&interpreter, string(bytes), false)
 
 	if hadError {
 		os.Exit(65)
@@ -66,7 +62,7 @@ func runPrompt() (err error) {
 		}
 
 		line := scanner.Text()
-		run(&interpreter, line)
+		run(&interpreter, line, true)
 
 		hadError = false
 		hadRuntimeError = false
@@ -74,24 +70,21 @@ func runPrompt() (err error) {
 
 }
 
-func run(interpreter *Interpreter, source string) {
+func run(interpreter *Interpreter, source string, printExpressions bool) {
 	scanner := NewScanner(source)
 	scanner.ScanTokens()
 
 	//fmt.Println(scanner.Tokens)
 
 	parser := NewParser(scanner.Tokens)
-	//expression := parser.ParseExpression()
-	statements := parser.ParseProgram()
+	statements := parser.Parse()
 
 	if hadError {
 		return
 	}
 
-	if *printExpressions {
-		//fmt.Println((&ExpressionPrinter{}).Print(expression))
-	} else {
-		//fmt.Println(interpreter.InterpretExpression(expression))
-		interpreter.InterpretProgram(statements)
+	value := interpreter.Interpret(statements)
+	if printExpressions && value != nil {
+		fmt.Println(value.String())
 	}
 }

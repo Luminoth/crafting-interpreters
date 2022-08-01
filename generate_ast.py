@@ -147,7 +147,7 @@ package main
                     f'Accept{constraint.capitalize()}(visitor {type}Visitor[{constraint}]) ({constraint}, error)\n')
         else:
             f.write(
-                f'Accept(visitor {type}Visitor) (error)\n')
+                f'Accept(visitor {type}Visitor) (*Value, error)\n')
         f.write('}\n')
 
     def _generate_visitors(self, type: str, ast_defs: List[ASTDef], f: io.TextIOWrapper):
@@ -169,7 +169,7 @@ type {type}VisitorConstraint interface {{
             f.write(f'\ntype {type}Visitor interface {{\n')
             for ast_def in ast_defs:
                 f.write(
-                    f'Visit{ast_def.name}{type}({type.lower()} *{ast_def.name}{type}) (error)\n')
+                    f'Visit{ast_def.name}{type}({type.lower()} *{ast_def.name}{type}) (*Value, error)\n')
         f.write('}\n')
 
     def _generate_definition(self, type: str, ast_def: ASTDef, f: io.TextIOWrapper):
@@ -197,7 +197,7 @@ func (e *{ast_def.name}{type}) Accept{constraint.capitalize()}(visitor {type}Vis
 """)
         else:
             f.write(f"""
-func (e *{ast_def.name}{type}) Accept(visitor {type}Visitor) (error) {{
+func (e *{ast_def.name}{type}) Accept(visitor {type}Visitor) (*Value, error) {{
     return visitor.Visit{ast_def.name}{type}(e)
 }}
 """)
