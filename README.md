@@ -67,9 +67,12 @@ declaration             -> variable_declaration
                         | statement ;
 variable_declaration    -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement               -> expression_statement
+                        | if_statement
                         | print_statement
                         | block ;
 expression_statement    -> expression ";" ;
+if_statement            -> "if" "(" expression ")" statement
+                            ( "else" statement )? ;
 print_statement         -> "print" expression ";" ;
 block                   -> "{" declaration* "}" ;
 expression              -> comma ;

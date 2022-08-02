@@ -85,6 +85,10 @@ func (p *Parser) variableDeclaration() (statement Statement, err error) {
 }
 
 func (p *Parser) statement() (statement Statement, err error) {
+	if p.match(If) {
+		return p.ifStatement()
+	}
+
 	if p.match(Print) {
 		return p.printStatement()
 	}
@@ -103,6 +107,43 @@ func (p *Parser) statement() (statement Statement, err error) {
 	}
 
 	return p.expressionStatement()
+}
+
+func (p *Parser) ifStatement() (statement Statement, err error) {
+	_, err = p.consume(LeftParen, "Expect '(' after 'if'.")
+	if err != nil {
+		return
+	}
+
+	condition, err := p.expression()
+	if err != nil {
+		return
+	}
+
+	_, err = p.consume(RightParen, "Expect ')' after if condition.")
+	if err != nil {
+		return
+	}
+
+	thenBranch, err := p.statement()
+	if err != nil {
+		return
+	}
+
+	var elseBranch Statement
+	if p.match(Else) {
+		elseBranch, err = p.statement()
+		if err != nil {
+			return
+		}
+	}
+
+	statement = &IfStatement{
+		Condition: condition,
+		Then:      thenBranch,
+		Else:      elseBranch,
+	}
+	return
 }
 
 func (p *Parser) printStatement() (statement Statement, err error) {

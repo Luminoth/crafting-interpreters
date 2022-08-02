@@ -58,6 +58,11 @@ STATEMENTS = [
     ASTDef('Block', {
         'statements': 'List[Statement]',
     }),
+    ASTDef('If', {
+        'condition': 'Expression',
+        'then': 'Statement',
+        'else': 'Statement',
+    }),
 ]
 
 

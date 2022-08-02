@@ -63,6 +63,24 @@ func (i *Interpreter) VisitBlockStatement(statement *BlockStatement) (*Value, er
 	return i.executeBlock(statement.Statements, NewEnvironmentScope(i.Environment))
 }
 
+func (i *Interpreter) VisitIfStatement(statement *IfStatement) (value *Value, err error) {
+	condition, err := i.evaluate(statement.Condition)
+	if err != nil {
+		return
+	}
+
+	isTruthy, err := i.isTruthy(condition)
+	if err != nil {
+		return
+	}
+
+	if isTruthy {
+		return i.execute(statement.Then)
+	} else {
+		return i.execute(statement.Else)
+	}
+}
+
 func (i *Interpreter) VisitVarStatement(statement *VarStatement) (value *Value, err error) {
 	var v Value
 	if statement.Initializer != nil {

@@ -38,9 +38,20 @@ func (e *BlockStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitBlockStatement(e)
 }
 
+type IfStatement struct {
+	Condition Expression
+	Then      Statement
+	Else      Statement
+}
+
+func (e *IfStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitIfStatement(e)
+}
+
 type StatementVisitor interface {
 	VisitExpressionStatement(statement *ExpressionStatement) (*Value, error)
 	VisitPrintStatement(statement *PrintStatement) (*Value, error)
 	VisitVarStatement(statement *VarStatement) (*Value, error)
 	VisitBlockStatement(statement *BlockStatement) (*Value, error)
+	VisitIfStatement(statement *IfStatement) (*Value, error)
 }
