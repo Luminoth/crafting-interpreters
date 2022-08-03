@@ -93,6 +93,10 @@ func (p *Parser) statement() (statement Statement, err error) {
 		return p.printStatement()
 	}
 
+	if p.match(While) {
+		return p.whileStatement()
+	}
+
 	if p.match(LeftBrace) {
 		statements, innerErr := p.block()
 		if innerErr != nil {
@@ -160,6 +164,34 @@ func (p *Parser) printStatement() (statement Statement, err error) {
 
 	statement = &PrintStatement{
 		Expression: value,
+	}
+	return
+}
+
+func (p *Parser) whileStatement() (statement Statement, err error) {
+	_, err = p.consume(LeftParen, "Expect '(' after 'while'.")
+	if err != nil {
+		return
+	}
+
+	condition, err := p.expression()
+	if err != nil {
+		return
+	}
+
+	_, err = p.consume(RightParen, "Expect ')' after while condition.")
+	if err != nil {
+		return
+	}
+
+	body, err := p.statement()
+	if err != nil {
+		return
+	}
+
+	statement = &WhileStatement{
+		Condition: condition,
+		Body:      body,
 	}
 	return
 }

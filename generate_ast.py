@@ -68,6 +68,10 @@ STATEMENTS = [
         'then': 'Statement',
         'else': 'Statement',
     }),
+    ASTDef('While', {
+        'condition': 'Expression',
+        'body': 'Statement',
+    }),
 ]
 
 

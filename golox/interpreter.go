@@ -95,6 +95,34 @@ func (i *Interpreter) VisitVarStatement(statement *VarStatement) (value *Value, 
 	return
 }
 
+func (i *Interpreter) VisitWhileStatement(statement *WhileStatement) (value *Value, err error) {
+	for {
+		condition, innerErr := i.evaluate(statement.Condition)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		isTruthy, innerErr := i.isTruthy(condition)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		if !isTruthy {
+			break
+		}
+
+		_, innerErr = i.execute(statement.Body)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+	}
+
+	return
+}
+
 func (i *Interpreter) execute(statement Statement) (*Value, error) {
 	return statement.Accept(i)
 }

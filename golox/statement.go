@@ -48,10 +48,20 @@ func (e *IfStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitIfStatement(e)
 }
 
+type WhileStatement struct {
+	Condition Expression
+	Body      Statement
+}
+
+func (e *WhileStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitWhileStatement(e)
+}
+
 type StatementVisitor interface {
 	VisitExpressionStatement(statement *ExpressionStatement) (*Value, error)
 	VisitPrintStatement(statement *PrintStatement) (*Value, error)
 	VisitVarStatement(statement *VarStatement) (*Value, error)
 	VisitBlockStatement(statement *BlockStatement) (*Value, error)
 	VisitIfStatement(statement *IfStatement) (*Value, error)
+	VisitWhileStatement(statement *WhileStatement) (*Value, error)
 }
