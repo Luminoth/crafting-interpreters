@@ -85,6 +85,10 @@ func (p *Parser) variableDeclaration() (statement Statement, err error) {
 }
 
 func (p *Parser) statement() (statement Statement, err error) {
+	if p.match(For) {
+		return p.forStatement()
+	}
+
 	if p.match(If) {
 		return p.ifStatement()
 	}
@@ -111,6 +115,94 @@ func (p *Parser) statement() (statement Statement, err error) {
 	}
 
 	return p.expressionStatement()
+}
+
+func (p *Parser) forStatement() (statement Statement, err error) {
+	_, err = p.consume(LeftParen, "Expect '(' after 'for'.")
+	if err != nil {
+		return
+	}
+
+	var initializer Statement
+	if p.match(Var) {
+		initializer, err = p.variableDeclaration()
+		if err != nil {
+			return
+		}
+	} else if !p.match(Semicolon) {
+		initializer, err = p.expressionStatement()
+		if err != nil {
+			return
+		}
+	}
+
+	var condition Expression
+	if !p.check(Semicolon) {
+		condition, err = p.expression()
+		if err != nil {
+			return
+		}
+	}
+
+	_, err = p.consume(Semicolon, "Expect ';' after loop condition.")
+	if err != nil {
+		return
+	}
+
+	var increment Expression
+	if !p.check(RightParen) {
+		increment, err = p.expression()
+		if err != nil {
+			return
+		}
+	}
+
+	_, err = p.consume(RightParen, "Expect ')' after for clauses.")
+	if err != nil {
+		return
+	}
+
+	body, err := p.statement()
+	if err != nil {
+		return
+	}
+
+	// build the desugared while loop
+
+	if increment != nil {
+		statement = &BlockStatement{
+			Statements: []Statement{
+				body,
+				&ExpressionStatement{
+					Expression: increment,
+				},
+			},
+		}
+	} else {
+		statement = body
+	}
+
+	if condition == nil {
+		condition = &LiteralExpression{
+			Value: NewBoolLiteral(true),
+		}
+	}
+
+	statement = &WhileStatement{
+		Condition: condition,
+		Body:      statement,
+	}
+
+	if initializer != nil {
+		statement = &BlockStatement{
+			Statements: []Statement{
+				initializer,
+				statement,
+			},
+		}
+	}
+
+	return
 }
 
 func (p *Parser) ifStatement() (statement Statement, err error) {

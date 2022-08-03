@@ -67,11 +67,15 @@ declaration             -> variable_declaration
                         | statement ;
 variable_declaration    -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement               -> expression_statement
+                        | for_statement
                         | if_statement
                         | print_statement
                         | while_statement
                         | block ;
 expression_statement    -> expression ";" ;
+for_statement           -> "for" "(" ( variable_declaration | expression_statement | ";" )
+                            expression? ";"
+                            expression? ")" statement ;
 if_statement            -> "if" "(" expression ")" statement
                             ( "else" statement )? ;
 print_statement         -> "print" expression ";" ;

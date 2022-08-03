@@ -5,13 +5,14 @@ import io
 import os
 import sys
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 class ASTDef:
-    def __init__(self, name: str, fields: Dict[str, str]):
+    def __init__(self, name: str, fields: Dict[str, str], note: Optional[str] = None):
         self.name = name
         self.fields = fields
+        self.note = note
 
 
 EXPRESSIONS = [
@@ -71,7 +72,7 @@ STATEMENTS = [
     ASTDef('While', {
         'condition': 'Expression',
         'body': 'Statement',
-    }),
+    }, 'For statement desugars to a While statement'),
 ]
 
 
@@ -188,7 +189,10 @@ type {type}VisitorConstraint interface {{
 
     def _generate_definition(self, type: str, ast_def: ASTDef, f: io.TextIOWrapper):
         # type
-        f.write(f'\ntype {ast_def.name}{type} struct {{\n')
+        f.write('\n')
+        if ast_def.note:
+            f.write(f'// {ast_def.note}\n')
+        f.write(f'type {ast_def.name}{type} struct {{\n')
         for field_name, field_type in ast_def.fields.items():
             # do some type overriding
             match field_type:

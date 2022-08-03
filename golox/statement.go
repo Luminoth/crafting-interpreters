@@ -48,6 +48,7 @@ func (e *IfStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitIfStatement(e)
 }
 
+// For statement desugars to a While statement
 type WhileStatement struct {
 	Condition Expression
 	Body      Statement
