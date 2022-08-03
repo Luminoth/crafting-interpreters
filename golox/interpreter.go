@@ -250,6 +250,35 @@ func (i *Interpreter) VisitTernaryExpression(expression *TernaryExpression) (val
 	}
 }
 
+func (i *Interpreter) VisitLogicalExpression(expression *LogicalExpression) (value Value, err error) {
+	value, err = i.evaluate(expression.Left)
+	if err != nil {
+		return
+	}
+
+	isTruthy, err := i.isTruthy(value)
+	if err != nil {
+		return
+	}
+
+	// short circuit
+	switch expression.Operator.Type {
+	case Or:
+		if isTruthy {
+			return
+		}
+	case And:
+		if !isTruthy {
+			return
+		}
+	default:
+		err = fmt.Errorf("unsupported logical operator type %v", expression.Operator.Type)
+		return
+	}
+
+	return i.evaluate(expression.Right)
+}
+
 func (i *Interpreter) VisitUnaryExpression(expression *UnaryExpression) (value Value, err error) {
 	right, err := i.evaluate(expression.Right)
 	if err != nil {

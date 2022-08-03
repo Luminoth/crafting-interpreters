@@ -264,7 +264,7 @@ func (p *Parser) assignment() (expr Expression, err error) {
 }
 
 func (p *Parser) ternary() (expr Expression, err error) {
-	expr, err = p.equality()
+	expr, err = p.or()
 	if err != nil {
 		return
 	}
@@ -292,6 +292,62 @@ func (p *Parser) ternary() (expr Expression, err error) {
 		Condition: expr,
 		True:      left,
 		False:     right,
+	}
+	return
+}
+
+func (p *Parser) or() (expr Expression, err error) {
+	expr, err = p.and()
+	if err != nil {
+		return
+	}
+
+	for {
+		if !p.match(Or) {
+			break
+		}
+
+		operator := p.previous()
+
+		right, innerErr := p.and()
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		expr = &LogicalExpression{
+			Left:     expr,
+			Operator: operator,
+			Right:    right,
+		}
+	}
+	return
+}
+
+func (p *Parser) and() (expr Expression, err error) {
+	expr, err = p.equality()
+	if err != nil {
+		return
+	}
+
+	for {
+		if !p.match(And) {
+			break
+		}
+
+		operator := p.previous()
+
+		right, innerErr := p.equality()
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		expr = &LogicalExpression{
+			Left:     expr,
+			Operator: operator,
+			Right:    right,
+		}
 	}
 	return
 }

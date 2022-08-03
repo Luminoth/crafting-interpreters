@@ -28,6 +28,10 @@ func (p *ExpressionPrinter) VisitTernaryExpression(expression *TernaryExpression
 	return p.parenthesize("ternary", expression.Condition, expression.True, expression.False)
 }
 
+func (p *ExpressionPrinter) VisitLogicalExpression(expression *LogicalExpression) (string, error) {
+	return p.parenthesize(expression.Operator.Lexeme, expression.Left, expression.Right)
+}
+
 func (p *ExpressionPrinter) VisitUnaryExpression(expression *UnaryExpression) (string, error) {
 	return p.parenthesize(expression.Operator.Lexeme, expression.Right)
 }

@@ -29,6 +29,11 @@ EXPRESSIONS = [
         'true': 'Expression',
         'false': 'Expression',
     }),
+    ASTDef('Logical', {
+        'left': 'Expression',
+        'operator': 'Token',
+        'right': 'Expression',
+    }),
     ASTDef('Unary', {
         'operator': 'Token',
         'right': 'Expression',

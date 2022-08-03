@@ -79,7 +79,9 @@ expression              -> comma ;
 comma                   -> assignment ( "," assignment )* ;
 assignment              -> IDENTIFIER "=" assignment
                         | ternary ;
-ternary                 -> equality ( "?" expression ":" ternary )? ;
+ternary                 -> logical_or ( "?" expression ":" ternary )? ;
+logical_or              -> logical_and ( "or" logical_and )* ;
+logical_and             -> equality ( "and" equality )* ;
 equality                -> comparison ( ( "!=" | "==" ) comparison )* ;
 comparison              -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term                    -> factor ( ( "-" | "+" ) factor )* ;
@@ -94,13 +96,15 @@ primary                 -> NUMBER | STRING
 
 ### Precedence
 
-| Name       | Operators | Associates |
-| ---------- | --------- |----------- |
-| Unary      | ! -       | Right      |
-| Factor     | / *       | Left       |
-| Term       | - +       | Left       |
-| Comparison | > >= < <= | Left       |
-| Equality   | == !=     | Left       |
-| Ternary    | ?:        | Right      |
-| Assignment | =         | Right      |
-| Comma      | ,         | Left       |
+| Name        | Operators | Associates |
+| ----------- | --------- |----------- |
+| Unary       | ! -       | Right      |
+| Factor      | / *       | Left       |
+| Term        | - +       | Left       |
+| Comparison  | > >= < <= | Left       |
+| Equality    | == !=     | Left       |
+| Logical And | and       | Left       |
+| Logical Or  | or        | Left       |
+| Ternary     | ?:        | Right      |
+| Assignment  | =         | Right      |
+| Comma       | ,         | Left       |
