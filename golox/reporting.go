@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 var hadError bool
 var hadRuntimeError bool
@@ -12,14 +15,15 @@ func report(line uint, where string, message string) {
 }
 
 func runtimeError(err error) {
-	if runtimeError, ok := err.(*RuntimeError); ok {
+	var runtimeError *RuntimeError
+	if errors.As(err, &runtimeError) {
 		if runtimeError.Token != nil {
 			fmt.Printf("%s\n[line %d]\n", runtimeError.Error(), runtimeError.Token.Line)
 		} else {
 			fmt.Printf("%s\n", runtimeError.Error())
 		}
 	} else {
-		fmt.Printf("%s\n", err.Error())
+		fmt.Printf("Unexpected runtime error: %s\n", err.Error())
 
 	}
 

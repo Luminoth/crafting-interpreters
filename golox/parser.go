@@ -297,24 +297,32 @@ func (p *Parser) whileStatement() (statement Statement, err error) {
 }
 
 func (p *Parser) breakStatement() (statement Statement, err error) {
+	keyword := p.previous()
+
 	_, err = p.consume(Semicolon, "Expect ';' after break.")
 	//_, err = p.consumeSafe(Semicolon)
 	if err != nil {
 		return
 	}
 
-	statement = &BreakStatement{}
+	statement = &BreakStatement{
+		Keyword: keyword,
+	}
 	return
 }
 
 func (p *Parser) continueStatement() (statement Statement, err error) {
+	keyword := p.previous()
+
 	_, err = p.consume(Semicolon, "Expect ';' after continue.")
 	//_, err = p.consumeSafe(Semicolon)
 	if err != nil {
 		return
 	}
 
-	statement = &ContinueStatement{}
+	statement = &ContinueStatement{
+		Keyword: keyword,
+	}
 	return
 }
 

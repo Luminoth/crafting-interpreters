@@ -15,11 +15,19 @@ func (e *RuntimeError) Error() string {
 }
 
 type BreakError struct {
-	RuntimeError
+	*RuntimeError
+}
+
+func (e *BreakError) Unwrap() error {
+	return e.RuntimeError
 }
 
 type ContinueError struct {
-	RuntimeError
+	*RuntimeError
+}
+
+func (e *ContinueError) Unwrap() error {
+	return e.RuntimeError
 }
 
 type Interpreter struct {
@@ -145,8 +153,9 @@ func (i *Interpreter) VisitWhileStatement(statement *WhileStatement) (value *Val
 
 func (i *Interpreter) VisitBreakStatement(statement *BreakStatement) (value *Value, err error) {
 	err = &BreakError{
-		RuntimeError: RuntimeError{
+		RuntimeError: &RuntimeError{
 			Message: "Break only supported in loops.",
+			Token:   statement.Keyword,
 		},
 	}
 	return
@@ -154,8 +163,9 @@ func (i *Interpreter) VisitBreakStatement(statement *BreakStatement) (value *Val
 
 func (i *Interpreter) VisitContinueStatement(statement *ContinueStatement) (value *Value, err error) {
 	err = &ContinueError{
-		RuntimeError: RuntimeError{
+		RuntimeError: &RuntimeError{
 			Message: "Continue only supported in loops.",
+			Token:   statement.Keyword,
 		},
 	}
 	return

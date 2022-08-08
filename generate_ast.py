@@ -74,8 +74,10 @@ STATEMENTS = [
         'body': 'Statement',
     }, 'For statement desugars to a While statement'),
     ASTDef('Break', {
+        'keyword': 'Token',
     }),
     ASTDef('Continue', {
+        'keyword': 'Token',
     }),
 ]
 

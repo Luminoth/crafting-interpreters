@@ -59,6 +59,7 @@ func (e *WhileStatement) Accept(visitor StatementVisitor) (*Value, error) {
 }
 
 type BreakStatement struct {
+	Keyword *Token
 }
 
 func (e *BreakStatement) Accept(visitor StatementVisitor) (*Value, error) {
@@ -66,6 +67,7 @@ func (e *BreakStatement) Accept(visitor StatementVisitor) (*Value, error) {
 }
 
 type ContinueStatement struct {
+	Keyword *Token
 }
 
 func (e *ContinueStatement) Accept(visitor StatementVisitor) (*Value, error) {
