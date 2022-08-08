@@ -36,6 +36,12 @@ func (p *ExpressionPrinter) VisitUnaryExpression(expression *UnaryExpression) (s
 	return p.parenthesize(expression.Operator.Lexeme, expression.Right)
 }
 
+func (p *ExpressionPrinter) VisitCallExpression(expression *CallExpression) (string, error) {
+	v := []Expression{expression.Callee}
+	v = append(v, expression.Arguments...)
+	return p.parenthesize(expression.Paren.Lexeme, v...)
+}
+
 func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpression) (string, error) {
 	return p.parenthesize("group", expression.Expression)
 }

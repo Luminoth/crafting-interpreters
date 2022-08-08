@@ -66,7 +66,6 @@ program                 -> declaration* EOF ;
 declaration             -> variable_declaration
                         | statement ;
 variable_declaration    -> "var" IDENTIFIER ( "=" expression )? ";" ;
-
 statement               -> expression_statement
                         | for_statement
                         | if_statement
@@ -86,7 +85,6 @@ while_statement         -> "while" "(" expression ")" statement ;
 break_statement         -> "break" ";" ;
 continue_statement      -> "continue" ";" ;
 block                   -> "{" declaration* "}" ;
-
 expression              -> comma ;
 comma                   -> assignment ( "," assignment )* ;
 assignment              -> IDENTIFIER "=" assignment
@@ -99,8 +97,9 @@ comparison              -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term                    -> factor ( ( "-" | "+" ) factor )* ;
 factor                  -> unary ( ( "/" | "*" ) unary )* ;
 unary                   -> ( "!" | "-" ) unary
-                        | primary ;
-
+                        | call ;
+call                    -> primary ( "(" arguments? ")" )* ;
+arguments               -> expression ( "," expression )* ;
 primary                 -> NUMBER | STRING
                         | "true" | "false" | "nil"
                         | "(" expression ")"

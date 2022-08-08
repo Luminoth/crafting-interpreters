@@ -39,6 +39,11 @@ EXPRESSIONS = [
         'operator': 'Token',
         'right': 'Expression',
     }),
+    ASTDef('Call', {
+        'callee': 'Expression',
+        'paren': 'Token',
+        'arguments': 'List[Expression]',
+    }),
     ASTDef('Grouping', {
         'expression': 'Expression',
     }),
@@ -206,6 +211,8 @@ type {type}VisitorConstraint interface {{
                     field_type = 'LiteralValue'
                 case 'Token':
                     field_type = '*Token'
+                case 'List[Expression]':
+                    field_type = '[]Expression'
                 case 'List[Statement]':
                     field_type = '[]Statement'
             f.write(f'{field_name.capitalize()} {field_type}\n')

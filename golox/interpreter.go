@@ -382,6 +382,42 @@ func (i *Interpreter) VisitUnaryExpression(expression *UnaryExpression) (value V
 	return
 }
 
+func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Value, err error) {
+	callee, err := i.evaluate(expression.Callee)
+	if err != nil {
+		return
+	}
+
+	arguments := make([]Value, len(expression.Arguments))
+	for idx, argument := range expression.Arguments {
+		argumentValue, innerErr := i.evaluate(argument)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+		arguments[idx] = argumentValue
+	}
+
+	if callee.Type != ValueTypeFunction {
+		err = &RuntimeError{
+			Message: "Can only call functions and classes.",
+			Token:   expression.Paren,
+		}
+		return
+	}
+
+	argumentCount := len(arguments)
+	if argumentCount != callee.FunctionValue.Arity {
+		err = &RuntimeError{
+			Message: fmt.Sprintf("Expected %d arguments but got %d.", callee.FunctionValue.Arity, argumentCount),
+			Token:   expression.Paren,
+		}
+		return
+	}
+
+	return callee.Call(i, arguments)
+}
+
 func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {
 	return i.evaluate(expression.Expression)
 }

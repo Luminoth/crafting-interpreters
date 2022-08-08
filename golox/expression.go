@@ -74,6 +74,20 @@ func (e *UnaryExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, 
 	return visitor.VisitUnaryExpression(e)
 }
 
+type CallExpression struct {
+	Callee    Expression
+	Paren     *Token
+	Arguments []Expression
+}
+
+func (e *CallExpression) AcceptString(visitor ExpressionVisitor[string]) (string, error) {
+	return visitor.VisitCallExpression(e)
+}
+
+func (e *CallExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, error) {
+	return visitor.VisitCallExpression(e)
+}
+
 type GroupingExpression struct {
 	Expression Expression
 }
@@ -120,6 +134,7 @@ type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
 	VisitTernaryExpression(expression *TernaryExpression) (T, error)
 	VisitLogicalExpression(expression *LogicalExpression) (T, error)
 	VisitUnaryExpression(expression *UnaryExpression) (T, error)
+	VisitCallExpression(expression *CallExpression) (T, error)
 	VisitGroupingExpression(expression *GroupingExpression) (T, error)
 	VisitLiteralExpression(expression *LiteralExpression) (T, error)
 	VisitVariableExpression(expression *VariableExpression) (T, error)

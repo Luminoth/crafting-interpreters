@@ -8,12 +8,22 @@ import (
 type ValueType int
 
 const (
-	ValueTypeNil    ValueType = 0
-	ValueTypeAny    ValueType = 1
-	ValueTypeNumber ValueType = 2
-	ValueTypeString ValueType = 3
-	ValueTypeBool   ValueType = 4
+	ValueTypeNil      ValueType = 0
+	ValueTypeAny      ValueType = 1
+	ValueTypeNumber   ValueType = 2
+	ValueTypeString   ValueType = 3
+	ValueTypeBool     ValueType = 4
+	ValueTypeFunction ValueType = 5
 )
+
+type FunctionType struct {
+	Name  string `json:"name"`
+	Arity int    `json:"arity"`
+}
+
+func (t FunctionType) String() string {
+	return fmt.Sprintf("%s(%d)", t.Name, t.Arity)
+}
 
 type Value struct {
 	Type ValueType `json:"type"`
@@ -22,6 +32,8 @@ type Value struct {
 	NumberValue float64     `json:"number"`
 	StringValue string      `json:"string"`
 	BoolValue   bool        `json:"bool"`
+
+	FunctionValue FunctionType `json:"function"`
 }
 
 func (v Value) String() string {
@@ -45,9 +57,24 @@ func (v Value) String() string {
 		return fmt.Sprintf("%t", v.BoolValue)
 	}
 
+	if v.Type == ValueTypeFunction {
+		return v.FunctionValue.String()
+	}
+
 	fmt.Printf("Unsupported value type %v\n", v.Type)
 	os.Exit(1)
 	return ""
+}
+
+func (v *Value) Call(interpreter *Interpreter, arguments []Value) (value Value, err error) {
+	if v.Type != ValueTypeFunction {
+		err = fmt.Errorf("value not callable")
+		return
+	}
+
+	// TODO:
+
+	return
 }
 
 func NewValue(literal LiteralValue) (value Value, err error) {
@@ -98,5 +125,15 @@ func NewBoolValue(value bool) Value {
 	return Value{
 		Type:      ValueTypeBool,
 		BoolValue: value,
+	}
+}
+
+func NewFunctionValue(name string, arity int) Value {
+	return Value{
+		Type: ValueTypeFunction,
+		FunctionValue: FunctionType{
+			Name:  name,
+			Arity: arity,
+		},
 	}
 }

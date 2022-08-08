@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+const (
+	MaxCallArguments = 255
+)
+
 type ParserError struct {
 	Message string `json:"message"`
 
@@ -420,6 +424,7 @@ func (p *Parser) assignment() (expr Expression, err error) {
 		}
 
 		p.error(equals, "Invalid assignment target.")
+		// don't throw the error, just report it
 	}
 
 	return
@@ -532,7 +537,7 @@ func (p *Parser) factor() (expr Expression, err error) {
 
 func (p *Parser) unary() (expr Expression, err error) {
 	if !p.match(Bang, Minus) {
-		return p.primary()
+		return p.call()
 	}
 
 	operator := p.previous()
@@ -545,6 +550,62 @@ func (p *Parser) unary() (expr Expression, err error) {
 	expr = &UnaryExpression{
 		Operator: operator,
 		Right:    right,
+	}
+	return
+}
+
+func (p *Parser) call() (expr Expression, err error) {
+	expr, err = p.primary()
+	if err != nil {
+		return
+	}
+
+	for {
+		if p.match(LeftParen) {
+			expr, err = p.finishCall(expr)
+			if err != nil {
+				return
+			}
+		} else {
+			break
+		}
+	}
+
+	return
+}
+
+func (p *Parser) finishCall(callee Expression) (expr Expression, err error) {
+	arguments := []Expression{}
+
+	if !p.check(RightParen) {
+		for {
+			if len(arguments) >= MaxCallArguments {
+				p.error(p.peek(), "Can't have more than 255 arguments.")
+				// don't throw the error, just report it
+			}
+
+			argument, innerErr := p.expression()
+			if innerErr != nil {
+				err = innerErr
+				return
+			}
+			arguments = append(arguments, argument)
+
+			if !p.match(Comma) {
+				break
+			}
+		}
+	}
+
+	paren, err := p.consume(RightParen, "Expect ')' after arguments.")
+	if err != nil {
+		return
+	}
+
+	expr = &CallExpression{
+		Callee:    callee,
+		Paren:     paren,
+		Arguments: arguments,
 	}
 	return
 }
