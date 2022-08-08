@@ -1,1 +1,1 @@
-"test"();
+print "Current time is " + clock();

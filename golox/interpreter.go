@@ -31,15 +31,23 @@ func (e *ContinueError) Unwrap() error {
 }
 
 type Interpreter struct {
+	Globals Environment `json:"globals"`
+
 	// NOTE: an alternative to this is to pass the environment
 	// to each Visit() method, letting the stack handle block scope cleanup
 	Environment *Environment `json:"environment"`
 }
 
 func NewInterpreter() Interpreter {
-	return Interpreter{
-		Environment: NewEnvironment(),
+	i := Interpreter{
+		Globals: NewEnvironment(),
 	}
+
+	// define native functions
+	i.Globals.Define("clock", NewFunctionValue("clock", 0, &ClockFunction{}))
+
+	i.Environment = &i.Globals
+	return i
 }
 
 func (i *Interpreter) Interpret(statements []Statement) (value *Value) {
@@ -388,6 +396,7 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 		return
 	}
 
+	// TODO: should these be evaluated *after* we do all the validation?
 	arguments := make([]Value, len(expression.Arguments))
 	for idx, argument := range expression.Arguments {
 		argumentValue, innerErr := i.evaluate(argument)
@@ -409,13 +418,13 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 	argumentCount := len(arguments)
 	if argumentCount != callee.FunctionValue.Arity {
 		err = &RuntimeError{
-			Message: fmt.Sprintf("Expected %d arguments but got %d.", callee.FunctionValue.Arity, argumentCount),
+			Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callee.FunctionValue.Name, callee.FunctionValue.Arity, argumentCount),
 			Token:   expression.Paren,
 		}
 		return
 	}
 
-	return callee.Call(i, arguments)
+	return callee.FunctionValue.Callable.Call(i, arguments)
 }
 
 func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {
