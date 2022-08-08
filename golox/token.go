@@ -32,6 +32,7 @@ func (t TokenType) String() string {
 		"True", "False",
 		"Fun",
 		"For", "While",
+		"Break", "Continue",
 		"Nil",
 		"Print",
 		"Return",
@@ -73,22 +74,24 @@ const (
 	Number     TokenType = 24
 
 	// keywords
-	And    TokenType = 25
-	Or     TokenType = 26
-	If     TokenType = 27
-	Else   TokenType = 28
-	Class  TokenType = 29
-	Super  TokenType = 30
-	This   TokenType = 31
-	True   TokenType = 32
-	False  TokenType = 33
-	Fun    TokenType = 34
-	For    TokenType = 35
-	While  TokenType = 36
-	Nil    TokenType = 37
-	Print  TokenType = 38
-	Return TokenType = 39
-	Var    TokenType = 40
+	And      TokenType = 25
+	Or       TokenType = 26
+	If       TokenType = 27
+	Else     TokenType = 28
+	Class    TokenType = 29
+	Super    TokenType = 30
+	This     TokenType = 31
+	True     TokenType = 32
+	False    TokenType = 33
+	Fun      TokenType = 34
+	For      TokenType = 35
+	While    TokenType = 36
+	Break    TokenType = 37
+	Continue TokenType = 38
+	Nil      TokenType = 39
+	Print    TokenType = 40
+	Return   TokenType = 41
+	Var      TokenType = 42
 )
 
 type LiteralType int

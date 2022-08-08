@@ -14,6 +14,14 @@ func (e *RuntimeError) Error() string {
 	return e.Message
 }
 
+type BreakError struct {
+	RuntimeError
+}
+
+type ContinueError struct {
+	RuntimeError
+}
+
 type Interpreter struct {
 	// NOTE: an alternative to this is to pass the environment
 	// to each Visit() method, letting the stack handle block scope cleanup
@@ -76,9 +84,13 @@ func (i *Interpreter) VisitIfStatement(statement *IfStatement) (value *Value, er
 
 	if isTruthy {
 		return i.execute(statement.Then)
-	} else {
+	}
+
+	if statement.Else != nil {
 		return i.execute(statement.Else)
 	}
+
+	return
 }
 
 func (i *Interpreter) VisitVarStatement(statement *VarStatement) (value *Value, err error) {
@@ -115,11 +127,37 @@ func (i *Interpreter) VisitWhileStatement(statement *WhileStatement) (value *Val
 
 		_, innerErr = i.execute(statement.Body)
 		if innerErr != nil {
+			if _, ok := innerErr.(*BreakError); ok {
+				break
+			}
+
+			if _, ok := innerErr.(*ContinueError); ok {
+				continue
+			}
+
 			err = innerErr
 			return
 		}
 	}
 
+	return
+}
+
+func (i *Interpreter) VisitBreakStatement(statement *BreakStatement) (value *Value, err error) {
+	err = &BreakError{
+		RuntimeError: RuntimeError{
+			Message: "Break only supported in loops.",
+		},
+	}
+	return
+}
+
+func (i *Interpreter) VisitContinueStatement(statement *ContinueStatement) (value *Value, err error) {
+	err = &ContinueError{
+		RuntimeError: RuntimeError{
+			Message: "Continue only supported in loops.",
+		},
+	}
 	return
 }
 

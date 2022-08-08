@@ -66,11 +66,14 @@ program                 -> declaration* EOF ;
 declaration             -> variable_declaration
                         | statement ;
 variable_declaration    -> "var" IDENTIFIER ( "=" expression )? ";" ;
+
 statement               -> expression_statement
                         | for_statement
                         | if_statement
                         | print_statement
                         | while_statement
+                        | break_statement
+                        | continue_statement
                         | block ;
 expression_statement    -> expression ";" ;
 for_statement           -> "for" "(" ( variable_declaration | expression_statement | ";" )
@@ -80,7 +83,10 @@ if_statement            -> "if" "(" expression ")" statement
                             ( "else" statement )? ;
 print_statement         -> "print" expression ";" ;
 while_statement         -> "while" "(" expression ")" statement ;
+break_statement         -> "break" ";" ;
+continue_statement      -> "continue" ";" ;
 block                   -> "{" declaration* "}" ;
+
 expression              -> comma ;
 comma                   -> assignment ( "," assignment )* ;
 assignment              -> IDENTIFIER "=" assignment
@@ -94,13 +100,14 @@ term                    -> factor ( ( "-" | "+" ) factor )* ;
 factor                  -> unary ( ( "/" | "*" ) unary )* ;
 unary                   -> ( "!" | "-" ) unary
                         | primary ;
+
 primary                 -> NUMBER | STRING
                         | "true" | "false" | "nil"
                         | "(" expression ")"
                         | IDENTIFIER ;
 ```
 
-### Precedence
+### Operator Precedence
 
 | Name        | Operators | Associates |
 | ----------- | --------- |----------- |

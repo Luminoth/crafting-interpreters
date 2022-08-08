@@ -73,6 +73,10 @@ STATEMENTS = [
         'condition': 'Expression',
         'body': 'Statement',
     }, 'For statement desugars to a While statement'),
+    ASTDef('Break', {
+    }),
+    ASTDef('Continue', {
+    }),
 ]
 
 

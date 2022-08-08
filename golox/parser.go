@@ -101,6 +101,14 @@ func (p *Parser) statement() (statement Statement, err error) {
 		return p.whileStatement()
 	}
 
+	if p.match(Break) {
+		return p.breakStatement()
+	}
+
+	if p.match(Continue) {
+		return p.continueStatement()
+	}
+
 	if p.match(LeftBrace) {
 		statements, innerErr := p.block()
 		if innerErr != nil {
@@ -285,6 +293,28 @@ func (p *Parser) whileStatement() (statement Statement, err error) {
 		Condition: condition,
 		Body:      body,
 	}
+	return
+}
+
+func (p *Parser) breakStatement() (statement Statement, err error) {
+	_, err = p.consume(Semicolon, "Expect ';' after break.")
+	//_, err = p.consumeSafe(Semicolon)
+	if err != nil {
+		return
+	}
+
+	statement = &BreakStatement{}
+	return
+}
+
+func (p *Parser) continueStatement() (statement Statement, err error) {
+	_, err = p.consume(Semicolon, "Expect ';' after continue.")
+	//_, err = p.consumeSafe(Semicolon)
+	if err != nil {
+		return
+	}
+
+	statement = &ContinueStatement{}
 	return
 }
 

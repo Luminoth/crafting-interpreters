@@ -13,7 +13,11 @@ func report(line uint, where string, message string) {
 
 func runtimeError(err error) {
 	if runtimeError, ok := err.(*RuntimeError); ok {
-		fmt.Printf("%s\n[line %d]\n", runtimeError.Error(), runtimeError.Token.Line)
+		if runtimeError.Token != nil {
+			fmt.Printf("%s\n[line %d]\n", runtimeError.Error(), runtimeError.Token.Line)
+		} else {
+			fmt.Printf("%s\n", runtimeError.Error())
+		}
 	} else {
 		fmt.Printf("%s\n", err.Error())
 

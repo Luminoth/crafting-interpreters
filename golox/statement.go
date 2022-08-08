@@ -58,6 +58,20 @@ func (e *WhileStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitWhileStatement(e)
 }
 
+type BreakStatement struct {
+}
+
+func (e *BreakStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitBreakStatement(e)
+}
+
+type ContinueStatement struct {
+}
+
+func (e *ContinueStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitContinueStatement(e)
+}
+
 type StatementVisitor interface {
 	VisitExpressionStatement(statement *ExpressionStatement) (*Value, error)
 	VisitPrintStatement(statement *PrintStatement) (*Value, error)
@@ -65,4 +79,6 @@ type StatementVisitor interface {
 	VisitBlockStatement(statement *BlockStatement) (*Value, error)
 	VisitIfStatement(statement *IfStatement) (*Value, error)
 	VisitWhileStatement(statement *WhileStatement) (*Value, error)
+	VisitBreakStatement(statement *BreakStatement) (*Value, error)
+	VisitContinueStatement(statement *ContinueStatement) (*Value, error)
 }
