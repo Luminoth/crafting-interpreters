@@ -59,6 +59,16 @@
 
 * clock()
 
+### Deviations
+
+* Multi-line comments
+* Comma expressions
+* Ternary operator
+* Extended string concatenation
+* Divide by zero runtime error
+* Prompt prints expression results
+* break and continue
+
 ### Grammar
 
 ```
