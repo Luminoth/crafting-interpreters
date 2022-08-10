@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+var printIsNative = false
+
 func main() {
 	flag.Parse()
 

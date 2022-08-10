@@ -46,6 +46,10 @@ func NewInterpreter() Interpreter {
 	// define native functions
 	i.Globals.Define("clock", NewFunctionValue("clock", 0, &ClockFunction{}))
 
+	if printIsNative {
+		i.Globals.Define("print", NewFunctionValue("print", 1, &PrintFunction{}))
+	}
+
 	i.Environment = &i.Globals
 	return i
 }
@@ -80,6 +84,9 @@ func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (value *Val
 	}
 
 	fmt.Println(v)
+
+	// no return value here
+	// because it looks weird to print things twice
 	return
 }
 

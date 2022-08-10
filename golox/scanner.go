@@ -22,9 +22,10 @@ var keywords = map[string]TokenType{
 	"break":    Break,
 	"continue": Continue,
 	"nil":      Nil,
-	"print":    Print,
 	"return":   Return,
 	"var":      Var,
+
+	"print": Print,
 }
 
 type Scanner struct {
@@ -298,7 +299,7 @@ func (s *Scanner) identifier() {
 
 	text := s.lexeme()
 	tokenType, ok := keywords[text]
-	if !ok {
+	if !ok || (text == "print" && printIsNative) {
 		tokenType = Identifier
 	}
 	s.addToken(tokenType)
