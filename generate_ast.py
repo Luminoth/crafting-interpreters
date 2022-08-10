@@ -59,6 +59,11 @@ STATEMENTS = [
     ASTDef('Expression', {
         'expression': 'Expression',
     }),
+    ASTDef('Function', {
+        'name': 'Token',
+        'params': 'List[Token]',
+        'body': 'List[Statement]',
+    }),
     ASTDef('Print', {
         'expression': 'Expression',
     }),
@@ -215,6 +220,8 @@ type {type}VisitorConstraint interface {{
                     field_type = '[]Expression'
                 case 'List[Statement]':
                     field_type = '[]Statement'
+                case 'List[Token]':
+                    field_type = '[]*Token'
             f.write(f'{field_name.capitalize()} {field_type}\n')
         f.write('}\n')
 

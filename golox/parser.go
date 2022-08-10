@@ -2,11 +2,28 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 const (
 	MaxCallArguments = 255
 )
+
+type FunctionKind int
+
+const (
+	FunctionKindFunction FunctionKind = 0
+)
+
+func (k FunctionKind) String() string {
+	if k == FunctionKindFunction {
+		return "function"
+	}
+
+	fmt.Println("Unsupported function kind")
+	os.Exit(1)
+	return ""
+}
 
 type ParserError struct {
 	Message string `json:"message"`
@@ -49,6 +66,8 @@ func (p *Parser) declaration() (statement Statement) {
 
 	if p.match(Var) {
 		statement, err = p.variableDeclaration()
+	} else if p.match(Fun) {
+		statement, err = p.function(FunctionKindFunction)
 	} else {
 		statement, err = p.statement()
 	}
@@ -84,6 +103,61 @@ func (p *Parser) variableDeclaration() (statement Statement, err error) {
 	statement = &VarStatement{
 		Name:        name,
 		Initializer: initializer,
+	}
+	return
+}
+
+func (p *Parser) function(kind FunctionKind) (statement Statement, err error) {
+	name, err := p.consume(Identifier, fmt.Sprintf("Expect %s name.", kind))
+	if err != nil {
+		return
+	}
+
+	_, err = p.consume(LeftParen, fmt.Sprintf("Expect '(' after %s name.", kind))
+	if err != nil {
+		return
+	}
+
+	params := []*Token{}
+	if !p.check(RightParen) {
+		for {
+			if len(params) >= MaxCallArguments {
+				p.error(p.peek(), "Can't have more than 255 parameters.")
+				// don't throw the error, just report it
+			}
+
+			param, innerErr := p.consume(Identifier, "Expect parameter name.")
+			if innerErr != nil {
+				err = innerErr
+				return
+			}
+			params = append(params, param)
+
+			if !p.match(Comma) {
+				break
+			}
+		}
+	}
+
+	_, err = p.consume(RightParen, "Expect ')' after parameters.")
+	if err != nil {
+		return
+	}
+
+	_, err = p.consume(LeftBrace, fmt.Sprintf("Expect '{' before %s body.", kind))
+	if err != nil {
+		return
+	}
+
+	body, err := p.block()
+	if err != nil {
+		return
+	}
+
+	statement = &FunctionStatement{
+		Name:   name,
+		Params: params,
+		Body:   body,
 	}
 	return
 }
@@ -366,7 +440,8 @@ func (p *Parser) expressionStatement() (statement Statement, err error) {
 }
 
 func (p *Parser) expression() (Expression, error) {
-	return p.comma()
+	//return p.comma()
+	return p.assignment()
 }
 
 func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes ...TokenType) (expr Expression, err error) {

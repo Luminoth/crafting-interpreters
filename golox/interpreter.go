@@ -44,10 +44,10 @@ func NewInterpreter() Interpreter {
 	}
 
 	// define native functions
-	i.Globals.Define("clock", NewFunctionValue("clock", 0, &ClockFunction{}))
+	i.Globals.Define("clock", NewCallableValue("clock", 0, &ClockFunction{}))
 
 	if printIsNative {
-		i.Globals.Define("print", NewFunctionValue("print", 1, &PrintFunction{}))
+		i.Globals.Define("print", NewCallableValue("print", 1, &PrintFunction{}))
 	}
 
 	i.Environment = &i.Globals
@@ -74,6 +74,12 @@ func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (
 	}
 
 	value = &v
+	return
+}
+
+func (i *Interpreter) VisitFunctionStatement(statement *FunctionStatement) (value *Value, err error) {
+	function := NewLoxFunction(statement)
+	i.Environment.Define(function.Name(), NewCallableValue(function.Name(), function.Arity(), function))
 	return
 }
 
@@ -423,15 +429,26 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 	}
 
 	argumentCount := len(arguments)
-	if argumentCount != callee.FunctionValue.Arity {
+	if argumentCount != callee.CallableValue.Arity {
 		err = &RuntimeError{
-			Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callee.FunctionValue.Name, callee.FunctionValue.Arity, argumentCount),
+			Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callee.CallableValue.Name, callee.CallableValue.Arity, argumentCount),
 			Token:   expression.Paren,
 		}
 		return
 	}
 
-	return callee.FunctionValue.Callable.Call(i, arguments)
+	v, err := callee.CallableValue.Callable.Call(i, arguments)
+	if err != nil {
+		return
+	}
+
+	if v == nil {
+		// TODO: should this be a "void" value?
+		value = Value{}
+	} else {
+		value = *v
+	}
+	return
 }
 
 func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {

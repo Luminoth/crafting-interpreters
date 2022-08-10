@@ -63,6 +63,7 @@
 
 * Multi-line comments
 * Comma expressions
+  * Removed for now as it's interfering with function calls
 * Ternary operator
 * Extended string concatenation
 * Divide by zero runtime error
@@ -73,8 +74,12 @@
 
 ```
 program                 -> declaration* EOF ;
-declaration             -> variable_declaration
+declaration             -> function_declaration
+                        | variable_declaration
                         | statement ;
+function_declaration    -> "fun" function ;
+function                -> IDENTIFIER ( parameters? ) block ";"
+parameters              -> IDENTIFIER ( "," IDENTIFIER )* ;
 variable_declaration    -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement               -> expression_statement
                         | for_statement
@@ -95,8 +100,9 @@ while_statement         -> "while" "(" expression ")" statement ;
 break_statement         -> "break" ";" ;
 continue_statement      -> "continue" ";" ;
 block                   -> "{" declaration* "}" ;
-expression              -> comma ;
-comma                   -> assignment ( "," assignment )* ;
+/*expression              -> comma ;
+comma                   -> assignment ( "," assignment )* ;*/
+expression              -> assignment
 assignment              -> IDENTIFIER "=" assignment
                         | ternary ;
 ternary                 -> logical_or ( "?" expression ":" ternary )? ;

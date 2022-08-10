@@ -16,13 +16,13 @@ const (
 	ValueTypeFunction ValueType = 5
 )
 
-type FunctionType struct {
+type CallableType struct {
 	Name     string   `json:"name"`
 	Arity    int      `json:"arity"`
 	Callable Callable `json:"callable"`
 }
 
-func (t FunctionType) String() string {
+func (t CallableType) String() string {
 	return fmt.Sprintf("%s(%d)", t.Name, t.Arity)
 }
 
@@ -34,7 +34,7 @@ type Value struct {
 	StringValue string      `json:"string"`
 	BoolValue   bool        `json:"bool"`
 
-	FunctionValue FunctionType `json:"function"`
+	CallableValue CallableType `json:"callable"`
 }
 
 func (v Value) String() string {
@@ -59,7 +59,7 @@ func (v Value) String() string {
 	}
 
 	if v.Type == ValueTypeFunction {
-		return v.FunctionValue.String()
+		return v.CallableValue.String()
 	}
 
 	fmt.Printf("Unsupported value type %v\n", v.Type)
@@ -118,10 +118,10 @@ func NewBoolValue(value bool) Value {
 	}
 }
 
-func NewFunctionValue(name string, arity int, callable Callable) Value {
+func NewCallableValue(name string, arity int, callable Callable) Value {
 	return Value{
 		Type: ValueTypeFunction,
-		FunctionValue: FunctionType{
+		CallableValue: CallableType{
 			Name:     name,
 			Arity:    arity,
 			Callable: callable,
