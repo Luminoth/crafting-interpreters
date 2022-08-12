@@ -63,7 +63,6 @@
 
 * Multi-line comments
 * Comma expressions
-  * Removed for now as it's interfering with function calls
 * Ternary operator
 * Extended string concatenation
 * Divide by zero runtime error
