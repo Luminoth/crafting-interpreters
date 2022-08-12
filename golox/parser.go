@@ -439,9 +439,29 @@ func (p *Parser) expressionStatement() (statement Statement, err error) {
 	return
 }
 
-func (p *Parser) expression() (Expression, error) {
-	//return p.comma()
-	return p.assignment()
+func (p *Parser) expression() (expr Expression, err error) {
+	expr, err = p.assignment()
+	if err != nil {
+		return
+	}
+
+	if p.match(Comma) {
+		operator := p.previous()
+
+		right, innerErr := p.expression()
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		expr = &BinaryExpression{
+			Left:     expr,
+			Operator: operator,
+			Right:    right,
+		}
+	}
+
+	return
 }
 
 func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes ...TokenType) (expr Expression, err error) {
@@ -470,10 +490,6 @@ func (p *Parser) binaryExpression(operand func() (Expression, error), tokenTypes
 		}
 	}
 	return
-}
-
-func (p *Parser) comma() (Expression, error) {
-	return p.binaryExpression(p.assignment, Comma)
 }
 
 func (p *Parser) assignment() (expr Expression, err error) {
@@ -659,7 +675,7 @@ func (p *Parser) finishCall(callee Expression) (expr Expression, err error) {
 				// don't throw the error, just report it
 			}
 
-			argument, innerErr := p.expression()
+			argument, innerErr := p.assignment()
 			if innerErr != nil {
 				err = innerErr
 				return

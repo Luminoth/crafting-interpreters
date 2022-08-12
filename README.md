@@ -100,9 +100,7 @@ while_statement         -> "while" "(" expression ")" statement ;
 break_statement         -> "break" ";" ;
 continue_statement      -> "continue" ";" ;
 block                   -> "{" declaration* "}" ;
-/*expression              -> comma ;
-comma                   -> assignment ( "," assignment )* ;*/
-expression              -> assignment
+expression              -> assignment ( "," expression )* ;
 assignment              -> IDENTIFIER "=" assignment
                         | ternary ;
 ternary                 -> logical_or ( "?" expression ":" ternary )? ;
@@ -115,7 +113,7 @@ factor                  -> unary ( ( "/" | "*" ) unary )* ;
 unary                   -> ( "!" | "-" ) unary
                         | call ;
 call                    -> primary ( "(" arguments? ")" )* ;
-arguments               -> expression ( "," expression )* ;
+arguments               -> assignment ( "," assignment )* ;
 primary                 -> NUMBER | STRING
                         | "true" | "false" | "nil"
                         | "(" expression ")"
