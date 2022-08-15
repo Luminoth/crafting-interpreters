@@ -21,3 +21,14 @@ func (s *Stack[T]) Pop() (T, bool) {
 	return v, true
 
 }
+
+func (s *Stack[T]) Peek() (T, bool) {
+	if s.IsEmpty() {
+		return *new(T), false
+	}
+
+	idx := len(*s) - 1
+	v := (*s)[idx]
+	return v, true
+
+}
