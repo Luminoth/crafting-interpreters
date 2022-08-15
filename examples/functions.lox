@@ -46,3 +46,10 @@ fun makeCounter() {
 var counter = makeCounter();
 counter();
 counter();
+
+fun scope(a) {
+    var a = "local";
+    print a;
+}
+
+scope("outer");
