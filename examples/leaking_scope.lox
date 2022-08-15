@@ -1,0 +1,16 @@
+// prints
+//     global
+//     block
+// when using the leaking closure scope from chapter 10
+// (because we're using a pointer to the captured environment)
+
+var a = "global";
+{
+    fun showA() {
+        print a;
+    }
+
+    showA();
+    var a = "block";
+    showA();
+}
