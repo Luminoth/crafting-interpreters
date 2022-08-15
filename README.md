@@ -84,6 +84,7 @@ statement               -> expression_statement
                         | for_statement
                         | if_statement
                         | print_statement
+                        | return_statement
                         | while_statement
                         | break_statement
                         | continue_statement
@@ -95,6 +96,7 @@ for_statement           -> "for" "(" ( variable_declaration | expression_stateme
 if_statement            -> "if" "(" expression ")" statement
                             ( "else" statement )? ;
 print_statement         -> "print" expression ";" ;
+return_statement        -> "return" expression? ";" ;
 while_statement         -> "while" "(" expression ")" statement ;
 break_statement         -> "break" ";" ;
 continue_statement      -> "continue" ";" ;

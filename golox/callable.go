@@ -31,14 +31,21 @@ func (f *LoxFunction) String() string {
 	return fmt.Sprintf("<fn %s>", f.Name())
 }
 
-func (f *LoxFunction) Call(interpreter *Interpreter, arguments []Value) (*Value, error) {
+func (f *LoxFunction) Call(interpreter *Interpreter, arguments []Value) (value *Value, err error) {
 	// TODO: why globals and not the current environment?
 	environment := NewEnvironmentScope(&interpreter.Globals)
 	for idx, param := range f.declaration.Params {
 		environment.Define(param.Lexeme, arguments[idx])
 	}
 
-	return interpreter.executeBlock(f.declaration.Body, environment)
+	value, err = interpreter.executeBlock(f.declaration.Body, environment)
+	if err != nil {
+		if returnErr, ok := err.(*ReturnError); ok {
+			value = returnErr.Value
+			err = nil
+		}
+	}
+	return
 }
 
 /* Native functions */

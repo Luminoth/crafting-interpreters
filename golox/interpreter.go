@@ -14,6 +14,16 @@ func (e *RuntimeError) Error() string {
 	return e.Message
 }
 
+type ReturnError struct {
+	*RuntimeError
+
+	Value *Value `json:"value,omitempty"`
+}
+
+func (e *ReturnError) Unwrap() error {
+	return e.RuntimeError
+}
+
 type BreakError struct {
 	*RuntimeError
 }
@@ -93,6 +103,27 @@ func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (value *Val
 
 	// no return value here
 	// because it looks weird to print things twice
+	return
+}
+
+func (i *Interpreter) VisitReturnStatement(statement *ReturnStatement) (value *Value, err error) {
+	var v Value
+	if statement.Expression != nil {
+		v, err = i.evaluate(statement.Expression)
+		if err != nil {
+			return
+		}
+
+		value = &v
+	}
+
+	err = &ReturnError{
+		RuntimeError: &RuntimeError{
+			Message: "Return only supported in functions.",
+			Token:   statement.Keyword,
+		},
+		Value: value,
+	}
 	return
 }
 

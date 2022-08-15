@@ -31,6 +31,15 @@ func (e *PrintStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitPrintStatement(e)
 }
 
+type ReturnStatement struct {
+	Keyword    *Token
+	Expression Expression
+}
+
+func (e *ReturnStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitReturnStatement(e)
+}
+
 type VarStatement struct {
 	Name        *Token
 	Initializer Expression
@@ -88,6 +97,7 @@ type StatementVisitor interface {
 	VisitExpressionStatement(statement *ExpressionStatement) (*Value, error)
 	VisitFunctionStatement(statement *FunctionStatement) (*Value, error)
 	VisitPrintStatement(statement *PrintStatement) (*Value, error)
+	VisitReturnStatement(statement *ReturnStatement) (*Value, error)
 	VisitVarStatement(statement *VarStatement) (*Value, error)
 	VisitBlockStatement(statement *BlockStatement) (*Value, error)
 	VisitIfStatement(statement *IfStatement) (*Value, error)

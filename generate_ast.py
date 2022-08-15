@@ -67,6 +67,10 @@ STATEMENTS = [
     ASTDef('Print', {
         'expression': 'Expression',
     }),
+    ASTDef('Return', {
+        'keyword': 'Token',
+        'expression': 'Expression',
+    }),
     ASTDef('Var', {
         'name': 'Token',
         'initializer': 'Expression',
