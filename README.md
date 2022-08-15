@@ -69,6 +69,10 @@
 * Prompt prints expression results
 * break and continue
 
+### TODO:
+
+* Chapter 10: Anonymous functions (lambdas)
+
 ### Grammar
 
 ```
