@@ -11,11 +11,13 @@ type Callable interface {
 
 type LoxFunction struct {
 	declaration *FunctionStatement
+	closure     *Environment
 }
 
-func NewLoxFunction(declaration *FunctionStatement) *LoxFunction {
+func NewLoxFunction(declaration *FunctionStatement, closure *Environment) *LoxFunction {
 	return &LoxFunction{
 		declaration: declaration,
+		closure:     closure,
 	}
 }
 
@@ -32,8 +34,7 @@ func (f *LoxFunction) String() string {
 }
 
 func (f *LoxFunction) Call(interpreter *Interpreter, arguments []Value) (value *Value, err error) {
-	// TODO: why globals and not the current environment?
-	environment := NewEnvironmentScope(&interpreter.Globals)
+	environment := NewEnvironmentScope(f.closure)
 	for idx, param := range f.declaration.Params {
 		environment.Define(param.Lexeme, arguments[idx])
 	}

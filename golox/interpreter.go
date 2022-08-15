@@ -88,7 +88,7 @@ func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (
 }
 
 func (i *Interpreter) VisitFunctionStatement(statement *FunctionStatement) (value *Value, err error) {
-	function := NewLoxFunction(statement)
+	function := NewLoxFunction(statement, i.Environment)
 	i.Environment.Define(function.Name(), NewCallableValue(function.Name(), function.Arity(), function))
 	return
 }
