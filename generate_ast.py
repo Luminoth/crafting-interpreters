@@ -69,7 +69,7 @@ STATEMENTS = [
     }),
     ASTDef('Return', {
         'keyword': 'Token',
-        'expression': 'Expression',
+        'value': 'Expression',
     }),
     ASTDef('Var', {
         'name': 'Token',

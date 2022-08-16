@@ -65,6 +65,8 @@ func NewInterpreter() Interpreter {
 }
 
 func (i *Interpreter) Interpret(statements []Statement) (value *Value) {
+	fmt.Println("Running interpreter ...")
+
 	for _, statement := range statements {
 		v, err := i.execute(statement)
 		if err != nil {
@@ -112,8 +114,8 @@ func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (value *Val
 
 func (i *Interpreter) VisitReturnStatement(statement *ReturnStatement) (value *Value, err error) {
 	var v Value
-	if statement.Expression != nil {
-		v, err = i.evaluate(statement.Expression)
+	if statement.Value != nil {
+		v, err = i.evaluate(statement.Value)
 		if err != nil {
 			return
 		}

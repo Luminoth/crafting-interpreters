@@ -32,8 +32,8 @@ func (e *PrintStatement) Accept(visitor StatementVisitor) (*Value, error) {
 }
 
 type ReturnStatement struct {
-	Keyword    *Token
-	Expression Expression
+	Keyword *Token
+	Value   Expression
 }
 
 func (e *ReturnStatement) Accept(visitor StatementVisitor) (*Value, error) {

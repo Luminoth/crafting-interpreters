@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Resolver struct {
 	Interpreter *Interpreter `json:"interpreter"`
 
@@ -11,6 +13,14 @@ func NewResolver(interpreter *Interpreter) Resolver {
 	return Resolver{
 		Interpreter: interpreter,
 	}
+}
+
+func (r *Resolver) Resolve(statements []Statement) {
+	fmt.Println("Running resolver ...")
+
+	r.resolveStatements(statements)
+
+	// TODO: handle errors
 }
 
 func (r *Resolver) beginScope() {
@@ -51,36 +61,112 @@ func (r *Resolver) resolveLocal(expression Expression, name *Token) {
 	// assume global if we didn't find it
 }
 
-func (r *Resolver) VisitBlockStatement(statement *BlockStatement) (*Value, error) {
-	r.beginScope()
-	err := r.resolveStatements(statement.Statements)
+func (r *Resolver) VisitExpressionStatement(statement *ExpressionStatement) (value *Value, err error) {
+	err = r.resolveExpression(statement.Expression)
 	if err != nil {
-		return nil, err
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitFunctionStatement(statement *FunctionStatement) (value *Value, err error) {
+	r.declare(statement.Name)
+	r.define(statement.Name)
+
+	err = r.resolveFunction(statement)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitPrintStatement(statement *PrintStatement) (value *Value, err error) {
+	err = r.resolveExpression(statement.Expression)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitReturnStatement(statement *ReturnStatement) (value *Value, err error) {
+	if statement.Value != nil {
+		err = r.resolveExpression(statement.Value)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (r *Resolver) VisitBlockStatement(statement *BlockStatement) (value *Value, err error) {
+	r.beginScope()
+	err = r.resolveStatements(statement.Statements)
+	if err != nil {
+		return
 	}
 	r.endScope()
 
-	return nil, nil
+	return
 }
 
-func (r *Resolver) VisitVarStatement(statement *VarStatement) (*Value, error) {
+func (r *Resolver) VisitIfStatement(statement *IfStatement) (value *Value, err error) {
+	err = r.resolveExpression(statement.Condition)
+	if err != nil {
+		return
+	}
+
+	err = r.resolveStatement(statement.Then)
+	if err != nil {
+		return
+	}
+
+	if statement.Else != nil {
+		err = r.resolveStatement(statement.Else)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (r *Resolver) VisitVarStatement(statement *VarStatement) (value *Value, err error) {
 	r.declare(statement.Name)
 	if statement.Initializer != nil {
-		err := r.resolveExpression(statement.Initializer)
+		err = r.resolveExpression(statement.Initializer)
 		if err != nil {
-			return nil, err
+			return
 		}
 	}
 	r.define(statement.Name)
 
-	return nil, nil
+	return
 }
 
-func (r *Resolver) VisitFunctionStatement(statement *FunctionStatement) (*Value, error) {
-	r.declare(statement.Name)
-	r.define(statement.Name)
+func (r *Resolver) VisitWhileStatement(statement *WhileStatement) (value *Value, err error) {
+	err = r.resolveExpression(statement.Condition)
+	if err != nil {
+		return
+	}
 
-	err := r.resolveFunction(statement)
-	return nil, err
+	err = r.resolveStatement(statement.Body)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitBreakStatement(statement *BreakStatement) (value *Value, err error) {
+	return
+}
+
+func (r *Resolver) VisitContinueStatement(statement *ContinueStatement) (value *Value, err error) {
+	return
 }
 
 func (r *Resolver) resolveStatements(statements []Statement) error {
@@ -94,9 +180,8 @@ func (r *Resolver) resolveStatements(statements []Statement) error {
 }
 
 func (r *Resolver) resolveStatement(statement Statement) error {
-	/*_, err := statement.Accept(r)
-	return err*/
-	return nil
+	_, err := statement.Accept(r)
+	return err
 }
 
 func (r *Resolver) resolveFunction(function *FunctionStatement) (err error) {
@@ -116,6 +201,101 @@ func (r *Resolver) resolveFunction(function *FunctionStatement) (err error) {
 	return
 }
 
+func (r *Resolver) VisitAssignExpression(expression *AssignExpression) (value Value, err error) {
+	err = r.resolveExpression(expression)
+	if err != nil {
+		return
+	}
+
+	r.resolveLocal(expression, expression.Name)
+	return
+}
+
+func (r *Resolver) VisitBinaryExpression(expression *BinaryExpression) (value Value, err error) {
+	err = r.resolveExpression(expression.Left)
+	if err != nil {
+		return
+	}
+
+	err = r.resolveExpression(expression.Right)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitTernaryExpression(expression *TernaryExpression) (value Value, err error) {
+	err = r.resolveExpression(expression.Condition)
+	if err != nil {
+		return
+	}
+
+	err = r.resolveExpression(expression.True)
+	if err != nil {
+		return
+	}
+
+	err = r.resolveExpression(expression.False)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitLogicalExpression(expression *LogicalExpression) (value Value, err error) {
+	err = r.resolveExpression(expression.Left)
+	if err != nil {
+		return
+	}
+
+	err = r.resolveExpression(expression.Right)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitUnaryExpression(expression *UnaryExpression) (value Value, err error) {
+	err = r.resolveExpression(expression.Right)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitCallExpression(expression *CallExpression) (value Value, err error) {
+	err = r.resolveExpression(expression.Callee)
+	if err != nil {
+		return
+	}
+
+	for _, argument := range expression.Arguments {
+		err = r.resolveExpression(argument)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (r *Resolver) VisitGroupingExpression(expression *GroupingExpression) (value Value, err error) {
+	err = r.resolveExpression(expression.Expression)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *Resolver) VisitLiteralExpression(expression *LiteralExpression) (value Value, err error) {
+	return
+}
+
 func (r *Resolver) VisitVariableExpression(expression *VariableExpression) (value Value, err error) {
 	if !r.Scopes.IsEmpty() {
 		// is the variable being accessed from its own initializer?
@@ -131,18 +311,7 @@ func (r *Resolver) VisitVariableExpression(expression *VariableExpression) (valu
 	return
 }
 
-func (r *Resolver) VisitAssignExpression(expression *AssignExpression) (value Value, err error) {
-	err = r.resolveExpression(expression)
-	if err != nil {
-		return
-	}
-
-	r.resolveLocal(expression, expression.Name)
-	return
-}
-
 func (r *Resolver) resolveExpression(expression Expression) error {
-	/*_, err := expression.AcceptValue(r)
-	return err*/
-	return nil
+	_, err := expression.AcceptValue(r)
+	return err
 }

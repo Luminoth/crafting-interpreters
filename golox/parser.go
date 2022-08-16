@@ -48,6 +48,8 @@ func NewParser(tokens []*Token) Parser {
 }
 
 func (p *Parser) Parse() (statements []Statement) {
+	fmt.Println("Parsing ...")
+
 	for {
 		if p.isAtEnd() {
 			break
@@ -368,8 +370,8 @@ func (p *Parser) returnStatement() (statement Statement, err error) {
 	}
 
 	statement = &ReturnStatement{
-		Keyword:    keyword,
-		Expression: value,
+		Keyword: keyword,
+		Value:   value,
 	}
 	return
 }

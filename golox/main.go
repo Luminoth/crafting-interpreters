@@ -85,6 +85,9 @@ func run(interpreter *Interpreter, source string, printExpressions bool) {
 		return
 	}
 
+	/*resolver := NewResolver(interpreter)
+	resolver.Resolve(statements)*/
+
 	value := interpreter.Interpret(statements)
 	if printExpressions && value != nil {
 		fmt.Println(value.String())

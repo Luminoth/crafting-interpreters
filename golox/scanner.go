@@ -41,6 +41,8 @@ type Scanner struct {
 func (s *Scanner) ScanTokens() {
 	s.reset()
 
+	fmt.Println("Scanning ...")
+
 	for {
 		s.Start = s.Current
 		if !s.scanToken() {
@@ -55,6 +57,8 @@ func (s *Scanner) ScanTokens() {
 }
 
 func (s *Scanner) reset() {
+	fmt.Println("Resetting scanner")
+
 	s.Tokens = []*Token{}
 
 	s.Start = 0
