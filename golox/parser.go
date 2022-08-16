@@ -857,11 +857,7 @@ func (p *Parser) isAtEnd() bool {
 }
 
 func (p *Parser) error(token *Token, message string) error {
-	if token.Type == EOF {
-		report(token.Line, " at end", message)
-	} else {
-		report(token.Line, fmt.Sprintf(" at '%s'", token.Lexeme), message)
-	}
+	reportError(token, message)
 
 	return &ParserError{
 		Message: message,

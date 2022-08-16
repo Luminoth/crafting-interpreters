@@ -14,6 +14,14 @@ func report(line uint, where string, message string) {
 	hadError = true
 }
 
+func reportError(token *Token, message string) {
+	if token.Type == EOF {
+		report(token.Line, " at end", message)
+	} else {
+		report(token.Line, fmt.Sprintf(" at '%s'", token.Lexeme), message)
+	}
+}
+
 func runtimeError(err error) {
 	var runtimeError *RuntimeError
 	if errors.As(err, &runtimeError) {
@@ -24,7 +32,6 @@ func runtimeError(err error) {
 		}
 	} else {
 		fmt.Printf("Unexpected runtime error: %s\n", err.Error())
-
 	}
 
 	hadRuntimeError = true

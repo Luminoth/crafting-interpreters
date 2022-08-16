@@ -77,6 +77,10 @@ func (i *Interpreter) Interpret(statements []Statement) (value *Value) {
 	return
 }
 
+func (i *Interpreter) Resolve(expression Expression, depth int) {
+	// TODO:
+}
+
 func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (value *Value, err error) {
 	v, err := i.evaluate(statement.Expression)
 	if err != nil {
