@@ -168,7 +168,8 @@ func (s *Scanner) scanToken() bool {
 		} else if IsAlpha(ch) {
 			s.identifier()
 		} else {
-			s.error(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
+			//s.error(s.Line, fmt.Sprintf("Unexpected character '%c'", ch))
+			s.error(s.Line, "Unexpected character.")
 		}
 	}
 
@@ -264,7 +265,8 @@ func (s *Scanner) stringLiteral() {
 	}
 
 	if s.isAtEnd() {
-		s.error(s.Line, fmt.Sprintf("Unterminated string literal '%s'", s.lexeme()))
+		//s.error(s.Line, fmt.Sprintf("Unterminated string literal '%s'", s.lexeme()))
+		s.error(s.Line, "Unterminated string.")
 		return
 	}
 

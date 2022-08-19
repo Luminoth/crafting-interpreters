@@ -128,7 +128,7 @@ func (v LiteralValue) String() string {
 		return fmt.Sprintf("%t", v.BoolValue)
 	}
 
-	fmt.Printf("Unsupported literal type %v\n", v.Type)
+	fmt.Fprintf(os.Stderr, "Unsupported literal type %v\n", v.Type)
 	os.Exit(1)
 	return ""
 }

@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 )
 
 var hadError bool
 var hadRuntimeError bool
 
 func report(line uint, where string, message string) {
-	fmt.Printf("[line %d] Error%s: %s\n", line, where, message)
+	fmt.Fprintf(os.Stderr, "[line %d] Error%s: %s\n", line, where, message)
 
 	hadError = true
 }
@@ -26,12 +27,12 @@ func runtimeError(err error) {
 	var runtimeError *RuntimeError
 	if errors.As(err, &runtimeError) {
 		if runtimeError.Token != nil {
-			fmt.Printf("%s\n[line %d]\n", runtimeError.Error(), runtimeError.Token.Line)
+			fmt.Fprintf(os.Stderr, "%s\n[line %d]\n", runtimeError.Error(), runtimeError.Token.Line)
 		} else {
-			fmt.Printf("%s\n", runtimeError.Error())
+			fmt.Fprintf(os.Stderr, "%s\n", runtimeError.Error())
 		}
 	} else {
-		fmt.Printf("Unexpected runtime error: %s\n", err.Error())
+		fmt.Fprintf(os.Stderr, "Unexpected runtime error: %s\n", err.Error())
 	}
 
 	hadRuntimeError = true

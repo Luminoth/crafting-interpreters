@@ -426,7 +426,7 @@ func (i *Interpreter) VisitUnaryExpression(expression *UnaryExpression) (value V
 
 	switch expression.Operator.Type {
 	case Minus:
-		err = i.checkNumberOperands(expression.Operator, right)
+		err = i.checkNumberOperand(expression.Operator, right)
 		if err != nil {
 			return
 		}
@@ -473,7 +473,8 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 	argumentCount := len(arguments)
 	if argumentCount != callee.CallableValue.Arity {
 		err = &RuntimeError{
-			Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callee.CallableValue.Name, callee.CallableValue.Arity, argumentCount),
+			//Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callee.CallableValue.Name, callee.CallableValue.Arity, argumentCount),
+			Message: fmt.Sprintf("Expected %d arguments but got %d.", callee.CallableValue.Arity, argumentCount),
 			Token:   expression.Paren,
 		}
 		return
@@ -563,14 +564,24 @@ func (i *Interpreter) evaluate(expression Expression) (Value, error) {
 	return expression.AcceptValue(i)
 }
 
-func (i *Interpreter) checkNumberOperands(operator *Token, values ...Value) error {
-	for _, value := range values {
-		if value.Type != ValueTypeNumber {
-			return &RuntimeError{
-				Message: "Operand must be a number.",
-				Token:   operator,
-			}
-		}
+func (i *Interpreter) checkNumberOperand(operator *Token, value Value) error {
+	if value.Type == ValueTypeNumber {
+		return nil
 	}
-	return nil
+
+	return &RuntimeError{
+		Message: "Operand must be a number.",
+		Token:   operator,
+	}
+}
+
+func (i *Interpreter) checkNumberOperands(operator *Token, a Value, b Value) error {
+	if a.Type == ValueTypeNumber && b.Type == ValueTypeNumber {
+		return nil
+	}
+
+	return &RuntimeError{
+		Message: "Operands must be numbers.",
+		Token:   operator,
+	}
 }

@@ -62,7 +62,7 @@ func (v Value) String() string {
 		return v.CallableValue.String()
 	}
 
-	fmt.Printf("Unsupported value type %v\n", v.Type)
+	fmt.Fprintf(os.Stderr, "Unsupported value type %v\n", v.Type)
 	os.Exit(1)
 	return ""
 }
