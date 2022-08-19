@@ -11,6 +11,8 @@ import (
 var printIsNative = false
 
 func main() {
+	debug := flag.Bool("debug", false, "Enable debug output")
+
 	flag.Parse()
 
 	if len(flag.Args()) > 1 {
@@ -20,9 +22,9 @@ func main() {
 
 	var err error
 	if len(flag.Args()) == 1 {
-		err = runFile(flag.Args()[0])
+		err = runFile(flag.Args()[0], *debug)
 	} else {
-		err = runPrompt()
+		err = runPrompt(*debug)
 	}
 
 	if err != nil {
@@ -31,15 +33,15 @@ func main() {
 	}
 }
 
-func runFile(filename string) (err error) {
+func runFile(filename string, debug bool) (err error) {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return
 	}
 
-	interpreter := NewInterpreter()
+	interpreter := NewInterpreter(debug)
 
-	run(&interpreter, string(bytes), false)
+	run(&interpreter, string(bytes), false, debug)
 
 	if hadError {
 		os.Exit(65)
@@ -52,8 +54,8 @@ func runFile(filename string) (err error) {
 	return
 }
 
-func runPrompt() (err error) {
-	interpreter := NewInterpreter()
+func runPrompt(debug bool) (err error) {
+	interpreter := NewInterpreter(debug)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -64,7 +66,7 @@ func runPrompt() (err error) {
 		}
 
 		line := scanner.Text()
-		run(&interpreter, line, true)
+		run(&interpreter, line, true, debug)
 
 		hadError = false
 		hadRuntimeError = false
@@ -72,13 +74,13 @@ func runPrompt() (err error) {
 
 }
 
-func run(interpreter *Interpreter, source string, printExpressions bool) {
-	scanner := NewScanner(source)
+func run(interpreter *Interpreter, source string, printExpressions bool, debug bool) {
+	scanner := NewScanner(source, debug)
 	scanner.ScanTokens()
 
 	//fmt.Println(scanner.Tokens)
 
-	parser := NewParser(scanner.Tokens)
+	parser := NewParser(scanner.Tokens, debug)
 	statements := parser.Parse()
 
 	if hadError {

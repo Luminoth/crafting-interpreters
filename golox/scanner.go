@@ -36,12 +36,25 @@ type Scanner struct {
 	Start   uint `json:"start"`
 	Current uint `json:"current"`
 	Line    uint `json:"line"`
+
+	Debug bool `json:"debug"`
+}
+
+func NewScanner(source string, debug bool) Scanner {
+	return Scanner{
+		Tokens: []*Token{},
+		source: []rune(source),
+		Line:   1,
+		Debug:  debug,
+	}
 }
 
 func (s *Scanner) ScanTokens() {
 	s.reset()
 
-	fmt.Println("Scanning ...")
+	if s.Debug {
+		fmt.Println("Scanning ...")
+	}
 
 	for {
 		s.Start = s.Current
@@ -57,7 +70,9 @@ func (s *Scanner) ScanTokens() {
 }
 
 func (s *Scanner) reset() {
-	fmt.Println("Resetting scanner")
+	if s.Debug {
+		fmt.Println("Resetting scanner")
+	}
 
 	s.Tokens = []*Token{}
 
@@ -333,12 +348,4 @@ func (s *Scanner) isAtEnd() bool {
 
 func (s *Scanner) error(line uint, message string) {
 	report(line, "", message)
-}
-
-func NewScanner(source string) Scanner {
-	return Scanner{
-		Tokens: []*Token{},
-		source: []rune(source),
-		Line:   1,
-	}
 }

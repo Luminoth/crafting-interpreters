@@ -7,16 +7,21 @@ type Resolver struct {
 
 	// each scope is name => have we finished resolving this variable's initializer yet?
 	Scopes Stack[map[string]bool] `json:"scopes"`
+
+	Debug bool `json:"debug"`
 }
 
 func NewResolver(interpreter *Interpreter) Resolver {
 	return Resolver{
 		Interpreter: interpreter,
+		Debug:       interpreter.Debug,
 	}
 }
 
 func (r *Resolver) Resolve(statements []Statement) {
-	fmt.Println("Running resolver ...")
+	if r.Debug {
+		fmt.Println("Running resolver ...")
+	}
 
 	r.resolveStatements(statements)
 

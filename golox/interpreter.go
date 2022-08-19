@@ -46,11 +46,14 @@ type Interpreter struct {
 	// NOTE: an alternative to this is to pass the environment
 	// to each Visit() method, letting the stack handle block scope cleanup
 	Environment *Environment `json:"environment"`
+
+	Debug bool `json:"debug"`
 }
 
-func NewInterpreter() Interpreter {
+func NewInterpreter(debug bool) Interpreter {
 	i := Interpreter{
 		Globals: NewEnvironment(),
+		Debug:   debug,
 	}
 
 	// define native functions
@@ -65,7 +68,9 @@ func NewInterpreter() Interpreter {
 }
 
 func (i *Interpreter) Interpret(statements []Statement) (value *Value) {
-	fmt.Println("Running interpreter ...")
+	if i.Debug {
+		fmt.Println("Running interpreter ...")
+	}
 
 	for _, statement := range statements {
 		v, err := i.execute(statement)

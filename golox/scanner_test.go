@@ -5,7 +5,7 @@ import "testing"
 func scan(source string) Scanner {
 	hadError = false
 
-	scanner := NewScanner(source)
+	scanner := NewScanner(source, true)
 	scanner.ScanTokens()
 
 	return scanner

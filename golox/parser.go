@@ -39,16 +39,21 @@ type Parser struct {
 	Tokens []*Token `json:"tokens"`
 
 	Current uint `json:"current"`
+
+	Debug bool `json:"debug"`
 }
 
-func NewParser(tokens []*Token) Parser {
+func NewParser(tokens []*Token, debug bool) Parser {
 	return Parser{
 		Tokens: tokens,
+		Debug:  debug,
 	}
 }
 
 func (p *Parser) Parse() (statements []Statement) {
-	fmt.Println("Parsing ...")
+	if p.Debug {
+		fmt.Println("Parsing ...")
+	}
 
 	for {
 		if p.isAtEnd() {
