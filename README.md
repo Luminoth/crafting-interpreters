@@ -5,6 +5,14 @@
 * https://github.com/fsacer/FailLang
   * Interesting expansion on Lox
 
+## Lox Test Suite
+
+* Checkout https://github.com/munificent/craftinginterpreters
+* Run `make get` from inside `craftinginterpreters`
+  * This requires Flutter to be installed
+* Run the regression scripts from the root
+  * eg. `./test-golox.sh`
+
 ## Lox
 
 ### Features
