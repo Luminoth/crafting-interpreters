@@ -1,5 +1,8 @@
 #! /bin/sh
 
+echo "Running generator ..."
+./generate-ast.py generate
+
 echo "Building golox ..."
 cd golox/
 go build
