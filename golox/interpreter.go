@@ -584,6 +584,7 @@ func (i *Interpreter) checkNumberOperand(operator *Token, value Value) error {
 	}
 
 	return &RuntimeError{
+		//Message: fmt.Sprintf("Operand must be a number (%s).", value),
 		Message: "Operand must be a number.",
 		Token:   operator,
 	}
@@ -595,6 +596,7 @@ func (i *Interpreter) checkNumberOperands(operator *Token, a Value, b Value) err
 	}
 
 	return &RuntimeError{
+		//Message: fmt.Sprintf("Operands must be numbers (%s, %s).", a, b),
 		Message: "Operands must be numbers.",
 		Token:   operator,
 	}

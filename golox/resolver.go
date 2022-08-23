@@ -50,8 +50,11 @@ func (r *Resolver) endScope() {
 func (r *Resolver) declare(name *Token) {
 	// global scope not tracked
 	if r.Scopes.IsEmpty() {
+		//fmt.Printf("Declaring global variable '%s'\n", name)
 		return
 	}
+
+	//fmt.Printf("Declaring local variable '%s' at %d\n", name, r.Scopes.Size())
 
 	scope, _ := r.Scopes.Peek()
 	if _, ok := scope[name.Lexeme]; ok {
@@ -64,16 +67,19 @@ func (r *Resolver) declare(name *Token) {
 func (r *Resolver) define(name *Token) {
 	// global scope not tracked
 	if r.Scopes.IsEmpty() {
+		//fmt.Printf("Defining global variable '%s'\n", name)
 		return
 	}
+
+	//fmt.Printf("Defining local variable '%s' at %d\n", name, r.Scopes.Size())
 
 	scope, _ := r.Scopes.Peek()
 	scope[name.Lexeme] = true
 }
 
 func (r *Resolver) resolveLocal(expression Expression, name *Token) {
-	for idx, scope := range r.Scopes {
-		if _, ok := scope[name.Lexeme]; ok {
+	for idx := r.Scopes.Size() - 1; idx >= 0; idx-- {
+		if _, ok := r.Scopes[idx][name.Lexeme]; ok {
 			r.Interpreter.Resolve(expression, r.Scopes.Size()-1-idx)
 			return
 		}

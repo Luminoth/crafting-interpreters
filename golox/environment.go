@@ -44,6 +44,8 @@ func (e *Environment) Assign(name *Token, value Value) (err error) {
 }
 
 func (e *Environment) Get(name *Token) (value Value, err error) {
+	//fmt.Printf("Getting variable '%s'\n", name.Lexeme)
+
 	if val, ok := e.Values[name.Lexeme]; ok {
 		value = val
 		return
@@ -75,6 +77,7 @@ func (e *Environment) AssignAt(distance int, name *Token, value Value) {
 }
 
 func (e *Environment) GetAt(distance int, name string) (value Value, err error) {
+	//fmt.Printf("Getting variable '%s' at distance %d\n", name, distance)
 	value = e.ancestor(distance).Values[name]
 	return
 }
