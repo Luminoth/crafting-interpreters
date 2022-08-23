@@ -60,3 +60,21 @@ func (e *Environment) Get(name *Token) (value Value, err error) {
 	return
 
 }
+
+func (e *Environment) ancestor(distance int) *Environment {
+	environment := e
+	for i := 0; i < distance; i++ {
+		environment = environment.Enclosing
+	}
+	return environment
+}
+
+func (e *Environment) AssignAt(distance int, name *Token, value Value) {
+	//fmt.Printf("Assigning variable '%s' = %v at distance %d\n", name.Lexeme, value, distance)
+	e.ancestor(distance).Values[name.Lexeme] = value
+}
+
+func (e *Environment) GetAt(distance int, name string) (value Value, err error) {
+	value = e.ancestor(distance).Values[name]
+	return
+}

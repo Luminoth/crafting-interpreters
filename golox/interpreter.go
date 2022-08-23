@@ -41,6 +41,8 @@ func (e *ContinueError) Unwrap() error {
 }
 
 type Interpreter struct {
+	Locals map[Expression]int `json:"locals"`
+
 	Globals Environment `json:"globals"`
 
 	// NOTE: an alternative to this is to pass the environment
@@ -52,6 +54,7 @@ type Interpreter struct {
 
 func NewInterpreter(debug bool) Interpreter {
 	i := Interpreter{
+		Locals:  map[Expression]int{},
 		Globals: NewEnvironment(),
 		Debug:   debug,
 	}
@@ -85,7 +88,7 @@ func (i *Interpreter) Interpret(statements []Statement) (value *Value) {
 }
 
 func (i *Interpreter) Resolve(expression Expression, depth int) {
-	// TODO:
+	i.Locals[expression] = depth
 }
 
 func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (value *Value, err error) {
@@ -261,9 +264,13 @@ func (i *Interpreter) VisitAssignExpression(expression *AssignExpression) (value
 		return
 	}
 
-	err = i.Environment.Assign(expression.Name, value)
-	if err != nil {
-		return
+	if distance, ok := i.Locals[expression]; ok {
+		i.Environment.AssignAt(distance, expression.Name, value)
+	} else {
+		err = i.Globals.Assign(expression.Name, value)
+		if err != nil {
+			return
+		}
 	}
 
 	return
@@ -502,8 +509,15 @@ func (i *Interpreter) VisitLiteralExpression(expression *LiteralExpression) (Val
 	return NewValue(expression.Value)
 }
 
+func (i *Interpreter) lookUpVariable(name *Token, expression Expression) (Value, error) {
+	if distance, ok := i.Locals[expression]; ok {
+		return i.Environment.GetAt(distance, name.Lexeme)
+	}
+	return i.Globals.Get(name)
+}
+
 func (i *Interpreter) VisitVariableExpression(expression *VariableExpression) (Value, error) {
-	return i.Environment.Get(expression.Name)
+	return i.lookUpVariable(expression.Name, expression)
 }
 
 func (i *Interpreter) isEqual(left Value, right Value) (ok bool, err error) {

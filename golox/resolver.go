@@ -207,7 +207,7 @@ func (r *Resolver) resolveFunction(function *FunctionStatement) (err error) {
 }
 
 func (r *Resolver) VisitAssignExpression(expression *AssignExpression) (value Value, err error) {
-	err = r.resolveExpression(expression)
+	err = r.resolveExpression(expression.Value)
 	if err != nil {
 		return
 	}
