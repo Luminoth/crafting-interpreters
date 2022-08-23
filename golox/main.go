@@ -90,6 +90,10 @@ func run(interpreter *Interpreter, source string, printExpressions bool, debug b
 	resolver := NewResolver(interpreter)
 	resolver.Resolve(statements)
 
+	if hadError {
+		return
+	}
+
 	value := interpreter.Interpret(statements)
 	if printExpressions && value != nil {
 		fmt.Println(value.String())

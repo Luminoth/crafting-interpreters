@@ -2,19 +2,30 @@ package main
 
 import "fmt"
 
+type FunctionType int
+
+const (
+	FunctionTypeNone     FunctionType = 0
+	FunctionTypeFunction FunctionType = 1
+)
+
 type Resolver struct {
 	Interpreter *Interpreter `json:"interpreter"`
 
 	// each scope is name => have we finished resolving this variable's initializer yet?
 	Scopes Stack[map[string]bool] `json:"scopes"`
 
+	CurrentFunction FunctionType `json:"current_function"`
+
 	Debug bool `json:"debug"`
 }
 
 func NewResolver(interpreter *Interpreter) Resolver {
 	return Resolver{
-		Interpreter: interpreter,
-		Debug:       interpreter.Debug,
+		Interpreter:     interpreter,
+		Scopes:          Stack[map[string]bool]{},
+		CurrentFunction: FunctionTypeNone,
+		Debug:           interpreter.Debug,
 	}
 }
 
@@ -43,6 +54,10 @@ func (r *Resolver) declare(name *Token) {
 	}
 
 	scope, _ := r.Scopes.Peek()
+	if _, ok := scope[name.Lexeme]; ok {
+		reportError(name, "Already a variable with this name in this scope.")
+	}
+
 	scope[name.Lexeme] = false
 }
 
@@ -79,7 +94,7 @@ func (r *Resolver) VisitFunctionStatement(statement *FunctionStatement) (value *
 	r.declare(statement.Name)
 	r.define(statement.Name)
 
-	err = r.resolveFunction(statement)
+	err = r.resolveFunction(statement, FunctionTypeFunction)
 	if err != nil {
 		return
 	}
@@ -97,6 +112,10 @@ func (r *Resolver) VisitPrintStatement(statement *PrintStatement) (value *Value,
 }
 
 func (r *Resolver) VisitReturnStatement(statement *ReturnStatement) (value *Value, err error) {
+	if r.CurrentFunction == FunctionTypeNone {
+		reportError(statement.Keyword, "Can't return from top-level code.")
+	}
+
 	if statement.Value != nil {
 		err = r.resolveExpression(statement.Value)
 		if err != nil {
@@ -189,7 +208,10 @@ func (r *Resolver) resolveStatement(statement Statement) error {
 	return err
 }
 
-func (r *Resolver) resolveFunction(function *FunctionStatement) (err error) {
+func (r *Resolver) resolveFunction(function *FunctionStatement, functionType FunctionType) (err error) {
+	enclosingFunction := r.CurrentFunction
+
+	r.CurrentFunction = functionType
 	r.beginScope()
 
 	for _, param := range function.Params {
@@ -203,6 +225,8 @@ func (r *Resolver) resolveFunction(function *FunctionStatement) (err error) {
 	}
 
 	r.endScope()
+	r.CurrentFunction = enclosingFunction
+
 	return
 }
 

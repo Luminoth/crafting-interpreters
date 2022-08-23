@@ -47,9 +47,10 @@ var counter = makeCounter();
 counter();
 counter();
 
-fun scope(a) {
+// this no longer works after chapter 11
+/*fun scope(a) {
     var a = "local";
     print a;
 }
 
-scope("outer");
+scope("outer");*/
