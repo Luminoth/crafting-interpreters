@@ -23,7 +23,7 @@ type CallableType struct {
 }
 
 func (t CallableType) String() string {
-	return fmt.Sprintf("%s(%d)", t.Name, t.Arity)
+	return t.Callable.String()
 }
 
 type Value struct {

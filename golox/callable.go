@@ -7,6 +7,8 @@ import (
 
 type Callable interface {
 	Call(interpreter *Interpreter, arguments []Value) (*Value, error)
+
+	String() string
 }
 
 type LoxFunction struct {
@@ -62,10 +64,18 @@ func (f *PrintFunction) Call(interpreter *Interpreter, arguments []Value) (*Valu
 	return nil, nil
 }
 
+func (f *PrintFunction) String() string {
+	return "<native fn>"
+}
+
 type ClockFunction struct {
 }
 
 func (f *ClockFunction) Call(interpreter *Interpreter, arguments []Value) (*Value, error) {
 	value := NewNumberValue(float64(time.Now().UnixMilli()) / 1000.0)
 	return &value, nil
+}
+
+func (f *ClockFunction) String() string {
+	return "<native fn>"
 }
