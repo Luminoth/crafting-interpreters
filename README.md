@@ -81,7 +81,11 @@
 
 ### TODO:
 
-* Chapter 10: Anonymous functions (lambdas)
+* Chapter 10
+  * Anonymous functions (lambdas)
+* Chapter 11
+  * Unused variable warning
+  * Environment optimization
 
 ### Grammar
 
