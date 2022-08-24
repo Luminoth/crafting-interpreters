@@ -8,6 +8,10 @@ import (
 type PrintFunction struct {
 }
 
+func (f *PrintFunction) Arity() int {
+	return 1
+}
+
 func (f *PrintFunction) Call(interpreter *Interpreter, arguments []Value) (*Value, error) {
 	fmt.Println(arguments[0])
 
@@ -21,6 +25,10 @@ func (f *PrintFunction) String() string {
 }
 
 type ClockFunction struct {
+}
+
+func (f *ClockFunction) Arity() int {
+	return 0
 }
 
 func (f *ClockFunction) Call(interpreter *Interpreter, arguments []Value) (*Value, error) {

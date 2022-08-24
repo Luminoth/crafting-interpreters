@@ -60,10 +60,12 @@ func NewInterpreter(debug bool) Interpreter {
 	}
 
 	// define native functions
-	i.Globals.Define("clock", NewCallableValue("clock", 0, &ClockFunction{}))
+	clock := &ClockFunction{}
+	i.Globals.Define("clock", NewCallableValue("clock", clock.Arity(), clock))
 
 	if printIsNative {
-		i.Globals.Define("print", NewCallableValue("print", 1, &PrintFunction{}))
+		print := &PrintFunction{}
+		i.Globals.Define("print", NewCallableValue("print", print.Arity(), print))
 	}
 
 	i.Environment = &i.Globals
@@ -240,10 +242,10 @@ func (i *Interpreter) VisitContinueStatement(statement *ContinueStatement) (valu
 func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
 	// two-stage define / assign so that class methods can reference the class
 	i.Environment.Define(statement.Name.Lexeme, Value{})
-	class := LoxClass{
+	class := &LoxClass{
 		Name: statement.Name.Lexeme,
 	}
-	i.Environment.Assign(statement.Name, NewClassValue(class))
+	i.Environment.Assign(statement.Name, NewCallableValue(class.Name, class.Arity(), class))
 	return
 }
 
@@ -479,7 +481,7 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 		arguments[idx] = argumentValue
 	}
 
-	if callee.Type != ValueTypeFunction {
+	if callee.Type != ValueTypeCallable {
 		err = &RuntimeError{
 			Message: "Can only call functions and classes.",
 			Token:   expression.Paren,
