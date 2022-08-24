@@ -12,23 +12,23 @@ type Callable interface {
 }
 
 type LoxFunction struct {
-	declaration *FunctionStatement
-	closure     *Environment
+	Declaration *FunctionStatement `json:"declaration"`
+	Closure     *Environment       `json:"closure"`
 }
 
 func NewLoxFunction(declaration *FunctionStatement, closure *Environment) *LoxFunction {
 	return &LoxFunction{
-		declaration: declaration,
-		closure:     closure,
+		Declaration: declaration,
+		Closure:     closure,
 	}
 }
 
 func (f *LoxFunction) Name() string {
-	return f.declaration.Name.Lexeme
+	return f.Declaration.Name.Lexeme
 }
 
 func (f *LoxFunction) Arity() int {
-	return len(f.declaration.Params)
+	return len(f.Declaration.Params)
 }
 
 func (f *LoxFunction) String() string {
@@ -36,12 +36,12 @@ func (f *LoxFunction) String() string {
 }
 
 func (f *LoxFunction) Call(interpreter *Interpreter, arguments []Value) (value *Value, err error) {
-	environment := NewEnvironmentScope(f.closure)
-	for idx, param := range f.declaration.Params {
+	environment := NewEnvironmentScope(f.Closure)
+	for idx, param := range f.Declaration.Params {
 		environment.Define(param.Lexeme, arguments[idx])
 	}
 
-	value, err = interpreter.executeBlock(f.declaration.Body, environment)
+	value, err = interpreter.executeBlock(f.Declaration.Body, environment)
 	if err != nil {
 		if returnErr, ok := err.(*ReturnError); ok {
 			value = returnErr.Value
