@@ -25,20 +25,6 @@ EXPRESSIONS = [
         'operator': 'Token',
         'right': 'Expression',
     }),
-    ASTDef('Ternary', {
-        'condition': 'Expression',
-        'true': 'Expression',
-        'false': 'Expression',
-    }),
-    ASTDef('Logical', {
-        'left': 'Expression',
-        'operator': 'Token',
-        'right': 'Expression',
-    }),
-    ASTDef('Unary', {
-        'operator': 'Token',
-        'right': 'Expression',
-    }),
     ASTDef('Call', {
         'callee': 'Expression',
         'paren': 'Token',
@@ -50,12 +36,35 @@ EXPRESSIONS = [
     ASTDef('Literal', {
         'value': 'Object',
     }),
+    ASTDef('Logical', {
+        'left': 'Expression',
+        'operator': 'Token',
+        'right': 'Expression',
+    }),
+    ASTDef('Ternary', {
+        'condition': 'Expression',
+        'true': 'Expression',
+        'false': 'Expression',
+    }),
+    ASTDef('Unary', {
+        'operator': 'Token',
+        'right': 'Expression',
+    }),
     ASTDef('Variable', {
         'name': 'Token',
     }),
 ]
 
 STATEMENTS = [
+    ASTDef('Block', {
+        'statements': 'List[Statement]',
+    }),
+    ASTDef('Break', {
+        'keyword': 'Token',
+    }),
+    ASTDef('Continue', {
+        'keyword': 'Token',
+    }),
     ASTDef('Expression', {
         'expression': 'Expression',
     }),
@@ -63,6 +72,11 @@ STATEMENTS = [
         'name': 'Token',
         'params': 'List[Token]',
         'body': 'List[Statement]',
+    }),
+    ASTDef('If', {
+        'condition': 'Expression',
+        'then': 'Statement',
+        'else': 'Statement',
     }),
     ASTDef('Print', {
         'expression': 'Expression',
@@ -75,24 +89,10 @@ STATEMENTS = [
         'name': 'Token',
         'initializer': 'Expression',
     }),
-    ASTDef('Block', {
-        'statements': 'List[Statement]',
-    }),
-    ASTDef('If', {
-        'condition': 'Expression',
-        'then': 'Statement',
-        'else': 'Statement',
-    }),
     ASTDef('While', {
         'condition': 'Expression',
         'body': 'Statement',
     }, 'For statement desugars to a While statement'),
-    ASTDef('Break', {
-        'keyword': 'Token',
-    }),
-    ASTDef('Continue', {
-        'keyword': 'Token',
-    }),
 ]
 
 

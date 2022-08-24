@@ -5,6 +5,30 @@ type Statement interface {
 	Accept(visitor StatementVisitor) (*Value, error)
 }
 
+type BlockStatement struct {
+	Statements []Statement
+}
+
+func (e *BlockStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitBlockStatement(e)
+}
+
+type BreakStatement struct {
+	Keyword *Token
+}
+
+func (e *BreakStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitBreakStatement(e)
+}
+
+type ContinueStatement struct {
+	Keyword *Token
+}
+
+func (e *ContinueStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitContinueStatement(e)
+}
+
 type ExpressionStatement struct {
 	Expression Expression
 }
@@ -21,6 +45,16 @@ type FunctionStatement struct {
 
 func (e *FunctionStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitFunctionStatement(e)
+}
+
+type IfStatement struct {
+	Condition Expression
+	Then      Statement
+	Else      Statement
+}
+
+func (e *IfStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitIfStatement(e)
 }
 
 type PrintStatement struct {
@@ -49,24 +83,6 @@ func (e *VarStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitVarStatement(e)
 }
 
-type BlockStatement struct {
-	Statements []Statement
-}
-
-func (e *BlockStatement) Accept(visitor StatementVisitor) (*Value, error) {
-	return visitor.VisitBlockStatement(e)
-}
-
-type IfStatement struct {
-	Condition Expression
-	Then      Statement
-	Else      Statement
-}
-
-func (e *IfStatement) Accept(visitor StatementVisitor) (*Value, error) {
-	return visitor.VisitIfStatement(e)
-}
-
 // For statement desugars to a While statement
 type WhileStatement struct {
 	Condition Expression
@@ -77,31 +93,15 @@ func (e *WhileStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitWhileStatement(e)
 }
 
-type BreakStatement struct {
-	Keyword *Token
-}
-
-func (e *BreakStatement) Accept(visitor StatementVisitor) (*Value, error) {
-	return visitor.VisitBreakStatement(e)
-}
-
-type ContinueStatement struct {
-	Keyword *Token
-}
-
-func (e *ContinueStatement) Accept(visitor StatementVisitor) (*Value, error) {
-	return visitor.VisitContinueStatement(e)
-}
-
 type StatementVisitor interface {
+	VisitBlockStatement(statement *BlockStatement) (*Value, error)
+	VisitBreakStatement(statement *BreakStatement) (*Value, error)
+	VisitContinueStatement(statement *ContinueStatement) (*Value, error)
 	VisitExpressionStatement(statement *ExpressionStatement) (*Value, error)
 	VisitFunctionStatement(statement *FunctionStatement) (*Value, error)
+	VisitIfStatement(statement *IfStatement) (*Value, error)
 	VisitPrintStatement(statement *PrintStatement) (*Value, error)
 	VisitReturnStatement(statement *ReturnStatement) (*Value, error)
 	VisitVarStatement(statement *VarStatement) (*Value, error)
-	VisitBlockStatement(statement *BlockStatement) (*Value, error)
-	VisitIfStatement(statement *IfStatement) (*Value, error)
 	VisitWhileStatement(statement *WhileStatement) (*Value, error)
-	VisitBreakStatement(statement *BreakStatement) (*Value, error)
-	VisitContinueStatement(statement *ContinueStatement) (*Value, error)
 }
