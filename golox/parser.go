@@ -13,11 +13,15 @@ type FunctionKind int
 
 const (
 	FunctionKindFunction FunctionKind = 0
+	FunctionKindMethod   FunctionKind = 1
 )
 
 func (k FunctionKind) String() string {
-	if k == FunctionKindFunction {
+	switch k {
+	case FunctionKindFunction:
 		return "function"
+	case FunctionKindMethod:
+		return "method"
 	}
 
 	fmt.Println("Unsupported function kind")
@@ -73,6 +77,8 @@ func (p *Parser) declaration() (statement Statement) {
 
 	if p.match(Var) {
 		statement, err = p.variableDeclaration()
+	} else if p.match(Class) {
+		statement, err = p.classDeclaration()
 	} else if p.match(Fun) {
 		statement, err = p.function(FunctionKindFunction)
 	} else {
@@ -114,7 +120,45 @@ func (p *Parser) variableDeclaration() (statement Statement, err error) {
 	return
 }
 
-func (p *Parser) function(kind FunctionKind) (statement Statement, err error) {
+func (p *Parser) classDeclaration() (statement Statement, err error) {
+	name, err := p.consume(Identifier, "Expect class name.")
+	if err != nil {
+		return
+	}
+
+	_, err = p.consume(LeftBrace, "Expect '{' before class body.")
+	if err != nil {
+		return
+	}
+
+	methods := []*FunctionStatement{}
+	for {
+		if p.check(RightBrace) || p.isAtEnd() {
+			break
+		}
+
+		method, innerErr := p.function(FunctionKindMethod)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		methods = append(methods, method)
+	}
+
+	_, err = p.consume(RightBrace, "Expect '}' after class body.")
+	if err != nil {
+		return
+	}
+
+	statement = &ClassStatement{
+		Name:    name,
+		Methods: methods,
+	}
+	return
+}
+
+func (p *Parser) function(kind FunctionKind) (statement *FunctionStatement, err error) {
 	name, err := p.consume(Identifier, fmt.Sprintf("Expect %s name.", kind))
 	if err != nil {
 		return

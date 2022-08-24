@@ -62,6 +62,10 @@ STATEMENTS = [
     ASTDef('Break', {
         'keyword': 'Token',
     }),
+    ASTDef('Class', {
+        'name': 'Token',
+        'methods': 'List[Function]',
+    }),
     ASTDef('Continue', {
         'keyword': 'Token',
     }),
@@ -224,6 +228,8 @@ type {type}VisitorConstraint interface {{
                     field_type = '[]Expression'
                 case 'List[Statement]':
                     field_type = '[]Statement'
+                case 'List[Function]':
+                    field_type = '[]*FunctionStatement'
                 case 'List[Token]':
                     field_type = '[]*Token'
             f.write(f'{field_name.capitalize()} {field_type}\n')

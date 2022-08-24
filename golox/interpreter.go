@@ -237,6 +237,16 @@ func (i *Interpreter) VisitContinueStatement(statement *ContinueStatement) (valu
 	return
 }
 
+func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
+	// two-stage define / assign so that class methods can reference the class
+	i.Environment.Define(statement.Name.Lexeme, Value{})
+	class := LoxClass{
+		Name: statement.Name.Lexeme,
+	}
+	i.Environment.Assign(statement.Name, NewClassValue(class))
+	return
+}
+
 func (i *Interpreter) execute(statement Statement) (*Value, error) {
 	return statement.Accept(i)
 }

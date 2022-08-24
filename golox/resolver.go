@@ -202,6 +202,12 @@ func (r *Resolver) VisitContinueStatement(statement *ContinueStatement) (value *
 	return
 }
 
+func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
+	r.declare(statement.Name)
+	r.define(statement.Name)
+	return
+}
+
 func (r *Resolver) resolveStatements(statements []Statement) error {
 	for _, statement := range statements {
 		err := r.resolveStatement(statement)

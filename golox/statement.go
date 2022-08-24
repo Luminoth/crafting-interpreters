@@ -21,6 +21,15 @@ func (e *BreakStatement) Accept(visitor StatementVisitor) (*Value, error) {
 	return visitor.VisitBreakStatement(e)
 }
 
+type ClassStatement struct {
+	Name    *Token
+	Methods []*FunctionStatement
+}
+
+func (e *ClassStatement) Accept(visitor StatementVisitor) (*Value, error) {
+	return visitor.VisitClassStatement(e)
+}
+
 type ContinueStatement struct {
 	Keyword *Token
 }
@@ -96,6 +105,7 @@ func (e *WhileStatement) Accept(visitor StatementVisitor) (*Value, error) {
 type StatementVisitor interface {
 	VisitBlockStatement(statement *BlockStatement) (*Value, error)
 	VisitBreakStatement(statement *BreakStatement) (*Value, error)
+	VisitClassStatement(statement *ClassStatement) (*Value, error)
 	VisitContinueStatement(statement *ContinueStatement) (*Value, error)
 	VisitExpressionStatement(statement *ExpressionStatement) (*Value, error)
 	VisitFunctionStatement(statement *FunctionStatement) (*Value, error)

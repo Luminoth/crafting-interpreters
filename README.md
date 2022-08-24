@@ -91,9 +91,11 @@
 
 ```
 program                 -> declaration* EOF ;
-declaration             -> function_declaration
+declaration             -> class_declaration
+                        | function_declaration
                         | variable_declaration
                         | statement ;
+class_declaration       -> "class" IDENTIFIER "{" function* "}" ;
 function_declaration    -> "fun" function ;
 function                -> IDENTIFIER ( parameters? ) block ";"
 parameters              -> IDENTIFIER ( "," IDENTIFIER )* ;
