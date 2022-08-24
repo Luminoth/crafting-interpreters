@@ -34,9 +34,12 @@ func (r *Resolver) Resolve(statements []Statement) {
 		fmt.Println("Running resolver ...")
 	}
 
-	r.resolveStatements(statements)
-
-	// TODO: handle errors
+	err := r.resolveStatements(statements)
+	if err != nil {
+		// TODO: runtime error is not right here
+		runtimeError(err)
+		return
+	}
 }
 
 func (r *Resolver) beginScope() {
