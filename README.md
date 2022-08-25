@@ -133,7 +133,7 @@ term                    -> factor ( ( "-" | "+" ) factor )* ;
 factor                  -> unary ( ( "/" | "*" ) unary )* ;
 unary                   -> ( "!" | "-" ) unary
                         | call ;
-call                    -> primary ( "(" arguments? ")" )* ;
+call                    -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 arguments               -> assignment ( "," assignment )* ;
 primary                 -> NUMBER | STRING
                         | "true" | "false" | "nil"

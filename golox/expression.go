@@ -47,6 +47,19 @@ func (e *CallExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, e
 	return visitor.VisitCallExpression(e)
 }
 
+type GetExpression struct {
+	Object Expression
+	Name   *Token
+}
+
+func (e *GetExpression) AcceptString(visitor ExpressionVisitor[string]) (string, error) {
+	return visitor.VisitGetExpression(e)
+}
+
+func (e *GetExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, error) {
+	return visitor.VisitGetExpression(e)
+}
+
 type GroupingExpression struct {
 	Expression Expression
 }
@@ -132,6 +145,7 @@ type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
 	VisitAssignExpression(expression *AssignExpression) (T, error)
 	VisitBinaryExpression(expression *BinaryExpression) (T, error)
 	VisitCallExpression(expression *CallExpression) (T, error)
+	VisitGetExpression(expression *GetExpression) (T, error)
 	VisitGroupingExpression(expression *GroupingExpression) (T, error)
 	VisitLiteralExpression(expression *LiteralExpression) (T, error)
 	VisitLogicalExpression(expression *LogicalExpression) (T, error)

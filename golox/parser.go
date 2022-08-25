@@ -736,6 +736,17 @@ func (p *Parser) call() (expr Expression, err error) {
 			if err != nil {
 				return
 			}
+		} else if p.match(Dot) {
+			name, innerErr := p.consume(Identifier, "Expect property name after '.'.")
+			if innerErr != nil {
+				err = innerErr
+				return
+			}
+
+			expr = &GetExpression{
+				Object: expr,
+				Name:   name,
+			}
 		} else {
 			break
 		}

@@ -30,6 +30,10 @@ EXPRESSIONS = [
         'paren': 'Token',
         'arguments': 'List[Expression]',
     }),
+    ASTDef('Get', {
+        'object': 'Expression',
+        'name': 'Token',
+    }),
     ASTDef('Grouping', {
         'expression': 'Expression',
     }),

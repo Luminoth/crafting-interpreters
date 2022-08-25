@@ -513,6 +513,23 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 	return
 }
 
+func (i *Interpreter) VisitGetExpression(expression *GetExpression) (value Value, err error) {
+	object, err := i.evaluate(expression.Object)
+	if err != nil {
+		return
+	}
+
+	if object.Type != ValueTypeInstance {
+		err = &RuntimeError{
+			Message: "Only instances have properties.",
+			Token:   expression.Name,
+		}
+		return
+	}
+
+	return value.InstanceValue.Get(expression.Name)
+}
+
 func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {
 	return i.evaluate(expression.Expression)
 }

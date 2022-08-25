@@ -327,6 +327,15 @@ func (r *Resolver) VisitCallExpression(expression *CallExpression) (value Value,
 	return
 }
 
+func (r *Resolver) VisitGetExpression(expression *GetExpression) (value Value, err error) {
+	err = r.resolveExpression(expression.Object)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func (r *Resolver) VisitGroupingExpression(expression *GroupingExpression) (value Value, err error) {
 	err = r.resolveExpression(expression.Expression)
 	if err != nil {

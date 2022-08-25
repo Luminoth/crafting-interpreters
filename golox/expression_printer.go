@@ -42,6 +42,14 @@ func (p *ExpressionPrinter) VisitCallExpression(expression *CallExpression) (str
 	return p.parenthesize(expression.Paren.Lexeme, v...)
 }
 
+func (p *ExpressionPrinter) VisitGetExpression(expression *GetExpression) (string, error) {
+	expr, err := p.parenthesize("get", expression.Object)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s.%s", expression.Name.Lexeme, expr), nil
+}
+
 func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpression) (string, error) {
 	return p.parenthesize("group", expression.Expression)
 }

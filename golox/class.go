@@ -20,9 +20,23 @@ func (c *LoxClass) Call(interpreter *Interpreter, arguments []Value) (*Value, er
 }
 
 type LoxInstance struct {
-	Class *LoxClass `json:"class"`
+	Class  *LoxClass        `json:"class"`
+	Fields map[string]Value `json:"fields"`
 }
 
 func (i LoxInstance) String() string {
 	return fmt.Sprintf("%s instance", i.Class.Name)
+}
+
+func (i *LoxInstance) Get(name *Token) (value Value, err error) {
+	if v, ok := i.Fields[name.Lexeme]; ok {
+		value = v
+		return
+	}
+
+	err = &RuntimeError{
+		Message: fmt.Sprintf("Undefined property '%s'.", name.Lexeme),
+		Token:   name,
+	}
+	return
 }
