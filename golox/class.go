@@ -24,6 +24,13 @@ type LoxInstance struct {
 	Fields Values    `json:"fields"`
 }
 
+func NewLoxInstance(class *LoxClass) *LoxInstance {
+	return &LoxInstance{
+		Class:  class,
+		Fields: Values{},
+	}
+}
+
 func (i LoxInstance) String() string {
 	return fmt.Sprintf("%s instance", i.Class.Name)
 }

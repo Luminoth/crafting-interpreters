@@ -140,9 +140,7 @@ func NewCallableValue(name string, arity int, callable Callable) Value {
 
 func NewInstanceValue(class *LoxClass) Value {
 	return Value{
-		Type: ValueTypeInstance,
-		InstanceValue: &LoxInstance{
-			Class: class,
-		},
+		Type:          ValueTypeInstance,
+		InstanceValue: NewLoxInstance(class),
 	}
 }

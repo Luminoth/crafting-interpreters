@@ -527,7 +527,7 @@ func (i *Interpreter) VisitGetExpression(expression *GetExpression) (value Value
 		return
 	}
 
-	return value.InstanceValue.Get(expression.Name)
+	return object.InstanceValue.Get(expression.Name)
 }
 
 func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {
