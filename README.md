@@ -122,7 +122,7 @@ break_statement         -> "break" ";" ;
 continue_statement      -> "continue" ";" ;
 block                   -> "{" declaration* "}" ;
 expression              -> assignment ( "," expression )* ;
-assignment              -> IDENTIFIER "=" assignment
+assignment              -> ( call "." )? IDENTIFIER "=" assignment
                         | ternary ;
 ternary                 -> logical_or ( "?" expression ":" ternary )? ;
 logical_or              -> logical_and ( "or" logical_and )* ;

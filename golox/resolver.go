@@ -336,6 +336,20 @@ func (r *Resolver) VisitGetExpression(expression *GetExpression) (value Value, e
 	return
 }
 
+func (r *Resolver) VisitSetExpression(expression *SetExpression) (value Value, err error) {
+	err = r.resolveExpression(expression.Value)
+	if err != nil {
+		return
+	}
+
+	err = r.resolveExpression(expression.Object)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func (r *Resolver) VisitGroupingExpression(expression *GroupingExpression) (value Value, err error) {
 	err = r.resolveExpression(expression.Expression)
 	if err != nil {

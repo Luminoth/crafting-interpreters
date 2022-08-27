@@ -98,6 +98,20 @@ func (e *LogicalExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value
 	return visitor.VisitLogicalExpression(e)
 }
 
+type SetExpression struct {
+	Object Expression
+	Name   *Token
+	Value  Expression
+}
+
+func (e *SetExpression) AcceptString(visitor ExpressionVisitor[string]) (string, error) {
+	return visitor.VisitSetExpression(e)
+}
+
+func (e *SetExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, error) {
+	return visitor.VisitSetExpression(e)
+}
+
 type TernaryExpression struct {
 	Condition Expression
 	True      Expression
@@ -149,6 +163,7 @@ type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
 	VisitGroupingExpression(expression *GroupingExpression) (T, error)
 	VisitLiteralExpression(expression *LiteralExpression) (T, error)
 	VisitLogicalExpression(expression *LogicalExpression) (T, error)
+	VisitSetExpression(expression *SetExpression) (T, error)
 	VisitTernaryExpression(expression *TernaryExpression) (T, error)
 	VisitUnaryExpression(expression *UnaryExpression) (T, error)
 	VisitVariableExpression(expression *VariableExpression) (T, error)

@@ -45,6 +45,11 @@ EXPRESSIONS = [
         'operator': 'Token',
         'right': 'Expression',
     }),
+    ASTDef('Set', {
+        'object': 'Expression',
+        'name': 'Token',
+        'value': "Expression",
+    }),
     ASTDef('Ternary', {
         'condition': 'Expression',
         'true': 'Expression',

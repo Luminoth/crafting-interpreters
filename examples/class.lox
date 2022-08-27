@@ -19,3 +19,8 @@ print DevonshireCream;
 class Bagel{}
 var bagel = Bagel();
 print bagel;
+
+//print bagel.value;
+
+bagel.value = 4;
+print bagel.value;

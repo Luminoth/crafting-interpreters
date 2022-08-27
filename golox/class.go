@@ -47,3 +47,7 @@ func (i *LoxInstance) Get(name *Token) (value Value, err error) {
 	}
 	return
 }
+
+func (i *LoxInstance) Set(name *Token, value Value) {
+	i.Fields[name.Lexeme] = value
+}

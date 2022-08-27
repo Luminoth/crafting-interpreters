@@ -591,6 +591,13 @@ func (p *Parser) assignment() (expr Expression, err error) {
 				Value: value,
 			}
 			return
+		} else if v, ok := expr.(*GetExpression); ok {
+			expr = &SetExpression{
+				Object: v.Object,
+				Name:   v.Name,
+				Value:  value,
+			}
+			return
 		}
 
 		p.error(equals, "Invalid assignment target.")

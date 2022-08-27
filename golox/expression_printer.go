@@ -50,6 +50,20 @@ func (p *ExpressionPrinter) VisitGetExpression(expression *GetExpression) (strin
 	return fmt.Sprintf("%s.%s", expression.Name.Lexeme, expr), nil
 }
 
+func (p *ExpressionPrinter) VisitSetExpression(expression *SetExpression) (string, error) {
+	expr, err := p.parenthesize("set", expression.Object)
+	if err != nil {
+		return "", err
+	}
+
+	v, err := expression.Value.AcceptString(p)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("(= %s.%s %s)", expression.Name.Lexeme, expr, v), nil
+}
+
 func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpression) (string, error) {
 	return p.parenthesize("group", expression.Expression)
 }

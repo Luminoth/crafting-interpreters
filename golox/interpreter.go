@@ -530,6 +530,29 @@ func (i *Interpreter) VisitGetExpression(expression *GetExpression) (value Value
 	return object.InstanceValue.Get(expression.Name)
 }
 
+func (i *Interpreter) VisitSetExpression(expression *SetExpression) (value Value, err error) {
+	object, err := i.evaluate(expression.Object)
+	if err != nil {
+		return
+	}
+
+	if object.Type != ValueTypeInstance {
+		err = &RuntimeError{
+			Message: "Only instances have fields.",
+			Token:   expression.Name,
+		}
+		return
+	}
+
+	value, err = i.evaluate(expression.Value)
+	if err != nil {
+		return
+	}
+
+	object.InstanceValue.Set(expression.Name, value)
+	return
+}
+
 func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {
 	return i.evaluate(expression.Expression)
 }
