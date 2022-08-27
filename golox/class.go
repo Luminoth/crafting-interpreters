@@ -20,8 +20,8 @@ func (c *LoxClass) Call(interpreter *Interpreter, arguments []Value) (*Value, er
 }
 
 type LoxInstance struct {
-	Class  *LoxClass        `json:"class"`
-	Fields map[string]Value `json:"fields"`
+	Class  *LoxClass `json:"class"`
+	Fields Values    `json:"fields"`
 }
 
 func (i LoxInstance) String() string {

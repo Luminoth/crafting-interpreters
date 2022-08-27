@@ -3,14 +3,14 @@ package main
 import "fmt"
 
 type Environment struct {
-	Values map[string]Value `json:"values"`
+	Values Values `json:"values"`
 
 	Enclosing *Environment `json:"enclosing,omitempty"`
 }
 
 func NewEnvironment() Environment {
 	return Environment{
-		Values: map[string]Value{},
+		Values: Values{},
 	}
 }
 

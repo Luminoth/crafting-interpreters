@@ -17,6 +17,8 @@ const (
 	ValueTypeInstance ValueType = 6
 )
 
+type Values map[string]Value
+
 type CallableType struct {
 	Name     string   `json:"name"`
 	Arity    int      `json:"arity"`
