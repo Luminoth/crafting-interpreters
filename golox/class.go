@@ -60,7 +60,7 @@ func (i *LoxInstance) Get(name *Token) (value Value, err error) {
 
 	method := i.Class.FindMethod(name.Lexeme)
 	if method != nil {
-		value = NewCallableValue(method.Name(), method.Arity(), method)
+		value = NewCallableValue(method.Name(), method)
 		return
 	}
 

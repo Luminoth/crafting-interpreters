@@ -19,7 +19,6 @@ const (
 
 type CallableType struct {
 	Name     string   `json:"name"`
-	Arity    int      `json:"arity"`
 	Callable Callable `json:"callable"`
 }
 
@@ -125,12 +124,11 @@ func NewBoolValue(value bool) Value {
 	}
 }
 
-func NewCallableValue(name string, arity int, callable Callable) Value {
+func NewCallableValue(name string, callable Callable) Value {
 	return Value{
 		Type: ValueTypeCallable,
 		CallableValue: &CallableType{
 			Name:     name,
-			Arity:    arity,
 			Callable: callable,
 		},
 	}
