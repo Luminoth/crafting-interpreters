@@ -53,7 +53,7 @@ func NewLoxInstance(class *LoxClass) *LoxInstance {
 }
 
 func (i LoxInstance) String() string {
-	return fmt.Sprintf("%s instance", i.Class.Name)
+	return fmt.Sprintf("%s instance", i.Class.Name())
 }
 
 func (i *LoxInstance) Get(name *Token) (value Value, err error) {
