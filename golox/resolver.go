@@ -3,11 +3,15 @@ package main
 import "fmt"
 
 type FunctionType int
+type ClassType int
 
 const (
 	FunctionTypeNone     FunctionType = 0
 	FunctionTypeFunction FunctionType = 1
 	FunctionTypeMethod   FunctionType = 2
+
+	ClassTypeNone  ClassType = 0
+	ClassTypeClass ClassType = 1
 )
 
 type Scope map[string]bool
@@ -19,6 +23,7 @@ type Resolver struct {
 	Scopes Stack[Scope] `json:"scopes"`
 
 	CurrentFunction FunctionType `json:"current_function"`
+	CurrentClass    ClassType    `json:"current_class"`
 
 	Debug bool `json:"debug"`
 }
@@ -206,6 +211,9 @@ func (r *Resolver) VisitContinueStatement(statement *ContinueStatement) (value *
 }
 
 func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
+	enclosingClass := r.CurrentClass
+	r.CurrentClass = ClassTypeClass
+
 	r.declare(statement.Name)
 	r.define(statement.Name)
 
@@ -222,6 +230,7 @@ func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value,
 
 	r.endScope()
 
+	r.CurrentClass = enclosingClass
 	return
 }
 
@@ -242,8 +251,8 @@ func (r *Resolver) resolveStatement(statement Statement) error {
 
 func (r *Resolver) resolveFunction(function *FunctionStatement, functionType FunctionType) (err error) {
 	enclosingFunction := r.CurrentFunction
-
 	r.CurrentFunction = functionType
+
 	r.beginScope()
 
 	for _, param := range function.Params {
@@ -257,8 +266,8 @@ func (r *Resolver) resolveFunction(function *FunctionStatement, functionType Fun
 	}
 
 	r.endScope()
-	r.CurrentFunction = enclosingFunction
 
+	r.CurrentFunction = enclosingFunction
 	return
 }
 
@@ -368,6 +377,11 @@ func (r *Resolver) VisitSetExpression(expression *SetExpression) (value Value, e
 }
 
 func (r *Resolver) VisitThisExpression(expression *ThisExpression) (value Value, err error) {
+	if r.CurrentClass == ClassTypeNone {
+		reportError(expression.Keyword, "Can't use 'this' outside of a class.")
+		return
+	}
+
 	r.resolveLocal(expression, expression.Keyword)
 	return
 }

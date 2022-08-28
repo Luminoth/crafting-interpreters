@@ -56,3 +56,5 @@ class Thing {
 
 var callback = Thing().getCallback();
 callback();
+
+//print this;
