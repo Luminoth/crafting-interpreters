@@ -17,8 +17,6 @@ const (
 	ValueTypeInstance ValueType = 6
 )
 
-type Values map[string]Value
-
 type CallableType struct {
 	Name     string   `json:"name"`
 	Arity    int      `json:"arity"`
@@ -144,3 +142,5 @@ func NewInstanceValue(class *LoxClass) Value {
 		InstanceValue: NewLoxInstance(class),
 	}
 }
+
+type Values map[string]Value

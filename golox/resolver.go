@@ -7,6 +7,7 @@ type FunctionType int
 const (
 	FunctionTypeNone     FunctionType = 0
 	FunctionTypeFunction FunctionType = 1
+	FunctionTypeMethod   FunctionType = 2
 )
 
 type Resolver struct {
@@ -205,6 +206,12 @@ func (r *Resolver) VisitContinueStatement(statement *ContinueStatement) (value *
 func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
 	r.declare(statement.Name)
 	r.define(statement.Name)
+
+	for _, method := range statement.Methods {
+		declaration := FunctionTypeMethod
+		r.resolveFunction(method, declaration)
+	}
+
 	return
 }
 

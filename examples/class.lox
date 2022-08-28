@@ -24,3 +24,11 @@ print bagel;
 
 bagel.value = 4;
 print bagel.value;
+
+class Bacon {
+    eat() {
+        print "Crunch crunch crunch";
+    }
+}
+
+Bacon().eat();

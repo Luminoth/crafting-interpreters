@@ -242,9 +242,15 @@ func (i *Interpreter) VisitContinueStatement(statement *ContinueStatement) (valu
 func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
 	// two-stage define / assign so that class methods can reference the class
 	i.Environment.Define(statement.Name.Lexeme, Value{})
-	class := &LoxClass{
-		Name: statement.Name.Lexeme,
+
+	methods := map[string]*LoxFunction{}
+	for _, method := range statement.Methods {
+		function := NewLoxFunction(method, i.Environment)
+		methods[method.Name.Lexeme] = function
 	}
+
+	class := NewLoxClass(statement.Name.Lexeme, methods)
+
 	i.Environment.Assign(statement.Name, NewCallableValue(class.Name, class.Arity(), class))
 	return
 }
