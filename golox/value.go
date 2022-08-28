@@ -17,15 +17,6 @@ const (
 	ValueTypeInstance ValueType = 6
 )
 
-type CallableType struct {
-	Name     string   `json:"name"`
-	Callable Callable `json:"callable"`
-}
-
-func (t CallableType) String() string {
-	return t.Callable.String()
-}
-
 type Value struct {
 	Type ValueType `json:"type"`
 
@@ -34,7 +25,7 @@ type Value struct {
 	StringValue string      `json:"string"`
 	BoolValue   bool        `json:"bool"`
 
-	CallableValue *CallableType `json:"callable"`
+	CallableValue Callable `json:"callable"`
 
 	InstanceValue *LoxInstance `json:"instance"`
 }
@@ -124,13 +115,10 @@ func NewBoolValue(value bool) Value {
 	}
 }
 
-func NewCallableValue(name string, callable Callable) Value {
+func NewCallableValue(callable Callable) Value {
 	return Value{
-		Type: ValueTypeCallable,
-		CallableValue: &CallableType{
-			Name:     name,
-			Callable: callable,
-		},
+		Type:          ValueTypeCallable,
+		CallableValue: callable,
 	}
 }
 

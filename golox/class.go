@@ -5,19 +5,23 @@ import "fmt"
 type Methods map[string]*LoxFunction
 
 type LoxClass struct {
-	Name    string  `json:"name"`
-	Methods Methods `json:"methods"`
+	ClassName string  `json:"name"`
+	Methods   Methods `json:"methods"`
 }
 
 func NewLoxClass(name string, methods Methods) *LoxClass {
 	return &LoxClass{
-		Name:    name,
-		Methods: methods,
+		ClassName: name,
+		Methods:   methods,
 	}
 }
 
+func (c *LoxClass) Name() string {
+	return c.ClassName
+}
+
 func (c LoxClass) String() string {
-	return c.Name
+	return c.Name()
 }
 
 func (c *LoxClass) Arity() int {
@@ -60,7 +64,7 @@ func (i *LoxInstance) Get(name *Token) (value Value, err error) {
 
 	method := i.Class.FindMethod(name.Lexeme)
 	if method != nil {
-		value = NewCallableValue(method.Name(), method)
+		value = NewCallableValue(method)
 		return
 	}
 

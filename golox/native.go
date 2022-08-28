@@ -8,6 +8,10 @@ import (
 type PrintFunction struct {
 }
 
+func (f *PrintFunction) Name() string {
+	return "print"
+}
+
 func (f *PrintFunction) Arity() int {
 	return 1
 }
@@ -25,6 +29,10 @@ func (f *PrintFunction) String() string {
 }
 
 type ClockFunction struct {
+}
+
+func (f *ClockFunction) Name() string {
+	return "clock"
 }
 
 func (f *ClockFunction) Arity() int {

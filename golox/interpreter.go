@@ -61,11 +61,11 @@ func NewInterpreter(debug bool) Interpreter {
 
 	// define native functions
 	clock := &ClockFunction{}
-	i.Globals.Define("clock", NewCallableValue("clock", clock))
+	i.Globals.Define("clock", NewCallableValue(clock))
 
 	if printIsNative {
 		print := &PrintFunction{}
-		i.Globals.Define("print", NewCallableValue("print", print))
+		i.Globals.Define("print", NewCallableValue(print))
 	}
 
 	i.Environment = &i.Globals
@@ -105,7 +105,7 @@ func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (
 
 func (i *Interpreter) VisitFunctionStatement(statement *FunctionStatement) (value *Value, err error) {
 	function := NewLoxFunction(statement, i.Environment)
-	i.Environment.Define(function.Name(), NewCallableValue(function.Name(), function))
+	i.Environment.Define(function.Name(), NewCallableValue(function))
 	return
 }
 
@@ -251,7 +251,7 @@ func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Val
 
 	class := NewLoxClass(statement.Name.Lexeme, methods)
 
-	i.Environment.Assign(statement.Name, NewCallableValue(class.Name, class))
+	i.Environment.Assign(statement.Name, NewCallableValue(class))
 	return
 }
 
@@ -496,16 +496,16 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 	}
 
 	argumentCount := len(arguments)
-	if argumentCount != callee.CallableValue.Callable.Arity() {
+	if argumentCount != callee.CallableValue.Arity() {
 		err = &RuntimeError{
-			//Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callee.CallableValue.Name, callee.CallableValue.Callable.Arity(), argumentCount),
-			Message: fmt.Sprintf("Expected %d arguments but got %d.", callee.CallableValue.Callable.Arity(), argumentCount),
+			//Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callee.CallableValue.Name(), callee.CallableValue.Arity(), argumentCount),
+			Message: fmt.Sprintf("Expected %d arguments but got %d.", callee.CallableValue.Arity(), argumentCount),
 			Token:   expression.Paren,
 		}
 		return
 	}
 
-	v, err := callee.CallableValue.Callable.Call(i, arguments)
+	v, err := callee.CallableValue.Call(i, arguments)
 	if err != nil {
 		return
 	}
