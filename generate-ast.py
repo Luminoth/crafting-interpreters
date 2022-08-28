@@ -50,6 +50,9 @@ EXPRESSIONS = [
         'name': 'Token',
         'value': "Expression",
     }),
+    ASTDef('This', {
+        'keyword': 'Token',
+    }),
     ASTDef('Ternary', {
         'condition': 'Expression',
         'true': 'Expression',

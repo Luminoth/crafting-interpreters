@@ -559,6 +559,10 @@ func (i *Interpreter) VisitSetExpression(expression *SetExpression) (value Value
 	return
 }
 
+func (i *Interpreter) VisitThisExpression(expression *ThisExpression) (value Value, err error) {
+	return i.lookUpVariable(expression.Keyword, expression)
+}
+
 func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {
 	return i.evaluate(expression.Expression)
 }

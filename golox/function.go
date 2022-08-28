@@ -43,3 +43,10 @@ func (f *LoxFunction) Call(interpreter *Interpreter, arguments []Value) (value *
 	}
 	return
 }
+
+func (f *LoxFunction) Bind(instance *LoxInstance) *LoxFunction {
+	// wrap methods with a special environment containing "this"
+	environment := NewEnvironmentScope(f.Closure)
+	environment.Define("this", NewInstanceValue(instance))
+	return NewLoxFunction(f.Declaration, environment)
+}

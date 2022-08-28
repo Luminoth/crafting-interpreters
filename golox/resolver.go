@@ -207,10 +207,18 @@ func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value,
 	r.declare(statement.Name)
 	r.define(statement.Name)
 
+	r.beginScope()
+
+	// inject "this"
+	scope, _ := r.Scopes.Peek()
+	scope["this"] = true
+
 	for _, method := range statement.Methods {
 		declaration := FunctionTypeMethod
 		r.resolveFunction(method, declaration)
 	}
+
+	r.endScope()
 
 	return
 }
@@ -354,6 +362,11 @@ func (r *Resolver) VisitSetExpression(expression *SetExpression) (value Value, e
 		return
 	}
 
+	return
+}
+
+func (r *Resolver) VisitThisExpression(expression *ThisExpression) (value Value, err error) {
+	r.resolveLocal(expression, expression.Keyword)
 	return
 }
 

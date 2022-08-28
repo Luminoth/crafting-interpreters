@@ -64,6 +64,10 @@ func (p *ExpressionPrinter) VisitSetExpression(expression *SetExpression) (strin
 	return fmt.Sprintf("(= %s.%s %s)", expression.Name.Lexeme, expr, v), nil
 }
 
+func (p *ExpressionPrinter) VisitThisExpression(expression *ThisExpression) (string, error) {
+	return expression.Keyword.Lexeme, nil
+}
+
 func (p *ExpressionPrinter) VisitGroupingExpression(expression *GroupingExpression) (string, error) {
 	return p.parenthesize("group", expression.Expression)
 }

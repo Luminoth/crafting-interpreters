@@ -122,10 +122,17 @@ func NewCallableValue(callable Callable) Value {
 	}
 }
 
-func NewInstanceValue(class *LoxClass) Value {
+func NewClassInstanceValue(class *LoxClass) Value {
 	return Value{
 		Type:          ValueTypeInstance,
 		InstanceValue: NewLoxInstance(class),
+	}
+}
+
+func NewInstanceValue(instance *LoxInstance) Value {
+	return Value{
+		Type:          ValueTypeInstance,
+		InstanceValue: instance,
 	}
 }
 

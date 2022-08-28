@@ -834,6 +834,13 @@ func (p *Parser) primary() (expr Expression, err error) {
 		return
 	}
 
+	if p.match(This) {
+		expr = &ThisExpression{
+			Keyword: p.previous(),
+		}
+		return
+	}
+
 	if p.match(Identifier) {
 		expr = &VariableExpression{
 			Name: p.previous(),

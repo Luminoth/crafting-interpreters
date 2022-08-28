@@ -36,7 +36,7 @@ func (c *LoxClass) FindMethod(name string) *LoxFunction {
 }
 
 func (c *LoxClass) Call(interpreter *Interpreter, arguments []Value) (*Value, error) {
-	value := NewInstanceValue(c)
+	value := NewClassInstanceValue(c)
 	return &value, nil
 }
 
@@ -64,7 +64,7 @@ func (i *LoxInstance) Get(name *Token) (value Value, err error) {
 
 	method := i.Class.FindMethod(name.Lexeme)
 	if method != nil {
-		value = NewCallableValue(method)
+		value = NewCallableValue(method.Bind(i))
 		return
 	}
 
