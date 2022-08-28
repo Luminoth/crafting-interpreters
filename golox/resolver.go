@@ -10,11 +10,13 @@ const (
 	FunctionTypeMethod   FunctionType = 2
 )
 
+type Scope map[string]bool
+
 type Resolver struct {
 	Interpreter *Interpreter `json:"interpreter"`
 
 	// each scope is name => have we finished resolving this variable's initializer yet?
-	Scopes Stack[map[string]bool] `json:"scopes"`
+	Scopes Stack[Scope] `json:"scopes"`
 
 	CurrentFunction FunctionType `json:"current_function"`
 
@@ -24,7 +26,7 @@ type Resolver struct {
 func NewResolver(interpreter *Interpreter) Resolver {
 	return Resolver{
 		Interpreter:     interpreter,
-		Scopes:          Stack[map[string]bool]{},
+		Scopes:          Stack[Scope]{},
 		CurrentFunction: FunctionTypeNone,
 		Debug:           interpreter.Debug,
 	}
@@ -44,7 +46,7 @@ func (r *Resolver) Resolve(statements []Statement) {
 }
 
 func (r *Resolver) beginScope() {
-	r.Scopes.Push(map[string]bool{})
+	r.Scopes.Push(Scope{})
 }
 
 func (r *Resolver) endScope() {
