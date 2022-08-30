@@ -61,11 +61,13 @@ func NewInterpreter(debug bool) Interpreter {
 
 	// define native functions
 	clock := &ClockFunction{}
-	i.Globals.Define("clock", NewCallableValue(clock))
+	value := NewCallableValue(clock)
+	i.Globals.Define("clock", &value)
 
 	if printIsNative {
 		print := &PrintFunction{}
-		i.Globals.Define("print", NewCallableValue(print))
+		value := NewCallableValue(print)
+		i.Globals.Define("print", &value)
 	}
 
 	i.Environment = &i.Globals
@@ -104,8 +106,9 @@ func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (
 }
 
 func (i *Interpreter) VisitFunctionStatement(statement *FunctionStatement) (value *Value, err error) {
-	function := NewLoxFunction(statement, i.Environment)
-	i.Environment.Define(function.Name(), NewCallableValue(function))
+	function := NewLoxFunction(statement, i.Environment, false)
+	v := NewCallableValue(function)
+	i.Environment.Define(function.Name(), &v)
 	return
 }
 
@@ -178,8 +181,9 @@ func (i *Interpreter) VisitVarStatement(statement *VarStatement) (value *Value, 
 		}
 	}
 
-	i.Environment.Define(statement.Name.Lexeme, v)
 	value = &v
+	i.Environment.Define(statement.Name.Lexeme, value)
+
 	return
 }
 
@@ -241,17 +245,18 @@ func (i *Interpreter) VisitContinueStatement(statement *ContinueStatement) (valu
 
 func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
 	// two-stage define / assign so that class methods can reference the class
-	i.Environment.Define(statement.Name.Lexeme, Value{})
+	i.Environment.Define(statement.Name.Lexeme, &Value{})
 
 	methods := map[string]*LoxFunction{}
 	for _, method := range statement.Methods {
-		function := NewLoxFunction(method, i.Environment)
+		function := NewLoxFunction(method, i.Environment, method.Name.Lexeme == "init")
 		methods[method.Name.Lexeme] = function
 	}
 
 	class := NewLoxClass(statement.Name.Lexeme, methods)
 
-	i.Environment.Assign(statement.Name, NewCallableValue(class))
+	v := NewCallableValue(class)
+	i.Environment.Assign(statement.Name, &v)
 	return
 }
 
@@ -283,9 +288,9 @@ func (i *Interpreter) VisitAssignExpression(expression *AssignExpression) (value
 	}
 
 	if distance, ok := i.Locals[expression]; ok {
-		i.Environment.AssignAt(distance, expression.Name, value)
+		i.Environment.AssignAt(distance, expression.Name, &value)
 	} else {
-		err = i.Globals.Assign(expression.Name, value)
+		err = i.Globals.Assign(expression.Name, &value)
 		if err != nil {
 			return
 		}
@@ -477,14 +482,14 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 	}
 
 	// TODO: should these be evaluated *after* we do all the validation?
-	arguments := make([]Value, len(expression.Arguments))
+	arguments := make([]*Value, len(expression.Arguments))
 	for idx, argument := range expression.Arguments {
 		argumentValue, innerErr := i.evaluate(argument)
 		if innerErr != nil {
 			err = innerErr
 			return
 		}
-		arguments[idx] = argumentValue
+		arguments[idx] = &argumentValue
 	}
 
 	if callee.Type != ValueTypeCallable {
@@ -533,7 +538,11 @@ func (i *Interpreter) VisitGetExpression(expression *GetExpression) (value Value
 		return
 	}
 
-	return object.InstanceValue.Get(expression.Name)
+	v, err := object.InstanceValue.Get(expression.Name)
+	if err != nil {
+		return
+	}
+	return *v, nil
 }
 
 func (i *Interpreter) VisitSetExpression(expression *SetExpression) (value Value, err error) {
@@ -555,7 +564,7 @@ func (i *Interpreter) VisitSetExpression(expression *SetExpression) (value Value
 		return
 	}
 
-	object.InstanceValue.Set(expression.Name, value)
+	object.InstanceValue.Set(expression.Name, &value)
 	return
 }
 
@@ -571,11 +580,21 @@ func (i *Interpreter) VisitLiteralExpression(expression *LiteralExpression) (Val
 	return NewValue(expression.Value)
 }
 
-func (i *Interpreter) lookUpVariable(name *Token, expression Expression) (Value, error) {
+func (i *Interpreter) lookUpVariable(name *Token, expression Expression) (value Value, err error) {
 	if distance, ok := i.Locals[expression]; ok {
-		return i.Environment.GetAt(distance, name.Lexeme)
+		v, innerErr := i.Environment.GetAt(distance, name.Lexeme)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+		return *v, nil
 	}
-	return i.Globals.Get(name)
+
+	v, err := i.Globals.Get(name)
+	if err != nil {
+		return
+	}
+	return *v, nil
 }
 
 func (i *Interpreter) VisitVariableExpression(expression *VariableExpression) (Value, error) {

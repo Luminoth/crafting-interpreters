@@ -16,7 +16,7 @@ func (f *PrintFunction) Arity() int {
 	return 1
 }
 
-func (f *PrintFunction) Call(interpreter *Interpreter, arguments []Value) (*Value, error) {
+func (f *PrintFunction) Call(interpreter *Interpreter, arguments []*Value) (*Value, error) {
 	fmt.Println(arguments[0])
 
 	// no return value here
@@ -39,7 +39,7 @@ func (f *ClockFunction) Arity() int {
 	return 0
 }
 
-func (f *ClockFunction) Call(interpreter *Interpreter, arguments []Value) (*Value, error) {
+func (f *ClockFunction) Call(interpreter *Interpreter, arguments []*Value) (*Value, error) {
 	value := NewNumberValue(float64(time.Now().UnixMilli()) / 1000.0)
 	return &value, nil
 }

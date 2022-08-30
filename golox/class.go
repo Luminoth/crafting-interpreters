@@ -25,7 +25,11 @@ func (c LoxClass) String() string {
 }
 
 func (c *LoxClass) Arity() int {
-	return 0
+	initializer := c.FindMethod("init")
+	if initializer == nil {
+		return 0
+	}
+	return initializer.Arity()
 }
 
 func (c *LoxClass) FindMethod(name string) *LoxFunction {
@@ -35,8 +39,15 @@ func (c *LoxClass) FindMethod(name string) *LoxFunction {
 	return nil
 }
 
-func (c *LoxClass) Call(interpreter *Interpreter, arguments []Value) (*Value, error) {
-	value := NewClassInstanceValue(c)
+func (c *LoxClass) Call(interpreter *Interpreter, arguments []*Value) (*Value, error) {
+	instance := NewLoxInstance(c)
+
+	initializer := c.FindMethod("init")
+	if initializer != nil {
+		initializer.Bind(instance).Call(interpreter, arguments)
+	}
+
+	value := NewInstanceValue(instance)
 	return &value, nil
 }
 
@@ -56,7 +67,7 @@ func (i LoxInstance) String() string {
 	return fmt.Sprintf("%s instance", i.Class.Name())
 }
 
-func (i *LoxInstance) Get(name *Token) (value Value, err error) {
+func (i *LoxInstance) Get(name *Token) (value *Value, err error) {
 	if v, ok := i.Fields[name.Lexeme]; ok {
 		value = v
 		return
@@ -64,7 +75,8 @@ func (i *LoxInstance) Get(name *Token) (value Value, err error) {
 
 	method := i.Class.FindMethod(name.Lexeme)
 	if method != nil {
-		value = NewCallableValue(method.Bind(i))
+		v := NewCallableValue(method.Bind(i))
+		value = &v
 		return
 	}
 
@@ -75,6 +87,6 @@ func (i *LoxInstance) Get(name *Token) (value Value, err error) {
 	return
 }
 
-func (i *LoxInstance) Set(name *Token, value Value) {
+func (i *LoxInstance) Set(name *Token, value *Value) {
 	i.Fields[name.Lexeme] = value
 }

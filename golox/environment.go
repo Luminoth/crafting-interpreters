@@ -2,6 +2,8 @@ package main
 
 import "fmt"
 
+type Values map[string]*Value
+
 type Environment struct {
 	Values Values `json:"values"`
 
@@ -20,12 +22,12 @@ func NewEnvironmentScope(enclosing *Environment) *Environment {
 	return &environment
 }
 
-func (e *Environment) Define(name string, value Value) {
+func (e *Environment) Define(name string, value *Value) {
 	//fmt.Printf("Defining variable '%s' = %v\n", name, value)
 	e.Values[name] = value
 }
 
-func (e *Environment) Assign(name *Token, value Value) (err error) {
+func (e *Environment) Assign(name *Token, value *Value) (err error) {
 	//fmt.Printf("Assigning variable '%s' = %v\n", name.Lexeme, value)
 	if _, ok := e.Values[name.Lexeme]; ok {
 		e.Values[name.Lexeme] = value
@@ -43,7 +45,7 @@ func (e *Environment) Assign(name *Token, value Value) (err error) {
 	return
 }
 
-func (e *Environment) Get(name *Token) (value Value, err error) {
+func (e *Environment) Get(name *Token) (value *Value, err error) {
 	//fmt.Printf("Getting variable '%s'\n", name.Lexeme)
 
 	if val, ok := e.Values[name.Lexeme]; ok {
@@ -71,12 +73,12 @@ func (e *Environment) ancestor(distance int) *Environment {
 	return environment
 }
 
-func (e *Environment) AssignAt(distance int, name *Token, value Value) {
+func (e *Environment) AssignAt(distance int, name *Token, value *Value) {
 	//fmt.Printf("Assigning variable '%s' = %v at distance %d\n", name.Lexeme, value, distance)
 	e.ancestor(distance).Values[name.Lexeme] = value
 }
 
-func (e *Environment) GetAt(distance int, name string) (value Value, err error) {
+func (e *Environment) GetAt(distance int, name string) (value *Value, err error) {
 	//fmt.Printf("Getting variable '%s' at distance %d\n", name, distance)
 	value = e.ancestor(distance).Values[name]
 	return

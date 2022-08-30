@@ -58,3 +58,24 @@ var callback = Thing().getCallback();
 callback();
 
 //print this;
+
+class Foo {
+    init() {
+        print this;
+
+        // not required, just testing
+        return;
+    }
+}
+
+var foo = Foo();
+print foo.init();
+
+/*class Bar {
+    init() {
+        return "something else";
+    }
+}
+
+var bar = Bar();
+print bar.init();*/

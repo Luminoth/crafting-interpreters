@@ -6,9 +6,10 @@ type FunctionType int
 type ClassType int
 
 const (
-	FunctionTypeNone     FunctionType = 0
-	FunctionTypeFunction FunctionType = 1
-	FunctionTypeMethod   FunctionType = 2
+	FunctionTypeNone        FunctionType = 0
+	FunctionTypeFunction    FunctionType = 1
+	FunctionTypeInitializer FunctionType = 2
+	FunctionTypeMethod      FunctionType = 3
 
 	ClassTypeNone  ClassType = 0
 	ClassTypeClass ClassType = 1
@@ -134,6 +135,10 @@ func (r *Resolver) VisitReturnStatement(statement *ReturnStatement) (value *Valu
 	}
 
 	if statement.Value != nil {
+		if r.CurrentFunction == FunctionTypeInitializer {
+			reportError(statement.Keyword, "Can't return a value from an initializer.")
+		}
+
 		err = r.resolveExpression(statement.Value)
 		if err != nil {
 			return
@@ -225,6 +230,9 @@ func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value,
 
 	for _, method := range statement.Methods {
 		declaration := FunctionTypeMethod
+		if method.Name.Lexeme == "init" {
+			declaration = FunctionTypeInitializer
+		}
 		r.resolveFunction(method, declaration)
 	}
 

@@ -6,7 +6,9 @@ func TestDefine(t *testing.T) {
 	environment := NewEnvironment()
 
 	token := &Token{Lexeme: "foo"}
-	environment.Define(token.Lexeme, NewBoolValue(true))
+
+	value := NewBoolValue(true)
+	environment.Define(token.Lexeme, &value)
 
 	val, err := environment.Get(token)
 	if err != nil {
@@ -22,8 +24,12 @@ func TestRedefine(t *testing.T) {
 	environment := NewEnvironment()
 
 	token := &Token{Lexeme: "foo"}
-	environment.Define(token.Lexeme, NewBoolValue(true))
-	environment.Define(token.Lexeme, NewStringValue("bar"))
+
+	value := NewBoolValue(true)
+	environment.Define(token.Lexeme, &value)
+
+	value = NewStringValue("bar")
+	environment.Define(token.Lexeme, &value)
 
 	val, err := environment.Get(token)
 	if err != nil {
@@ -39,9 +45,11 @@ func TestAssign(t *testing.T) {
 	environment := NewEnvironment()
 
 	token := &Token{Lexeme: "foo"}
-	environment.Define(token.Lexeme, NewBoolValue(true))
+	value := NewBoolValue(true)
+	environment.Define(token.Lexeme, &value)
 
-	err := environment.Assign(token, NewStringValue("bar"))
+	value = NewStringValue("bar")
+	err := environment.Assign(token, &value)
 	if err != nil {
 		t.Fatalf("Assign failed: %s", err)
 	}
@@ -61,7 +69,8 @@ func TestInvalidAssign(t *testing.T) {
 
 	token := &Token{Lexeme: "foo"}
 
-	err := environment.Assign(token, NewStringValue("bar"))
+	value := NewStringValue("bar")
+	err := environment.Assign(token, &value)
 	if err == nil {
 		t.Fatalf("Assign did not fail")
 	}
