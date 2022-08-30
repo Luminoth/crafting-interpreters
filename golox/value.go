@@ -13,8 +13,9 @@ const (
 	ValueTypeNumber   ValueType = 2
 	ValueTypeString   ValueType = 3
 	ValueTypeBool     ValueType = 4
-	ValueTypeCallable ValueType = 5
-	ValueTypeInstance ValueType = 6
+	ValueTypeFunction ValueType = 5
+	ValueTypeClass    ValueType = 6
+	ValueTypeInstance ValueType = 7
 )
 
 type Value struct {
@@ -25,7 +26,8 @@ type Value struct {
 	StringValue string      `json:"string"`
 	BoolValue   bool        `json:"bool"`
 
-	CallableValue Callable `json:"callable"`
+	FunctionValue Callable `json:"function"`
+	ClassValue    Callable `json:"class"`
 
 	InstanceValue *LoxInstance `json:"instance"`
 }
@@ -51,8 +53,12 @@ func (v Value) String() string {
 		return fmt.Sprintf("%t", v.BoolValue)
 	}
 
-	if v.Type == ValueTypeCallable {
-		return v.CallableValue.String()
+	if v.Type == ValueTypeFunction {
+		return v.FunctionValue.String()
+	}
+
+	if v.Type == ValueTypeClass {
+		return v.ClassValue.String()
 	}
 
 	if v.Type == ValueTypeInstance {
@@ -115,10 +121,17 @@ func NewBoolValue(value bool) Value {
 	}
 }
 
-func NewCallableValue(callable Callable) Value {
+func NewFunctionValue(function Callable) Value {
 	return Value{
-		Type:          ValueTypeCallable,
-		CallableValue: callable,
+		Type:          ValueTypeFunction,
+		FunctionValue: function,
+	}
+}
+
+func NewClassValue(class Callable) Value {
+	return Value{
+		Type:       ValueTypeClass,
+		ClassValue: class,
 	}
 }
 

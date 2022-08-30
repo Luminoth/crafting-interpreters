@@ -126,6 +126,18 @@ func (p *Parser) classDeclaration() (statement Statement, err error) {
 		return
 	}
 
+	var superclass *VariableExpression
+	if p.match(Less) {
+		_, err = p.consume(Identifier, "Expect superclass name.")
+		if err != nil {
+			return
+		}
+
+		superclass = &VariableExpression{
+			Name: p.previous(),
+		}
+	}
+
 	_, err = p.consume(LeftBrace, "Expect '{' before class body.")
 	if err != nil {
 		return
@@ -152,8 +164,9 @@ func (p *Parser) classDeclaration() (statement Statement, err error) {
 	}
 
 	statement = &ClassStatement{
-		Name:    name,
-		Methods: methods,
+		Name:       name,
+		Methods:    methods,
+		Superclass: superclass,
 	}
 	return
 }

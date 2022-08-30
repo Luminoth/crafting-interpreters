@@ -76,6 +76,7 @@ STATEMENTS = [
     }),
     ASTDef('Class', {
         'name': 'Token',
+        'superclass': 'VariableExpression',
         'methods': 'List[Function]',
     }),
     ASTDef('Continue', {
@@ -236,6 +237,8 @@ type {type}VisitorConstraint interface {{
                     field_type = 'LiteralValue'
                 case 'Token':
                     field_type = '*Token'
+                case 'VariableExpression':
+                    field_type = '*VariableExpression'
                 case 'List[Expression]':
                     field_type = '[]Expression'
                 case 'List[Statement]':

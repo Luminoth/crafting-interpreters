@@ -61,12 +61,12 @@ func NewInterpreter(debug bool) Interpreter {
 
 	// define native functions
 	clock := &ClockFunction{}
-	value := NewCallableValue(clock)
+	value := NewFunctionValue(clock)
 	i.Globals.Define("clock", &value)
 
 	if printIsNative {
 		print := &PrintFunction{}
-		value := NewCallableValue(print)
+		value := NewFunctionValue(print)
 		i.Globals.Define("print", &value)
 	}
 
@@ -107,7 +107,7 @@ func (i *Interpreter) VisitExpressionStatement(statement *ExpressionStatement) (
 
 func (i *Interpreter) VisitFunctionStatement(statement *FunctionStatement) (value *Value, err error) {
 	function := NewLoxFunction(statement, i.Environment, false)
-	v := NewCallableValue(function)
+	v := NewFunctionValue(function)
 	i.Environment.Define(function.Name(), &v)
 	return
 }
@@ -244,6 +244,25 @@ func (i *Interpreter) VisitContinueStatement(statement *ContinueStatement) (valu
 }
 
 func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
+	var superclass *LoxClass
+	if statement.Superclass != nil {
+		v, innerErr := i.evaluate(statement.Superclass)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		if v.Type != ValueTypeClass {
+			err = &RuntimeError{
+				Message: "Superclass must be a class.",
+				Token:   statement.Superclass.Name,
+			}
+			return
+		}
+
+		superclass = v.ClassValue.(*LoxClass)
+	}
+
 	// two-stage define / assign so that class methods can reference the class
 	i.Environment.Define(statement.Name.Lexeme, &Value{})
 
@@ -253,9 +272,9 @@ func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Val
 		methods[method.Name.Lexeme] = function
 	}
 
-	class := NewLoxClass(statement.Name.Lexeme, methods)
+	class := NewLoxClass(statement.Name.Lexeme, superclass, methods)
 
-	v := NewCallableValue(class)
+	v := NewClassValue(class)
 	i.Environment.Assign(statement.Name, &v)
 	return
 }
@@ -492,7 +511,12 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 		arguments[idx] = &argumentValue
 	}
 
-	if callee.Type != ValueTypeCallable {
+	var callable Callable
+	if callee.Type == ValueTypeFunction {
+		callable = callee.FunctionValue
+	} else if callee.Type == ValueTypeClass {
+		callable = callee.ClassValue
+	} else {
 		err = &RuntimeError{
 			Message: "Can only call functions and classes.",
 			Token:   expression.Paren,
@@ -501,16 +525,16 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 	}
 
 	argumentCount := len(arguments)
-	if argumentCount != callee.CallableValue.Arity() {
+	if argumentCount != callable.Arity() {
 		err = &RuntimeError{
-			//Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callee.CallableValue.Name(), callee.CallableValue.Arity(), argumentCount),
-			Message: fmt.Sprintf("Expected %d arguments but got %d.", callee.CallableValue.Arity(), argumentCount),
+			//Message: fmt.Sprintf("'%s' expected %d arguments but got %d.", callable.Name(), callable.Arity(), argumentCount),
+			Message: fmt.Sprintf("Expected %d arguments but got %d.", callable.Arity(), argumentCount),
 			Token:   expression.Paren,
 		}
 		return
 	}
 
-	v, err := callee.CallableValue.Call(i, arguments)
+	v, err := callable.Call(i, arguments)
 	if err != nil {
 		return
 	}

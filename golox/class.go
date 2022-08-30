@@ -5,14 +5,16 @@ import "fmt"
 type Methods map[string]*LoxFunction
 
 type LoxClass struct {
-	ClassName string  `json:"name"`
-	Methods   Methods `json:"methods"`
+	ClassName  string    `json:"name"`
+	Superclass *LoxClass `json:"superclass,omitempty"`
+	Methods    Methods   `json:"methods"`
 }
 
-func NewLoxClass(name string, methods Methods) *LoxClass {
+func NewLoxClass(name string, superclass *LoxClass, methods Methods) *LoxClass {
 	return &LoxClass{
-		ClassName: name,
-		Methods:   methods,
+		ClassName:  name,
+		Superclass: superclass,
+		Methods:    methods,
 	}
 }
 
@@ -75,7 +77,7 @@ func (i *LoxInstance) Get(name *Token) (value *Value, err error) {
 
 	method := i.Class.FindMethod(name.Lexeme)
 	if method != nil {
-		v := NewCallableValue(method.Bind(i))
+		v := NewFunctionValue(method.Bind(i))
 		value = &v
 		return
 	}

@@ -222,6 +222,13 @@ func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value,
 	r.declare(statement.Name)
 	r.define(statement.Name)
 
+	if statement.Superclass != nil {
+		if statement.Name.Lexeme == statement.Superclass.Name.Lexeme {
+			reportError(statement.Superclass.Name, "A class can't inherit from itself.")
+		}
+		r.resolveExpression(statement.Superclass)
+	}
+
 	r.beginScope()
 
 	// inject "this"

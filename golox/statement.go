@@ -22,8 +22,9 @@ func (e *BreakStatement) Accept(visitor StatementVisitor) (*Value, error) {
 }
 
 type ClassStatement struct {
-	Name    *Token
-	Methods []*FunctionStatement
+	Name       *Token
+	Superclass *VariableExpression
+	Methods    []*FunctionStatement
 }
 
 func (e *ClassStatement) Accept(visitor StatementVisitor) (*Value, error) {

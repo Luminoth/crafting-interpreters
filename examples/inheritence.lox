@@ -1,0 +1,7 @@
+class Doughnut {
+}
+
+class BostonCream < Doughnut {
+}
+
+//class Oops < Oops {}
