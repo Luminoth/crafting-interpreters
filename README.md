@@ -86,6 +86,9 @@
 * Chapter 11
   * Unused variable warning
   * Environment optimization
+* Chapter 12
+  * Static methods
+  * getters / setters
 
 ### Grammar
 
