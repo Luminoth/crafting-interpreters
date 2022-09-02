@@ -40,31 +40,19 @@ func (f *LoxFunction) Call(interpreter *Interpreter, arguments []*Value) (value 
 			if f.IsInitializer {
 				// initialzers return 'this'
 				// which should be in the enclosing environment
-				v, innerErr := f.Closure.GetAt(0, "this")
-				if innerErr != nil {
-					err = innerErr
-					return
-				}
-
-				value = v
-				return
+				value = f.Closure.GetAt(0, "this")
+			} else {
+				value = returnErr.Value
 			}
-
-			value = returnErr.Value
 			return
 		}
+		return
 	}
 
 	if f.IsInitializer {
 		// initialzers return 'this'
 		// which should be in the enclosing environment
-		v, innerErr := f.Closure.GetAt(0, "this")
-		if innerErr != nil {
-			err = innerErr
-			return
-		}
-
-		value = v
+		value = f.Closure.GetAt(0, "this")
 		return
 	}
 

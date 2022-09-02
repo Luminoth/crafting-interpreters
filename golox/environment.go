@@ -81,8 +81,7 @@ func (e *Environment) AssignAt(distance int, name *Token, value *Value) {
 	e.ancestor(distance).Values[name.Lexeme] = value
 }
 
-func (e *Environment) GetAt(distance int, name string) (value *Value, err error) {
+func (e *Environment) GetAt(distance int, name string) *Value {
 	//fmt.Printf("Getting variable '%s' at distance %d\n", name, distance)
-	value = e.ancestor(distance).Values[name]
-	return
+	return e.ancestor(distance).Values[name]
 }

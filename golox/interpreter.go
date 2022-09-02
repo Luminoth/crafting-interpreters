@@ -573,18 +573,10 @@ func (i *Interpreter) VisitSetExpression(expression *SetExpression) (value Value
 
 func (i *Interpreter) VisitSuperExpression(expression *SuperExpression) (value Value, err error) {
 	if distance, ok := i.Locals[expression]; ok {
-		superclass, innerErr := i.Environment.GetAt(distance, "super")
-		if innerErr != nil {
-			err = innerErr
-			return
-		}
+		superclass := i.Environment.GetAt(distance, "super")
 
 		// 'this' should be one up from 'super'
-		object, innerErr := i.Environment.GetAt(distance-1, "this")
-		if innerErr != nil {
-			err = innerErr
-			return
-		}
+		object := i.Environment.GetAt(distance-1, "this")
 
 		method := superclass.GetClassValue().FindMethod(expression.Method.Lexeme)
 		if method == nil {
@@ -608,7 +600,12 @@ func (i *Interpreter) VisitSuperExpression(expression *SuperExpression) (value V
 }
 
 func (i *Interpreter) VisitThisExpression(expression *ThisExpression) (value Value, err error) {
-	return i.lookUpVariable(expression.Keyword, expression)
+	v, err := i.lookUpVariable(expression.Keyword, expression)
+	if err != nil {
+		return
+	}
+	value = *v
+	return
 }
 
 func (i *Interpreter) VisitGroupingExpression(expression *GroupingExpression) (Value, error) {
@@ -619,25 +616,27 @@ func (i *Interpreter) VisitLiteralExpression(expression *LiteralExpression) (Val
 	return NewValue(expression.Value)
 }
 
-func (i *Interpreter) lookUpVariable(name *Token, expression Expression) (value Value, err error) {
+func (i *Interpreter) lookUpVariable(name *Token, expression Expression) (value *Value, err error) {
 	if distance, ok := i.Locals[expression]; ok {
-		v, innerErr := i.Environment.GetAt(distance, name.Lexeme)
-		if innerErr != nil {
-			err = innerErr
-			return
-		}
-		return *v, nil
+		value = i.Environment.GetAt(distance, name.Lexeme)
+		return
 	}
 
-	v, err := i.Globals.Get(name)
+	value, err = i.Globals.Get(name)
 	if err != nil {
 		return
 	}
-	return *v, nil
+
+	return
 }
 
-func (i *Interpreter) VisitVariableExpression(expression *VariableExpression) (Value, error) {
-	return i.lookUpVariable(expression.Name, expression)
+func (i *Interpreter) VisitVariableExpression(expression *VariableExpression) (value Value, err error) {
+	v, err := i.lookUpVariable(expression.Name, expression)
+	if err != nil {
+		return
+	}
+	value = *v
+	return
 }
 
 func (i *Interpreter) isEqual(left *Value, right *Value) bool {

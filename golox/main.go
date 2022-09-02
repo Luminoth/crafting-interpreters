@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
+	"runtime/pprof"
 )
 
 func main() {
 	debug := flag.Bool("debug", false, "Enable debug output")
+	profile := flag.Bool("profile", false, "Enable profiling")
 	// TODO: a 'strict' flag would be useful for passing the lox test harness
 
 	flag.Parse()
@@ -17,6 +20,17 @@ func main() {
 	if len(flag.Args()) > 1 {
 		fmt.Println("Usage: golox [script]")
 		os.Exit(64)
+	}
+
+	if *profile {
+		fmt.Printf("Enabling CPU profiling ...\n")
+
+		cpu, err := os.Create("cpu.prof")
+		if err != nil {
+			fmt.Printf("Failed to enable CPU profiling: %s\n", err)
+			os.Exit(64)
+		}
+		pprof.StartCPUProfile(cpu)
 	}
 
 	var err error
@@ -29,6 +43,25 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
+	}
+
+	if *profile {
+		fmt.Printf("Generating heap profile ...\n")
+
+		runtime.GC()
+		mem, err := os.Create("memory.prof")
+		if err != nil {
+			fmt.Printf("Failed to generate heap profile: %s\n", err)
+			os.Exit(64)
+		}
+
+		if err := pprof.WriteHeapProfile(mem); err != nil {
+			fmt.Printf("Failed to write heap profile: %s\n", err)
+			os.Exit(64)
+		}
+
+		mem.Close()
+		pprof.StopCPUProfile()
 	}
 }
 
