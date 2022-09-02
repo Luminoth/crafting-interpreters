@@ -260,11 +260,18 @@ func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Val
 			return
 		}
 
-		superclass = v.ClassValue.(*LoxClass)
+		superclass = v.GetClassValue()
 	}
 
 	// two-stage define / assign so that class methods can reference the class
 	i.Environment.Define(statement.Name.Lexeme, &Value{})
+
+	if superclass != nil {
+		i.Environment = NewEnvironmentScope(i.Environment)
+
+		v := NewClassValue(superclass)
+		i.Environment.Define("super", &v)
+	}
 
 	methods := map[string]*LoxFunction{}
 	for _, method := range statement.Methods {
@@ -273,6 +280,10 @@ func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Val
 	}
 
 	class := NewLoxClass(statement.Name.Lexeme, superclass, methods)
+
+	if superclass != nil {
+		i.Environment = i.Environment.Enclosing
+	}
 
 	v := NewClassValue(class)
 	i.Environment.Assign(statement.Name, &v)
@@ -518,6 +529,7 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 		callable = callee.ClassValue
 	} else {
 		err = &RuntimeError{
+			//Message: fmt.Sprintf("Can only call functions and classes, got %d", callee.Type),
 			Message: "Can only call functions and classes.",
 			Token:   expression.Paren,
 		}
@@ -589,6 +601,41 @@ func (i *Interpreter) VisitSetExpression(expression *SetExpression) (value Value
 	}
 
 	object.InstanceValue.Set(expression.Name, &value)
+	return
+}
+
+func (i *Interpreter) VisitSuperExpression(expression *SuperExpression) (value Value, err error) {
+	if distance, ok := i.Locals[expression]; ok {
+		superclass, innerErr := i.Environment.GetAt(distance, "super")
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		object, innerErr := i.Environment.GetAt(distance-1, "this")
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		method := superclass.GetClassValue().FindMethod(expression.Method.Lexeme)
+		if method == nil {
+			err = &RuntimeError{
+				Message: fmt.Sprintf("Undefined property '%s'.", expression.Method.Lexeme),
+				Token:   expression.Method,
+			}
+			return
+		}
+
+		value = NewFunctionValue(method.Bind(object.InstanceValue))
+		return
+	}
+
+	// this shouldn't happen
+	err = &RuntimeError{
+		Message: "Missing superclass.",
+		Token:   expression.Keyword,
+	}
 	return
 }
 

@@ -112,6 +112,19 @@ func (e *SetExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, er
 	return visitor.VisitSetExpression(e)
 }
 
+type SuperExpression struct {
+	Keyword *Token
+	Method  *Token
+}
+
+func (e *SuperExpression) AcceptString(visitor ExpressionVisitor[string]) (string, error) {
+	return visitor.VisitSuperExpression(e)
+}
+
+func (e *SuperExpression) AcceptValue(visitor ExpressionVisitor[Value]) (Value, error) {
+	return visitor.VisitSuperExpression(e)
+}
+
 type ThisExpression struct {
 	Keyword *Token
 }
@@ -176,6 +189,7 @@ type ExpressionVisitor[T ExpressionVisitorConstraint] interface {
 	VisitLiteralExpression(expression *LiteralExpression) (T, error)
 	VisitLogicalExpression(expression *LogicalExpression) (T, error)
 	VisitSetExpression(expression *SetExpression) (T, error)
+	VisitSuperExpression(expression *SuperExpression) (T, error)
 	VisitThisExpression(expression *ThisExpression) (T, error)
 	VisitTernaryExpression(expression *TernaryExpression) (T, error)
 	VisitUnaryExpression(expression *UnaryExpression) (T, error)

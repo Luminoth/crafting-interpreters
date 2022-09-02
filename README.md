@@ -138,10 +138,10 @@ unary                   -> ( "!" | "-" ) unary
                         | call ;
 call                    -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 arguments               -> assignment ( "," assignment )* ;
-primary                 -> NUMBER | STRING
-                        | "true" | "false" | "nil"
-                        | "(" expression ")"
-                        | IDENTIFIER ;
+primary                 -> "true" | "false" | "nil" | "this"
+                        | "super" "." IDENTIFIER
+                        | NUMBER | STRING | IDENTIFIER
+                        | "(" expression ")" ;
 ```
 
 ### Operator Precedence

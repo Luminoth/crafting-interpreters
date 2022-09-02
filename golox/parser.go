@@ -812,13 +812,6 @@ func (p *Parser) finishCall(callee Expression) (expr Expression, err error) {
 }
 
 func (p *Parser) primary() (expr Expression, err error) {
-	if p.match(False) {
-		expr = &LiteralExpression{
-			Value: NewBoolLiteral(false),
-		}
-		return
-	}
-
 	if p.match(True) {
 		expr = &LiteralExpression{
 			Value: NewBoolLiteral(true),
@@ -826,9 +819,44 @@ func (p *Parser) primary() (expr Expression, err error) {
 		return
 	}
 
+	if p.match(False) {
+		expr = &LiteralExpression{
+			Value: NewBoolLiteral(false),
+		}
+		return
+	}
+
 	if p.match(Nil) {
 		expr = &LiteralExpression{
 			Value: NewNilLiteral(),
+		}
+		return
+	}
+
+	if p.match(This) {
+		expr = &ThisExpression{
+			Keyword: p.previous(),
+		}
+		return
+	}
+
+	if p.match(Super) {
+		keyword := p.previous()
+
+		_, err = p.consume(Dot, "Expect '.' after 'super'.")
+		if err != nil {
+			return
+		}
+
+		method, innerErr := p.consume(Identifier, "Expect superclass method name.")
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+
+		expr = &SuperExpression{
+			Keyword: keyword,
+			Method:  method,
 		}
 		return
 	}
@@ -843,13 +871,6 @@ func (p *Parser) primary() (expr Expression, err error) {
 	if p.match(String) {
 		expr = &LiteralExpression{
 			Value: NewStringLiteral(p.previous().Literal.StringValue),
-		}
-		return
-	}
-
-	if p.match(This) {
-		expr = &ThisExpression{
-			Keyword: p.previous(),
 		}
 		return
 	}

@@ -50,6 +50,10 @@ EXPRESSIONS = [
         'name': 'Token',
         'value': "Expression",
     }),
+    ASTDef('Super', {
+        'keyword': 'Token',
+        'method': 'Token',
+    }),
     ASTDef('This', {
         'keyword': 'Token',
     }),

@@ -18,6 +18,8 @@ const (
 	ValueTypeInstance ValueType = 7
 )
 
+// TODO: add a String() method for ValueType (and other enums)
+
 type Value struct {
 	Type ValueType `json:"type"`
 
@@ -68,6 +70,12 @@ func (v Value) String() string {
 	fmt.Fprintf(os.Stderr, "Unsupported value type %v\n", v.Type)
 	os.Exit(1)
 	return ""
+}
+
+func (v *Value) GetClassValue() *LoxClass {
+	// NOTE: no error checking here
+	// the caller is responsible for that
+	return v.ClassValue.(*LoxClass)
 }
 
 func NewValue(literal LiteralValue) (value Value, err error) {

@@ -11,8 +11,9 @@ const (
 	FunctionTypeInitializer FunctionType = 2
 	FunctionTypeMethod      FunctionType = 3
 
-	ClassTypeNone  ClassType = 0
-	ClassTypeClass ClassType = 1
+	ClassTypeNone     ClassType = 0
+	ClassTypeClass    ClassType = 1
+	ClassTypeSubclass ClassType = 2
 )
 
 type Scope map[string]bool
@@ -223,10 +224,18 @@ func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value,
 	r.define(statement.Name)
 
 	if statement.Superclass != nil {
+		r.CurrentClass = ClassTypeSubclass
+
 		if statement.Name.Lexeme == statement.Superclass.Name.Lexeme {
 			reportError(statement.Superclass.Name, "A class can't inherit from itself.")
 		}
 		r.resolveExpression(statement.Superclass)
+
+		r.beginScope()
+
+		// inject "super"
+		scope, _ := r.Scopes.Peek()
+		scope["super"] = true
 	}
 
 	r.beginScope()
@@ -244,6 +253,10 @@ func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value,
 	}
 
 	r.endScope()
+
+	if statement.Superclass != nil {
+		r.endScope()
+	}
 
 	r.CurrentClass = enclosingClass
 	return
@@ -388,6 +401,17 @@ func (r *Resolver) VisitSetExpression(expression *SetExpression) (value Value, e
 		return
 	}
 
+	return
+}
+
+func (r *Resolver) VisitSuperExpression(expression *SuperExpression) (value Value, err error) {
+	if r.CurrentClass == ClassTypeNone {
+		reportError(expression.Keyword, "Can't use 'super' outside of a class.")
+	} else if r.CurrentClass != ClassTypeSubclass {
+		reportError(expression.Keyword, "Can't user 'super' in a class with no superclass")
+	}
+
+	r.resolveLocal(expression, expression.Keyword)
 	return
 }
 

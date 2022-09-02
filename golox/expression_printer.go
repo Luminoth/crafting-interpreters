@@ -64,6 +64,10 @@ func (p *ExpressionPrinter) VisitSetExpression(expression *SetExpression) (strin
 	return fmt.Sprintf("(= %s.%s %s)", expression.Name.Lexeme, expr, v), nil
 }
 
+func (p *ExpressionPrinter) VisitSuperExpression(expression *SuperExpression) (string, error) {
+	return fmt.Sprintf("%s.%s", expression.Keyword.Lexeme, expression.Method.Lexeme), nil
+}
+
 func (p *ExpressionPrinter) VisitThisExpression(expression *ThisExpression) (string, error) {
 	return expression.Keyword.Lexeme, nil
 }
