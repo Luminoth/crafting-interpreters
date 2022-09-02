@@ -7,18 +7,28 @@ import (
 
 type ValueType int
 
+// TODO: use stringer to generate this
+func (t ValueType) String() string {
+	return [...]string{
+		"nil",
+		"number",
+		"string",
+		"bool",
+		"function",
+		"class",
+		"instance",
+	}[t]
+}
+
 const (
 	ValueTypeNil      ValueType = 0
-	ValueTypeAny      ValueType = 1
-	ValueTypeNumber   ValueType = 2
-	ValueTypeString   ValueType = 3
-	ValueTypeBool     ValueType = 4
-	ValueTypeFunction ValueType = 5
-	ValueTypeClass    ValueType = 6
-	ValueTypeInstance ValueType = 7
+	ValueTypeNumber   ValueType = 1
+	ValueTypeString   ValueType = 2
+	ValueTypeBool     ValueType = 3
+	ValueTypeFunction ValueType = 4
+	ValueTypeClass    ValueType = 5
+	ValueTypeInstance ValueType = 6
 )
-
-// TODO: add a String() method for ValueType (and other enums)
 
 type Value struct {
 	Type ValueType `json:"type"`
@@ -37,10 +47,6 @@ type Value struct {
 func (v Value) String() string {
 	if v.Type == ValueTypeNil {
 		return "nil"
-	}
-
-	if v.Type == ValueTypeAny {
-		return fmt.Sprintf("%v", v.AnyValue)
 	}
 
 	if v.Type == ValueTypeNumber {
@@ -72,6 +78,39 @@ func (v Value) String() string {
 	return ""
 }
 
+func (v *Value) Equals(other *Value) bool {
+	switch v.Type {
+	case ValueTypeNil:
+		return other.Type == ValueTypeNil
+	case ValueTypeNumber:
+		if other.Type == ValueTypeNumber {
+			return v.NumberValue == other.NumberValue
+		} else {
+			return false
+		}
+	case ValueTypeString:
+		if other.Type == ValueTypeString {
+			return v.StringValue == other.StringValue
+		} else {
+			return false
+		}
+	case ValueTypeBool:
+		if other.Type == ValueTypeBool {
+			return v.BoolValue == other.BoolValue
+		} else {
+			return false
+		}
+	case ValueTypeFunction:
+		return v.FunctionValue == other.FunctionValue
+	case ValueTypeClass:
+		return v.ClassValue == other.ClassValue
+	case ValueTypeInstance:
+		return v.InstanceValue == other.InstanceValue
+	default:
+		return false
+	}
+}
+
 func (v *Value) GetClassValue() *LoxClass {
 	// NOTE: no error checking here
 	// the caller is responsible for that
@@ -98,13 +137,6 @@ func NewValue(literal LiteralValue) (value Value, err error) {
 func NewNilValue() Value {
 	return Value{
 		Type: ValueTypeNil,
-	}
-}
-
-func NewAnyValue(value interface{}) Value {
-	return Value{
-		Type:     ValueTypeAny,
-		AnyValue: value,
 	}
 }
 

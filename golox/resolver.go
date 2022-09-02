@@ -3,14 +3,17 @@ package main
 import "fmt"
 
 type FunctionType int
-type ClassType int
 
 const (
 	FunctionTypeNone        FunctionType = 0
 	FunctionTypeFunction    FunctionType = 1
 	FunctionTypeInitializer FunctionType = 2
 	FunctionTypeMethod      FunctionType = 3
+)
 
+type ClassType int
+
+const (
 	ClassTypeNone     ClassType = 0
 	ClassTypeClass    ClassType = 1
 	ClassTypeSubclass ClassType = 2
@@ -408,7 +411,7 @@ func (r *Resolver) VisitSuperExpression(expression *SuperExpression) (value Valu
 	if r.CurrentClass == ClassTypeNone {
 		reportError(expression.Keyword, "Can't use 'super' outside of a class.")
 	} else if r.CurrentClass != ClassTypeSubclass {
-		reportError(expression.Keyword, "Can't user 'super' in a class with no superclass")
+		reportError(expression.Keyword, "Can't use 'super' in a class with no superclass.")
 	}
 
 	r.resolveLocal(expression, expression.Keyword)
