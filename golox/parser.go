@@ -99,6 +99,7 @@ func (p *Parser) variableDeclaration() (statement Statement, err error) {
 		return
 	}
 
+	// check for initializer
 	var initializer Expression
 	if p.match(Equal) {
 		initializer, err = p.expression()
@@ -126,6 +127,7 @@ func (p *Parser) classDeclaration() (statement Statement, err error) {
 		return
 	}
 
+	// check for inheritence
 	var superclass *VariableExpression
 	if p.match(Less) {
 		_, err = p.consume(Identifier, "Expect superclass name.")
@@ -143,6 +145,7 @@ func (p *Parser) classDeclaration() (statement Statement, err error) {
 		return
 	}
 
+	// read method declarations
 	methods := []*FunctionStatement{}
 	for {
 		if p.check(RightBrace) || p.isAtEnd() {
@@ -182,6 +185,7 @@ func (p *Parser) function(kind FunctionKind) (statement *FunctionStatement, err 
 		return
 	}
 
+	// read parameters
 	params := []*Token{}
 	if !p.check(RightParen) {
 		for {
@@ -321,7 +325,7 @@ func (p *Parser) forStatement() (statement Statement, err error) {
 		return
 	}
 
-	// build the desugared while loop
+	// use a desugared while loop
 
 	if increment != nil {
 		statement = &BlockStatement{

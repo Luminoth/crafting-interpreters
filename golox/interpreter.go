@@ -14,6 +14,7 @@ func (e *RuntimeError) Error() string {
 	return e.Message
 }
 
+// fake error to communicate a return
 type ReturnError struct {
 	*RuntimeError
 
@@ -24,6 +25,7 @@ func (e *ReturnError) Unwrap() error {
 	return e.RuntimeError
 }
 
+// fake error to communicate a break
 type BreakError struct {
 	*RuntimeError
 }
@@ -32,6 +34,7 @@ func (e *BreakError) Unwrap() error {
 	return e.RuntimeError
 }
 
+// fake error to communicate a continue
 type ContinueError struct {
 	*RuntimeError
 }
@@ -43,7 +46,7 @@ func (e *ContinueError) Unwrap() error {
 type Interpreter struct {
 	Locals map[Expression]int `json:"locals"`
 
-	Globals Environment `json:"globals"`
+	Globals *Environment `json:"globals"`
 
 	// NOTE: an alternative to this is to pass the environment
 	// to each Visit() method, letting the stack handle block scope cleanup
@@ -59,18 +62,9 @@ func NewInterpreter(debug bool) Interpreter {
 		Debug:   debug,
 	}
 
-	// define native functions
-	clock := &ClockFunction{}
-	value := NewFunctionValue(clock)
-	i.Globals.Define("clock", &value)
+	DefineNativeFunctions(i.Globals)
 
-	if printIsNative {
-		print := &PrintFunction{}
-		value := NewFunctionValue(print)
-		i.Globals.Define("print", &value)
-	}
-
-	i.Environment = &i.Globals
+	i.Environment = i.Globals
 	return i
 }
 
@@ -113,6 +107,8 @@ func (i *Interpreter) VisitFunctionStatement(statement *FunctionStatement) (valu
 }
 
 func (i *Interpreter) VisitPrintStatement(statement *PrintStatement) (value *Value, err error) {
+	// TODO: do we need to error if printIsNative is true?
+
 	v, err := i.evaluate(statement.Expression)
 	if err != nil {
 		return
@@ -233,6 +229,7 @@ func (i *Interpreter) VisitContinueStatement(statement *ContinueStatement) (valu
 }
 
 func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Value, err error) {
+	// evaluate the superclass first
 	var superclass *LoxClass
 	if statement.Superclass != nil {
 		v, innerErr := i.evaluate(statement.Superclass)
@@ -255,6 +252,7 @@ func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Val
 	// two-stage define / assign so that class methods can reference the class
 	i.Environment.Define(statement.Name.Lexeme, &Value{})
 
+	// define 'super' in an enclosing scope
 	if superclass != nil {
 		i.Environment = NewEnvironmentScope(i.Environment)
 
@@ -270,6 +268,7 @@ func (i *Interpreter) VisitClassStatement(statement *ClassStatement) (value *Val
 
 	class := NewLoxClass(statement.Name.Lexeme, superclass, methods)
 
+	// pop 'super' environment
 	if superclass != nil {
 		i.Environment = i.Environment.Enclosing
 	}
@@ -477,17 +476,6 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 		return
 	}
 
-	// TODO: should these be evaluated *after* we do all the validation?
-	arguments := make([]*Value, len(expression.Arguments))
-	for idx, argument := range expression.Arguments {
-		argumentValue, innerErr := i.evaluate(argument)
-		if innerErr != nil {
-			err = innerErr
-			return
-		}
-		arguments[idx] = &argumentValue
-	}
-
 	var callable Callable
 	if callee.Type == ValueTypeFunction {
 		callable = callee.FunctionValue
@@ -500,6 +488,17 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 			Token:   expression.Paren,
 		}
 		return
+	}
+
+	// evaluate the arguments
+	arguments := make([]*Value, len(expression.Arguments))
+	for idx, argument := range expression.Arguments {
+		argumentValue, innerErr := i.evaluate(argument)
+		if innerErr != nil {
+			err = innerErr
+			return
+		}
+		arguments[idx] = &argumentValue
 	}
 
 	argumentCount := len(arguments)
@@ -518,7 +517,9 @@ func (i *Interpreter) VisitCallExpression(expression *CallExpression) (value Val
 	}
 
 	if v == nil {
-		// TODO: should this be a "void" value?
+		// TODO: should this be a "void" value instead?
+		// if we had a void value then we could directly
+		// return callable.Call()
 		value = Value{}
 	} else {
 		value = *v
@@ -578,6 +579,7 @@ func (i *Interpreter) VisitSuperExpression(expression *SuperExpression) (value V
 			return
 		}
 
+		// 'this' should be one up from 'super'
 		object, innerErr := i.Environment.GetAt(distance-1, "this")
 		if innerErr != nil {
 			err = innerErr

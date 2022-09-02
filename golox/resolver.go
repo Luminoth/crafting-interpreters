@@ -236,14 +236,14 @@ func (r *Resolver) VisitClassStatement(statement *ClassStatement) (value *Value,
 
 		r.beginScope()
 
-		// inject "super"
+		// inject 'super'
 		scope, _ := r.Scopes.Peek()
 		scope["super"] = true
 	}
 
 	r.beginScope()
 
-	// inject "this"
+	// inject 'this'
 	scope, _ := r.Scopes.Peek()
 	scope["this"] = true
 

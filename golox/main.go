@@ -8,10 +8,9 @@ import (
 	"os"
 )
 
-var printIsNative = false
-
 func main() {
 	debug := flag.Bool("debug", false, "Enable debug output")
+	// TODO: a 'strict' flag would be useful for passing the lox test harness
 
 	flag.Parse()
 

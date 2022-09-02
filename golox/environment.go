@@ -10,16 +10,17 @@ type Environment struct {
 	Enclosing *Environment `json:"enclosing,omitempty"`
 }
 
-func NewEnvironment() Environment {
-	return Environment{
-		Values: Values{},
+func NewEnvironment() *Environment {
+	return &Environment{
+		Values:    Values{},
+		Enclosing: nil,
 	}
 }
 
 func NewEnvironmentScope(enclosing *Environment) *Environment {
 	environment := NewEnvironment()
 	environment.Enclosing = enclosing
-	return &environment
+	return environment
 }
 
 func (e *Environment) Define(name string, value *Value) {
@@ -34,6 +35,7 @@ func (e *Environment) Assign(name *Token, value *Value) (err error) {
 		return
 	}
 
+	// try the enclosing scope
 	if e.Enclosing != nil {
 		return e.Enclosing.Assign(name, value)
 	}
@@ -53,6 +55,7 @@ func (e *Environment) Get(name *Token) (value *Value, err error) {
 		return
 	}
 
+	// try the enclosing scope
 	if e.Enclosing != nil {
 		return e.Enclosing.Get(name)
 	}

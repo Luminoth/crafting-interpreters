@@ -1,8 +1,6 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type LoxFunction struct {
 	Declaration   *FunctionStatement `json:"declaration"`
@@ -26,10 +24,6 @@ func (f *LoxFunction) Arity() int {
 	return len(f.Declaration.Params)
 }
 
-func (f *LoxFunction) String() string {
-	return fmt.Sprintf("<fn %s>", f.Name())
-}
-
 func (f *LoxFunction) Call(interpreter *Interpreter, arguments []*Value) (value *Value, err error) {
 	environment := NewEnvironmentScope(f.Closure)
 	for idx, param := range f.Declaration.Params {
@@ -38,8 +32,14 @@ func (f *LoxFunction) Call(interpreter *Interpreter, arguments []*Value) (value 
 
 	value, err = interpreter.executeBlock(f.Declaration.Body, environment)
 	if err != nil {
+		// returns are passed through errors
+		// so check for that first
 		if returnErr, ok := err.(*ReturnError); ok {
+			err = nil
+
 			if f.IsInitializer {
+				// initialzers return 'this'
+				// which should be in the enclosing environment
 				v, innerErr := f.Closure.GetAt(0, "this")
 				if innerErr != nil {
 					err = innerErr
@@ -47,17 +47,17 @@ func (f *LoxFunction) Call(interpreter *Interpreter, arguments []*Value) (value 
 				}
 
 				value = v
-				err = nil
 				return
 			}
 
 			value = returnErr.Value
-			err = nil
 			return
 		}
 	}
 
 	if f.IsInitializer {
+		// initialzers return 'this'
+		// which should be in the enclosing environment
 		v, innerErr := f.Closure.GetAt(0, "this")
 		if innerErr != nil {
 			err = innerErr
@@ -65,15 +65,18 @@ func (f *LoxFunction) Call(interpreter *Interpreter, arguments []*Value) (value 
 		}
 
 		value = v
-		err = nil
 		return
 	}
 
 	return
 }
 
+func (f *LoxFunction) String() string {
+	return fmt.Sprintf("<fn %s>", f.Name())
+}
+
 func (f *LoxFunction) Bind(instance *LoxInstance) *LoxFunction {
-	// wrap methods with a special environment containing "this"
+	// wrap methods with a special environment containing 'this'
 	environment := NewEnvironmentScope(f.Closure)
 	value := NewInstanceValue(instance)
 	environment.Define("this", &value)
