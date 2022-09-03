@@ -3,7 +3,9 @@
 use crate::value::*;
 
 /// Bytecode operation codes
-#[derive(Debug, strum_macros::Display, strum_macros::AsRefStr, strum_macros::EnumCount)]
+#[derive(
+    Debug, PartialEq, Eq, strum_macros::Display, strum_macros::AsRefStr, strum_macros::EnumCount,
+)]
 pub enum OpCode {
     /// A constant value
     #[strum(serialize = "OP_CONSTANT")]
@@ -93,5 +95,35 @@ impl Chunk {
             code.disassemble(self);
             offset += code.size();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_write() {
+        let mut chunk = Chunk::new();
+        chunk.write(OpCode::Return, 123);
+        assert_eq!(chunk.code[0], OpCode::Return);
+        assert_eq!(chunk.lines[0], 123);
+    }
+
+    #[test]
+    fn test_constant() {
+        let mut chunk = Chunk::new();
+
+        let constant = chunk.add_constant(1.2);
+        chunk.write(OpCode::Constant(constant), 123);
+        assert_eq!(chunk.code[0], OpCode::Constant(0));
+        assert_eq!(chunk.lines[0], 123);
+        assert_eq!(chunk.constants[0], 1.2);
+
+        let constant = chunk.add_constant(2.1);
+        chunk.write(OpCode::Constant(constant), 124);
+        assert_eq!(chunk.code[1], OpCode::Constant(1));
+        assert_eq!(chunk.lines[1], 124);
+        assert_eq!(chunk.constants[1], 2.1);
     }
 }
