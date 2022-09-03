@@ -116,14 +116,16 @@ mod tests {
 
         let constant = chunk.add_constant(1.2);
         chunk.write(OpCode::Constant(constant), 123);
-        assert_eq!(chunk.code[0], OpCode::Constant(0));
-        assert_eq!(chunk.lines[0], 123);
-        assert_eq!(chunk.constants[0], 1.2);
+        let idx = constant as usize;
+        assert_eq!(chunk.code[idx], OpCode::Constant(0));
+        assert_eq!(chunk.lines[idx], 123);
+        assert_eq!(chunk.constants[idx], 1.2);
 
         let constant = chunk.add_constant(2.1);
         chunk.write(OpCode::Constant(constant), 124);
-        assert_eq!(chunk.code[1], OpCode::Constant(1));
-        assert_eq!(chunk.lines[1], 124);
-        assert_eq!(chunk.constants[1], 2.1);
+        let idx = constant as usize;
+        assert_eq!(chunk.code[idx], OpCode::Constant(1));
+        assert_eq!(chunk.lines[idx], 124);
+        assert_eq!(chunk.constants[idx], 2.1);
     }
 }
