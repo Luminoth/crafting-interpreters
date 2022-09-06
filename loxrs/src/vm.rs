@@ -5,6 +5,9 @@ use std::cell::RefCell;
 use thiserror::Error;
 
 use crate::chunk::*;
+use crate::value::*;
+
+const STACK_MAX: usize = 256;
 
 /// Errors returned by the VM interpreter
 #[derive(Error, Debug)]
@@ -26,6 +29,12 @@ pub struct VM<'a> {
 
     /// Instruction pointer / program counter
     ip: RefCell<usize>,
+
+    /// Value stack
+    stack: RefCell<[Value; STACK_MAX]>,
+
+    /// Stack pointer
+    sp: RefCell<usize>,
 }
 
 impl<'a> VM<'a> {
@@ -34,6 +43,8 @@ impl<'a> VM<'a> {
         Self {
             chunk: RefCell::new(None),
             ip: RefCell::new(0),
+            stack: RefCell::new([Value::default(); STACK_MAX]),
+            sp: RefCell::new(0),
         }
     }
 
@@ -43,6 +54,20 @@ impl<'a> VM<'a> {
         *self.ip.borrow_mut() = 0;
 
         self.run()
+    }
+
+    fn push(&self, value: Value) {
+        let sp = *self.sp.borrow();
+        self.stack.borrow_mut()[sp] = value;
+        *self.sp.borrow_mut() += 1;
+    }
+
+    fn pop(&self) -> Value {
+        let sp = *self.sp.borrow() - 1;
+        let ret = self.stack.borrow()[sp];
+        *self.sp.borrow_mut() -= 1;
+
+        ret
     }
 
     // READ_BYTE()
@@ -60,14 +85,25 @@ impl<'a> VM<'a> {
             let instruction = self.read_byte();
 
             #[cfg(feature = "debug_trace")]
-            instruction.disassemble(self.chunk.borrow().unwrap());
+            {
+                print!("          ");
+                for slot in 0..*self.sp.borrow() {
+                    print!("[ {} ]", self.stack.borrow()[slot]);
+                }
+                println!();
+                instruction.disassemble(self.chunk.borrow().unwrap());
+            }
 
             match instruction {
                 OpCode::Constant(idx) => {
                     let constant = self.chunk.borrow().unwrap().get_constant(*idx);
-                    println!("{}", constant);
+                    self.push(*constant);
                 }
-                OpCode::Return => return Ok(()),
+                OpCode::Return => {
+                    let value = self.pop();
+                    println!("{}", value);
+                    return Ok(());
+                }
             }
         }
     }
