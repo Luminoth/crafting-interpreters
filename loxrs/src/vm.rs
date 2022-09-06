@@ -55,7 +55,12 @@ impl<'a> VM<'a> {
 
     fn run(&self) -> Result<(), InterpretError> {
         loop {
-            match self.read_byte() {
+            let instruction = self.read_byte();
+
+            #[cfg(feature = "debug")]
+            instruction.disassemble(self.chunk.borrow().unwrap());
+
+            match instruction {
                 OpCode::Constant(idx) => {
                     let constant = self.chunk.borrow().unwrap().get_constant(*idx);
                     println!("{}", constant);
