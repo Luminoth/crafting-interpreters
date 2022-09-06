@@ -1,8 +1,10 @@
-//! Bytecode chunks
+//! Lox bytecode chunks
 
 use crate::value::*;
 
 /// Bytecode operation codes
+// TODO: this is currently less memory efficient than the book's implementation
+// probably want to keep an eye on things to see if it gets really bad
 #[derive(
     Debug, PartialEq, Eq, strum_macros::Display, strum_macros::AsRefStr, strum_macros::EnumCount,
 )]
@@ -68,10 +70,24 @@ impl Chunk {
         }
     }
 
+    /// Reads the instruction at ip
+    // READ_BYTE()
+    #[inline]
+    pub fn read(&self, ip: usize) -> &OpCode {
+        &self.code[ip]
+    }
+
     /// Write an opcode to the chunk
     pub fn write(&mut self, opcode: OpCode, line: usize) {
         self.code.push(opcode);
         self.lines.push(line);
+    }
+
+    /// Gets the constant at the given index
+    // READ_CONSTANT()
+    #[inline]
+    pub fn get_constant(&self, idx: u8) -> &Value {
+        &self.constants[idx as usize]
     }
 
     /// Add a constant to the chunk and return its index
@@ -107,6 +123,7 @@ mod tests {
         let mut chunk = Chunk::new();
         chunk.write(OpCode::Return, 123);
         assert_eq!(chunk.code[0], OpCode::Return);
+        assert_eq!(*chunk.read(0), OpCode::Return);
         assert_eq!(chunk.lines[0], 123);
     }
 
@@ -120,6 +137,7 @@ mod tests {
         assert_eq!(chunk.code[idx], OpCode::Constant(0));
         assert_eq!(chunk.lines[idx], 123);
         assert_eq!(chunk.constants[idx], 1.2);
+        assert_eq!(*chunk.get_constant(idx as u8), 1.2);
 
         let constant = chunk.add_constant(2.1);
         chunk.write(OpCode::Constant(constant), 124);
@@ -127,5 +145,6 @@ mod tests {
         assert_eq!(chunk.code[idx], OpCode::Constant(1));
         assert_eq!(chunk.lines[idx], 124);
         assert_eq!(chunk.constants[idx], 2.1);
+        assert_eq!(*chunk.get_constant(idx as u8), 2.1);
     }
 }
