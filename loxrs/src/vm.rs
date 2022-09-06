@@ -6,6 +6,7 @@ use thiserror::Error;
 
 use crate::chunk::*;
 
+/// Errors returned by the VM interpreter
 #[derive(Error, Debug)]
 pub enum InterpretError {
     /// A compile error
@@ -17,6 +18,7 @@ pub enum InterpretError {
     RuntimeError,
 }
 
+/// The Lox Virtual Machine
 #[derive(Debug)]
 pub struct VM<'a> {
     /// The chunk currently being processed
@@ -57,7 +59,7 @@ impl<'a> VM<'a> {
         loop {
             let instruction = self.read_byte();
 
-            #[cfg(feature = "debug")]
+            #[cfg(feature = "debug_trace")]
             instruction.disassemble(self.chunk.borrow().unwrap());
 
             match instruction {

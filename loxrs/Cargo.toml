@@ -13,4 +13,4 @@ thiserror = "1.0"
 
 [features]
 default = []
-debug = []
+debug_trace = []
