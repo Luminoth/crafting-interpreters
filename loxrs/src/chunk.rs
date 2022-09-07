@@ -13,6 +13,10 @@ pub enum OpCode {
     #[strum(serialize = "OP_CONSTANT")]
     Constant(u8),
 
+    /// Unary negation
+    #[strum(serialize = "OP_NEGATE")]
+    Negate,
+
     /// Return from the current function
     #[strum(serialize = "OP_RETURN")]
     Return,
@@ -26,6 +30,7 @@ impl OpCode {
     pub fn size(&self) -> usize {
         match self {
             Self::Constant(_) => 2,
+            Self::Negate => 1,
             Self::Return => 1,
         }
     }
@@ -38,6 +43,9 @@ impl OpCode {
                     "{:<16} {:>4} '{}'",
                     self, idx, chunk.constants[*idx as usize]
                 );
+            }
+            Self::Negate => {
+                println!("{}", self);
             }
             Self::Return => {
                 println!("{}", self);

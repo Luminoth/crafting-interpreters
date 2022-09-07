@@ -99,6 +99,9 @@ impl<'a> VM<'a> {
                     let constant = self.chunk.borrow().unwrap().get_constant(*idx);
                     self.push(*constant);
                 }
+                OpCode::Negate => {
+                    self.push(-self.pop());
+                }
                 OpCode::Return => {
                     let value = self.pop();
                     println!("{}", value);
