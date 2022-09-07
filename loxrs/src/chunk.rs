@@ -13,6 +13,22 @@ pub enum OpCode {
     #[strum(serialize = "OP_CONSTANT")]
     Constant(u8),
 
+    /// Addition
+    #[strum(serialize = "OP_ADD")]
+    Add,
+
+    /// Subtraction
+    #[strum(serialize = "OP_SUBTRACT")]
+    Subtract,
+
+    /// Multiplication
+    #[strum(serialize = "OP_MULTIPLY")]
+    Multiply,
+
+    /// Division
+    #[strum(serialize = "OP_DIVIDE")]
+    Divide,
+
     /// Unary negation
     #[strum(serialize = "OP_NEGATE")]
     Negate,
@@ -30,8 +46,12 @@ impl OpCode {
     pub fn size(&self) -> usize {
         match self {
             Self::Constant(_) => 2,
-            Self::Negate => 1,
-            Self::Return => 1,
+            Self::Add
+            | Self::Subtract
+            | Self::Multiply
+            | Self::Divide
+            | Self::Negate
+            | Self::Return => 1,
         }
     }
 
@@ -44,10 +64,12 @@ impl OpCode {
                     self, idx, chunk.constants[*idx as usize]
                 );
             }
-            Self::Negate => {
-                println!("{}", self);
-            }
-            Self::Return => {
+            Self::Add
+            | Self::Subtract
+            | Self::Multiply
+            | Self::Divide
+            | Self::Negate
+            | Self::Return => {
                 println!("{}", self);
             }
         }

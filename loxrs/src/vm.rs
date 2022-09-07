@@ -9,6 +9,11 @@ use crate::value::*;
 
 const STACK_MAX: usize = 256;
 
+#[cfg(feature = "dynamic_stack")]
+type Stack = Vec<Value>;
+#[cfg(not(feature = "dynamic_stack"))]
+type Stack = [Value; STACK_MAX];
+
 /// Errors returned by the VM interpreter
 #[derive(Error, Debug)]
 pub enum InterpretError {
@@ -31,19 +36,27 @@ pub struct VM<'a> {
     ip: RefCell<usize>,
 
     /// Value stack
-    stack: RefCell<[Value; STACK_MAX]>,
+    stack: RefCell<Stack>,
 
     /// Stack pointer
+    #[cfg(not(feature = "dynamic_stack"))]
     sp: RefCell<usize>,
 }
 
 impl<'a> VM<'a> {
     /// Creates a new VM
     pub fn new() -> Self {
+        #[cfg(feature = "dynamic_stack")]
+        let stack = Stack::with_capacity(STACK_MAX);
+        #[cfg(not(feature = "dynamic_stack"))]
+        let stack = [Value::default(); STACK_MAX];
+
         Self {
             chunk: RefCell::new(None),
             ip: RefCell::new(0),
-            stack: RefCell::new([Value::default(); STACK_MAX]),
+            stack: RefCell::new(stack),
+
+            #[cfg(not(feature = "dynamic_stack"))]
             sp: RefCell::new(0),
         }
     }
@@ -57,17 +70,29 @@ impl<'a> VM<'a> {
     }
 
     fn push(&self, value: Value) {
-        let sp = *self.sp.borrow();
-        self.stack.borrow_mut()[sp] = value;
-        *self.sp.borrow_mut() += 1;
+        #[cfg(feature = "dynamic_stack")]
+        self.stack.borrow_mut().push(value);
+
+        #[cfg(not(feature = "dynamic_stack"))]
+        {
+            let sp = *self.sp.borrow();
+            self.stack.borrow_mut()[sp] = value;
+            *self.sp.borrow_mut() += 1;
+        }
     }
 
     fn pop(&self) -> Value {
-        let sp = *self.sp.borrow() - 1;
-        let ret = self.stack.borrow()[sp];
-        *self.sp.borrow_mut() -= 1;
+        #[cfg(feature = "dynamic_stack")]
+        return self.stack.borrow_mut().pop().unwrap();
 
-        ret
+        #[cfg(not(feature = "dynamic_stack"))]
+        {
+            let sp = *self.sp.borrow() - 1;
+            let ret = self.stack.borrow()[sp];
+            *self.sp.borrow_mut() -= 1;
+
+            ret
+        }
     }
 
     // READ_BYTE()
@@ -80,6 +105,16 @@ impl<'a> VM<'a> {
         ret
     }
 
+    #[inline]
+    fn binary_op<C>(&self, op: C)
+    where
+        C: FnOnce(Value, Value) -> Value,
+    {
+        let b = self.pop();
+        let a = self.pop();
+        self.push(op(a, b));
+    }
+
     fn run(&self) -> Result<(), InterpretError> {
         loop {
             let instruction = self.read_byte();
@@ -87,10 +122,16 @@ impl<'a> VM<'a> {
             #[cfg(feature = "debug_trace")]
             {
                 print!("          ");
+                #[cfg(feature = "dynamic_stack")]
+                for value in self.stack.borrow().iter() {
+                    print!("[ {} ]", value);
+                }
+                #[cfg(not(feature = "dynamic_stack"))]
                 for slot in 0..*self.sp.borrow() {
                     print!("[ {} ]", self.stack.borrow()[slot]);
                 }
                 println!();
+
                 instruction.disassemble(self.chunk.borrow().unwrap());
             }
 
@@ -98,6 +139,19 @@ impl<'a> VM<'a> {
                 OpCode::Constant(idx) => {
                     let constant = self.chunk.borrow().unwrap().get_constant(*idx);
                     self.push(*constant);
+                }
+                OpCode::Add => {
+                    self.binary_op(|a, b| a + b);
+                }
+                OpCode::Subtract => {
+                    self.binary_op(|a, b| a - b);
+                }
+                OpCode::Multiply => {
+                    self.binary_op(|a, b| a * b);
+                }
+                OpCode::Divide => {
+                    // TODO: divide by 0 error
+                    self.binary_op(|a, b| a / b);
                 }
                 OpCode::Negate => {
                     self.push(-self.pop());

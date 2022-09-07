@@ -14,3 +14,4 @@ thiserror = "1.0"
 [features]
 default = ["debug_trace"]
 debug_trace = []
+dynamic_stack = []
