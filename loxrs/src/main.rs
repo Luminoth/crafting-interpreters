@@ -7,9 +7,8 @@ mod vm;
 use chunk::*;
 use vm::*;
 
-fn main() -> anyhow::Result<()> {
-    let vm = VM::new();
-
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let mut chunk = Chunk::new();
 
     let constant = chunk.add_constant(1.2);
@@ -29,7 +28,12 @@ fn main() -> anyhow::Result<()> {
     chunk.write(OpCode::Return, 123);
 
     chunk.disassemble("test chunk");
-    vm.interpret(&chunk)?;
+
+    tokio::task::spawn_blocking(move || {
+        let vm = VM::new();
+        vm.interpret(&chunk)
+    })
+    .await??;
 
     Ok(())
 }
