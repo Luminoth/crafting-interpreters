@@ -51,6 +51,7 @@ pub enum TokenType {
     Break,
     Continue,
     Nil,
+    #[cfg(not(feature = "native_print"))]
     Print,
     Return,
     Var,
@@ -105,7 +106,7 @@ impl<'a> Scanner<'a> {
     pub fn scan_token(&self) -> Token {
         self.skip_whitespace_and_comments();
 
-        *self.start.borrow_mut() = *self.current.borrow();
+        *self.start.borrow_mut() = self.current();
 
         if self.is_at_end() {
             return self.make_token(TokenType::Eof);
@@ -167,18 +168,37 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn peek(&self) -> char {
-        let current = *self.current.borrow();
-        self.source.as_bytes()[current] as char
+    #[inline]
+    fn start(&self) -> usize {
+        *self.start.borrow()
     }
 
+    #[inline]
+    fn peek_start(&self) -> char {
+        self.source.as_bytes()[self.start()] as char
+    }
+
+    #[inline]
+    fn peek_start_next(&self) -> char {
+        self.source.as_bytes()[self.start() + 1] as char
+    }
+
+    #[inline]
+    fn current(&self) -> usize {
+        *self.current.borrow()
+    }
+
+    #[inline]
+    fn peek(&self) -> char {
+        self.source.as_bytes()[self.current()] as char
+    }
+
+    #[inline]
     fn peek_next(&self) -> char {
         if self.is_at_end() {
             return '\0';
         }
-
-        let next = *self.current.borrow() + 1;
-        self.source.as_bytes()[next] as char
+        self.source.as_bytes()[self.current() + 1] as char
     }
 
     fn advance(&self) -> char {
@@ -200,8 +220,9 @@ impl<'a> Scanner<'a> {
         true
     }
 
+    #[inline]
     fn is_at_end(&self) -> bool {
-        *self.current.borrow() >= self.source.len()
+        self.current() >= self.source.len()
     }
 
     fn skip_whitespace_and_comments(&self) {
@@ -291,8 +312,57 @@ impl<'a> Scanner<'a> {
         self.make_token(self.identifier_type())
     }
 
-    fn identifier_type(&self) -> TokenType {
+    fn check_keyword(&self, keyword_start: usize, rest: &str, r#type: TokenType) -> TokenType {
+        if self.current() - self.start() == keyword_start + rest.len() {
+            let start = self.start() + keyword_start;
+            let source = &self.source[start..start + rest.len()];
+            if source == rest {
+                return r#type;
+            }
+        }
+
         TokenType::Identifier
+    }
+
+    fn identifier_type(&self) -> TokenType {
+        match self.peek_start() {
+            'a' => self.check_keyword(1, "nd", TokenType::And),
+            'c' => self.check_keyword(1, "lass", TokenType::Class),
+            'e' => self.check_keyword(1, "lse", TokenType::Else),
+            'f' => {
+                if self.current() - self.start() > 1 {
+                    match self.peek_start_next() {
+                        'a' => self.check_keyword(2, "lse", TokenType::False),
+                        'o' => self.check_keyword(2, "r", TokenType::For),
+                        'u' => self.check_keyword(2, "n", TokenType::Fun),
+                        _ => TokenType::Identifier,
+                    }
+                } else {
+                    TokenType::Identifier
+                }
+            }
+            'i' => self.check_keyword(1, "f", TokenType::If),
+            'n' => self.check_keyword(1, "il", TokenType::Nil),
+            'o' => self.check_keyword(1, "r", TokenType::Or),
+            #[cfg(not(feature = "native_print"))]
+            'p' => self.check_keyword(1, "rint", TokenType::Print),
+            'r' => self.check_keyword(1, "eturn", TokenType::Return),
+            's' => self.check_keyword(1, "uper", TokenType::Super),
+            't' => {
+                if self.current() - self.start() > 1 {
+                    match self.peek_start_next() {
+                        'h' => self.check_keyword(2, "is", TokenType::This),
+                        'r' => self.check_keyword(2, "ue", TokenType::True),
+                        _ => TokenType::Identifier,
+                    }
+                } else {
+                    TokenType::Identifier
+                }
+            }
+            'v' => self.check_keyword(1, "ar", TokenType::Var),
+            'w' => self.check_keyword(1, "hile", TokenType::While),
+            _ => TokenType::Identifier,
+        }
     }
 
     fn number(&self) -> Token {
@@ -322,11 +392,9 @@ impl<'a> Scanner<'a> {
     }
 
     fn make_token(&self, r#type: TokenType) -> Token {
-        let start = *self.start.borrow();
-        let current = *self.current.borrow();
         Token {
             r#type,
-            lexeme: Some(&self.source[start..current]),
+            lexeme: Some(&self.source[self.start()..self.current()]),
             line: *self.line.borrow(),
         }
     }

@@ -17,3 +17,4 @@ tokio = { version = "1.21", features = ["full"] }
 default = ["debug_trace"]
 debug_trace = []
 dynamic_stack = []
+native_print = []
