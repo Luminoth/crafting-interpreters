@@ -103,8 +103,11 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    /// Scan and return the next token in the source stream
     pub fn scan_token(&self) -> Token {
-        self.skip_whitespace_and_comments();
+        if let Some(error) = self.skip_whitespace_and_comments() {
+            return error;
+        }
 
         *self.start.borrow_mut() = self.current();
 
@@ -190,6 +193,9 @@ impl<'a> Scanner<'a> {
 
     #[inline]
     fn peek(&self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
         self.source.as_bytes()[self.current()] as char
     }
 
@@ -225,10 +231,11 @@ impl<'a> Scanner<'a> {
         self.current() >= self.source.len()
     }
 
-    fn skip_whitespace_and_comments(&self) {
+    // this can return an error token
+    fn skip_whitespace_and_comments(&self) -> Option<Token> {
         loop {
             if self.is_at_end() {
-                return;
+                return None;
             }
 
             let ch = self.peek();
@@ -265,11 +272,19 @@ impl<'a> Scanner<'a> {
 
                             self.advance();
                         }
+
+                        if self.is_at_end() {
+                            return Some(self.error_token("Unterminated multi-line comment"));
+                        }
+
+                        // consume the closing '*/'
+                        self.advance();
+                        self.advance();
                     } else {
-                        return;
+                        return None;
                     }
                 }
-                _ => break,
+                _ => return None,
             }
         }
     }
