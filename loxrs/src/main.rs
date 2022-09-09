@@ -1,5 +1,8 @@
 //! Rust implementation of clox from Crafting Interpreters - Robert Nystrom
 
+#![allow(dead_code)]
+#![deny(warnings)]
+
 mod chunk;
 mod compiler;
 mod options;
@@ -42,7 +45,7 @@ async fn repl() -> anyhow::Result<()> {
         if let Some(line) = lines.next_line().await? {
             // ignore any errors that come out of this
             // (tho we may want to exit(74) if it's an internal error)
-            let _ = interpret(&line).await;
+            let _ = interpret(line).await;
         } else {
             stdout.write_all(b"\n").await?;
             break;
@@ -60,9 +63,9 @@ async fn run_file(filepath: impl AsRef<Path>) -> anyhow::Result<()> {
     match interpret(source).await {
         Ok(_) => Ok(()),
         Err(err) => match err {
-            InterpretError::InternalError => std::process::exit(1),
-            InterpretError::CompileError => std::process::exit(65),
-            InterpretError::RuntimeError => std::process::exit(70),
+            InterpretError::Internal => std::process::exit(1),
+            InterpretError::Compile => std::process::exit(65),
+            InterpretError::Runtime => std::process::exit(70),
         },
     }
 }

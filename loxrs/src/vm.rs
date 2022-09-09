@@ -20,15 +20,15 @@ type Stack = [Value; STACK_MAX];
 pub enum InterpretError {
     /// An internal error
     #[error("internal error")]
-    InternalError,
+    Internal,
 
     /// A compile error
     #[error("compile error")]
-    CompileError,
+    Compile,
 
     /// A runtime error
     #[error("runtime error")]
-    RuntimeError,
+    Runtime,
 }
 
 /// The Lox Virtual Machine
@@ -177,7 +177,7 @@ impl<'a> VM<'a> {
 }
 
 /// Compile and interpret lox source
-pub async fn interpret(input: impl AsRef<str>) -> Result<(), InterpretError> {
+pub async fn interpret(input: String) -> Result<(), InterpretError> {
     compile(input).await;
 
     tokio::task::spawn_blocking(move || {
@@ -187,7 +187,7 @@ pub async fn interpret(input: impl AsRef<str>) -> Result<(), InterpretError> {
         vm.interpret(&chunk)
     })
     .await
-    .map_err(|_| InterpretError::InternalError)
+    .map_err(|_| InterpretError::Internal)
     .and_then(|result| result)
 }
 
