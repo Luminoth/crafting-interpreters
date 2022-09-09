@@ -100,6 +100,11 @@ impl Chunk {
         }
     }
 
+    /// The number of opcodes in the chunk
+    pub fn size(&self) -> usize {
+        self.code.len()
+    }
+
     /// Reads the instruction at ip
     // READ_BYTE()
     #[inline]

@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use thiserror::Error;
 
 use crate::chunk::*;
+use crate::compiler::*;
 use crate::value::*;
 
 const STACK_MAX: usize = 256;
@@ -17,6 +18,10 @@ type Stack = [Value; STACK_MAX];
 /// Errors returned by the VM interpreter
 #[derive(Error, Debug)]
 pub enum InterpretError {
+    /// An internal error
+    #[error("internal error")]
+    InternalError,
+
     /// A compile error
     #[error("compile error")]
     CompileError,
@@ -65,6 +70,11 @@ impl<'a> VM<'a> {
     pub fn interpret(&self, chunk: &'a Chunk) -> Result<(), InterpretError> {
         *self.chunk.borrow_mut() = Some(chunk);
         *self.ip.borrow_mut() = 0;
+
+        // TODO: maybe this should be an error?
+        if self.chunk.borrow().unwrap().size() < 1 {
+            return Ok(());
+        }
 
         self.run()
     }
@@ -164,6 +174,21 @@ impl<'a> VM<'a> {
             }
         }
     }
+}
+
+/// Compile and interpret lox source
+pub async fn interpret(input: impl AsRef<str>) -> Result<(), InterpretError> {
+    compile(input).await;
+
+    tokio::task::spawn_blocking(move || {
+        let chunk = Chunk::new();
+
+        let vm = VM::new();
+        vm.interpret(&chunk)
+    })
+    .await
+    .map_err(|_| InterpretError::InternalError)
+    .and_then(|result| result)
 }
 
 #[cfg(test)]
