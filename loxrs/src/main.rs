@@ -13,13 +13,30 @@ mod vm;
 use std::path::Path;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tracing::Level;
+use tracing_subscriber::FmtSubscriber;
 
 use options::*;
 use vm::*;
 
+fn init_logging() -> anyhow::Result<()> {
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::INFO)
+        .without_time()
+        .with_level(false)
+        .with_target(false)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)?;
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let options: Options = argh::from_env();
+
+    init_logging()?;
 
     if let Some(filepath) = options.filepath {
         run_file(filepath).await?;

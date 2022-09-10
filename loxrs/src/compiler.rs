@@ -1,5 +1,7 @@
 //! Lox compiler
 
+use tracing::info;
+
 use crate::scanner::*;
 
 /// Compiles lox source
@@ -10,15 +12,15 @@ pub async fn compile(input: String) {
         let mut line = -1;
         loop {
             let token = scanner.scan_token();
-            if token.line as isize != line {
-                print!("{:>4} ", token.line);
-                line = token.line as isize;
-            } else {
-                print!("   | ");
-            }
-
-            println!(
-                "{:>2} '{}'",
+            info!(
+                "{} {:>2} '{}'",
+                if token.line as isize != line {
+                    let f = format!("{:>4} ", token.line);
+                    line = token.line as isize;
+                    f
+                } else {
+                    "   | ".to_owned()
+                },
                 token.r#type as u8,
                 token.lexeme.unwrap_or_default()
             );

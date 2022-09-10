@@ -1,5 +1,7 @@
 //! Lox bytecode chunks
 
+use tracing::info;
+
 use crate::value::*;
 
 /// Bytecode operation codes
@@ -56,12 +58,15 @@ impl OpCode {
     }
 
     /// Disassemble the opcode to stdout
-    pub fn disassemble(&self, chunk: &Chunk) {
+    pub fn disassemble(&self, header: impl AsRef<str>, chunk: &Chunk) {
         match self {
             Self::Constant(idx) => {
-                println!(
-                    "{:<16} {:>4} '{}'",
-                    self, idx, chunk.constants[*idx as usize]
+                info!(
+                    "{}{:<16} {:>4} '{}'",
+                    header.as_ref(),
+                    self,
+                    idx,
+                    chunk.constants[*idx as usize]
                 );
             }
             Self::Add
@@ -70,7 +75,7 @@ impl OpCode {
             | Self::Divide
             | Self::Negate
             | Self::Return => {
-                println!("{}", self);
+                info!("{}{}", header.as_ref(), self);
             }
         }
     }
@@ -133,17 +138,20 @@ impl Chunk {
 
     /// Disassemble the chunk to stdout
     pub fn disassemble(&self, name: impl AsRef<str>) {
-        println!("== {} ==", name.as_ref());
+        info!("== {} ==", name.as_ref());
 
         let mut offset = 0;
         for (idx, code) in self.code.iter().enumerate() {
-            print!("{:0>4} ", offset);
-            if offset > 0 && self.lines[idx] == self.lines[idx - 1] {
-                print!("   | ");
-            } else {
-                print!("{:>4} ", self.lines[idx]);
-            }
-            code.disassemble(self);
+            let header = format!(
+                "{:0>4} {}",
+                offset,
+                if offset > 0 && self.lines[idx] == self.lines[idx - 1] {
+                    "   | ".to_owned()
+                } else {
+                    format!("{:>4} ", self.lines[idx])
+                }
+            );
+            code.disassemble(header, self);
             offset += code.size();
         }
     }

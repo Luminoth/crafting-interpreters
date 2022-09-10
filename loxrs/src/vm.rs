@@ -1,8 +1,10 @@
 //! Lox Virtual Machine
 
 use std::cell::RefCell;
+use std::fmt::Write;
 
 use thiserror::Error;
+use tracing::info;
 
 use crate::chunk::*;
 use crate::compiler::*;
@@ -131,18 +133,19 @@ impl<'a> VM<'a> {
 
             #[cfg(feature = "debug_trace")]
             {
-                print!("          ");
+                let mut stack = String::from("          ");
                 #[cfg(feature = "dynamic_stack")]
                 for value in self.stack.borrow().iter() {
-                    print!("[ {} ]", value);
+                    write!(stack, "[ {} ]", value).map_err(|_| InterpretError::Internal)?;
                 }
                 #[cfg(not(feature = "dynamic_stack"))]
                 for slot in 0..*self.sp.borrow() {
-                    print!("[ {} ]", self.stack.borrow()[slot]);
+                    write!(stack, "[ {} ]", self.stack.borrow()[slot])
+                        .map_err(|_| InterpretError::Internal)?;
                 }
-                println!();
+                info!("{}", stack);
 
-                instruction.disassemble(self.chunk.borrow().unwrap());
+                instruction.disassemble("", self.chunk.borrow().unwrap());
             }
 
             match instruction {
@@ -168,7 +171,7 @@ impl<'a> VM<'a> {
                 }
                 OpCode::Return => {
                     let value = self.pop();
-                    println!("{}", value);
+                    info!("{}", value);
                     return Ok(());
                 }
             }
