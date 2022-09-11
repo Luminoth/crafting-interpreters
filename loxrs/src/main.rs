@@ -86,3 +86,13 @@ async fn run_file(filepath: impl AsRef<Path>) -> anyhow::Result<()> {
         },
     }
 }
+
+async fn interpret(input: String) -> Result<(), InterpretError> {
+    tokio::task::spawn_blocking(move || {
+        let vm = VM::new();
+        vm.interpret(input)
+    })
+    .await
+    .map_err(|_| InterpretError::Internal)
+    .and_then(|result| result)
+}
