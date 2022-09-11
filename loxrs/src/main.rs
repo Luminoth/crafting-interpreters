@@ -16,6 +16,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
+use compiler::*;
 use options::*;
 use vm::*;
 
@@ -89,8 +90,10 @@ async fn run_file(filepath: impl AsRef<Path>) -> anyhow::Result<()> {
 
 async fn interpret(input: String) -> Result<(), InterpretError> {
     tokio::task::spawn_blocking(move || {
+        let chunk = compile(input)?;
+
         let vm = VM::new();
-        vm.interpret(input)
+        vm.interpret(chunk)
     })
     .await
     .map_err(|_| InterpretError::Internal)

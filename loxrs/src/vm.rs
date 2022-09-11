@@ -7,7 +7,6 @@ use thiserror::Error;
 use tracing::info;
 
 use crate::chunk::*;
-use crate::compiler::*;
 use crate::value::*;
 
 const STACK_MAX: usize = 256;
@@ -69,12 +68,7 @@ impl VM {
     }
 
     /// Compile and interpret a Lox program
-    pub fn interpret(&self, input: String) -> Result<(), InterpretError> {
-        let chunk = match compile(input) {
-            Some(chunk) => chunk,
-            None => return Err(InterpretError::Compile),
-        };
-
+    pub fn interpret(&self, chunk: Chunk) -> Result<(), InterpretError> {
         *self.chunk.borrow_mut() = chunk;
         *self.ip.borrow_mut() = 0;
 
@@ -187,15 +181,13 @@ impl VM {
 
 #[cfg(test)]
 mod tests {
-    // TODO:
-
-    /*use super::*;
+    use super::*;
 
     #[test]
     fn test_interpret_basic() {
         let vm = VM::new();
         let mut chunk = Chunk::new();
         chunk.write(OpCode::Return, 123);
-        assert_eq!(vm.interpret(&chunk).unwrap(), ());
-    }*/
+        assert_eq!(vm.interpret(chunk).unwrap(), ());
+    }
 }

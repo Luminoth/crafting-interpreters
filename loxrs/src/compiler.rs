@@ -4,9 +4,10 @@ use tracing::info;
 
 use crate::chunk::*;
 use crate::scanner::*;
+use crate::vm::*;
 
 /// Compiles lox source
-pub fn compile(input: String) -> Option<Chunk> {
+pub fn compile(input: String) -> Result<Chunk, InterpretError> {
     let chunk = Chunk::new();
 
     let scanner = Scanner::new(&input);
@@ -32,7 +33,7 @@ pub fn compile(input: String) -> Option<Chunk> {
         }
     }
 
-    Some(chunk)
+    Ok(chunk)
 }
 
 #[cfg(test)]
