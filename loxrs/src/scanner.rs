@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 
 /// Lox token type
-#[derive(Debug, PartialEq, Eq, Copy, Clone, strum_macros::Display)]
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone, strum_macros::Display)]
 pub enum TokenType {
     // single character tokens
     LeftParen,
@@ -60,11 +60,12 @@ pub enum TokenType {
     Error,
 
     /// End of file
+    #[default]
     Eof,
 }
 
 /// Lox token
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Token<'a> {
     /// The token type
     pub r#type: TokenType,
