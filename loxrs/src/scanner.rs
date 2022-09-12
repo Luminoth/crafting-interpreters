@@ -81,7 +81,7 @@ pub struct Token<'a> {
 
 impl<'a> Token<'a> {
     /// Emit the instruction associated with the token's type
-    pub fn emit_instruction(&self, parser: &Parser) {
+    pub fn emit_instruction(&self, parser: &mut Parser) {
         #[allow(clippy::single_match)]
         match self.r#type {
             TokenType::Number => {
@@ -121,7 +121,7 @@ impl<'a> Scanner<'a> {
     }
 
     /// Scan and return the next token in the source stream
-    pub fn scan_token(&self) -> Token {
+    pub fn scan_token(&self) -> Token<'a> {
         if let Some(error) = self.skip_whitespace_and_comments() {
             return error;
         }
@@ -249,7 +249,7 @@ impl<'a> Scanner<'a> {
     }
 
     // this can return an error token
-    fn skip_whitespace_and_comments(&self) -> Option<Token> {
+    fn skip_whitespace_and_comments(&self) -> Option<Token<'a>> {
         loop {
             if self.is_at_end() {
                 return None;
@@ -306,7 +306,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn string(&self) -> Token {
+    fn string(&self) -> Token<'a> {
         // TODO: handle escape characters
 
         loop {
@@ -332,7 +332,7 @@ impl<'a> Scanner<'a> {
         self.make_token(TokenType::String)
     }
 
-    fn identifier(&self) -> Token {
+    fn identifier(&self) -> Token<'a> {
         loop {
             if !self.peek().is_ascii_alphabetic() && !self.peek().is_ascii_digit() {
                 break;
@@ -397,7 +397,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn number(&self) -> Token {
+    fn number(&self) -> Token<'a> {
         loop {
             if !self.peek().is_ascii_digit() {
                 break;
@@ -423,7 +423,7 @@ impl<'a> Scanner<'a> {
         self.make_token(TokenType::Number)
     }
 
-    fn make_token(&self, r#type: TokenType) -> Token {
+    fn make_token(&self, r#type: TokenType) -> Token<'a> {
         Token {
             r#type,
             lexeme: Some(&self.source[self.start()..self.current()]),
@@ -431,7 +431,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn error_token(&self, message: &'static str) -> Token {
+    fn error_token(&self, message: &'static str) -> Token<'a> {
         Token {
             r#type: TokenType::Error,
             lexeme: Some(message),

@@ -29,7 +29,7 @@ enum Precedence {
 #[derive(Debug)]
 pub struct Parser<'a> {
     scanner: Scanner<'a>,
-    chunk: RefCell<&'a mut Chunk>,
+    chunk: &'a mut Chunk,
 
     current: RefCell<Token<'a>>,
     previous: RefCell<Token<'a>>,
@@ -42,7 +42,7 @@ impl<'a> Parser<'a> {
     fn new(scanner: Scanner<'a>, chunk: &'a mut Chunk) -> Self {
         Self {
             scanner,
-            chunk: RefCell::new(chunk),
+            chunk,
             current: RefCell::new(Token::default()),
             previous: RefCell::new(Token::default()),
             had_error: RefCell::new(false),
@@ -58,7 +58,7 @@ impl<'a> Parser<'a> {
         *self.panic_mode.borrow()
     }
 
-    fn advance(&'a self) {
+    fn advance(&self) {
         *self.previous.borrow_mut() = *self.current.borrow();
 
         loop {
@@ -72,7 +72,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn consume(&'a self, r#type: TokenType, message: impl AsRef<str>) {
+    fn consume(&self, r#type: TokenType, message: impl AsRef<str>) {
         if self.current.borrow().r#type == r#type {
             self.advance();
             return;
@@ -97,7 +97,7 @@ impl<'a> Parser<'a> {
         // TODO: what goes here?
     }
 
-    fn unary(&self) {
+    fn unary(&mut self) {
         let operator = self.previous.borrow().r#type;
 
         self.parse_precedence(Precedence::Unary);
@@ -109,14 +109,12 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn emit_instruction(&self, instruction: OpCode) {
-        self.chunk
-            .borrow_mut()
-            .write(instruction, self.previous.borrow().line);
+    fn emit_instruction(&mut self, instruction: OpCode) {
+        self.chunk.write(instruction, self.previous.borrow().line);
     }
 
-    fn make_constant(&self, value: Value) -> u8 {
-        let idx = self.chunk.borrow_mut().add_constant(value);
+    fn make_constant(&mut self, value: Value) -> u8 {
+        let idx = self.chunk.add_constant(value);
         if idx > u8::MAX as usize {
             self.error("Too many constants in one chunk.");
             return 0;
@@ -125,16 +123,16 @@ impl<'a> Parser<'a> {
     }
 
     /// Emits a constant to the bytecode chunk
-    pub fn emit_constant(&self, value: Value) {
+    pub fn emit_constant(&mut self, value: Value) {
         let constant = self.make_constant(value);
         self.emit_instruction(OpCode::Constant(constant));
     }
 
-    fn emit_return(&self) {
+    fn emit_return(&mut self) {
         self.emit_instruction(OpCode::Return);
     }
 
-    fn end_compiler(&self) {
+    fn end_compiler(&mut self) {
         self.emit_return()
     }
 
@@ -178,7 +176,7 @@ pub fn compile(input: String) -> Result<Chunk, InterpretError> {
     let mut chunk = Chunk::new();
 
     let scanner = Scanner::new(&input);
-    let parser = Parser::new(scanner, &mut chunk);
+    let mut parser = Parser::new(scanner, &mut chunk);
 
     parser.advance();
     parser.expression();
