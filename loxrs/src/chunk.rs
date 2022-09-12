@@ -131,9 +131,9 @@ impl Chunk {
     }
 
     /// Add a constant to the chunk and return its index
-    pub fn add_constant(&mut self, value: Value) -> u8 {
+    pub fn add_constant(&mut self, value: Value) -> usize {
         self.constants.push(value);
-        (self.constants.len() - 1) as u8
+        self.constants.len() - 1
     }
 
     /// Disassemble the chunk to stdout
@@ -175,7 +175,7 @@ mod tests {
         let mut chunk = Chunk::new();
 
         let constant = chunk.add_constant(1.2);
-        chunk.write(OpCode::Constant(constant), 123);
+        chunk.write(OpCode::Constant(constant as u8), 123);
         let idx = constant as usize;
         assert_eq!(chunk.code[idx], OpCode::Constant(0));
         assert_eq!(chunk.lines[idx], 123);
@@ -183,7 +183,7 @@ mod tests {
         assert_eq!(*chunk.get_constant(idx as u8), 1.2);
 
         let constant = chunk.add_constant(2.1);
-        chunk.write(OpCode::Constant(constant), 124);
+        chunk.write(OpCode::Constant(constant as u8), 124);
         let idx = constant as usize;
         assert_eq!(chunk.code[idx], OpCode::Constant(1));
         assert_eq!(chunk.lines[idx], 124);

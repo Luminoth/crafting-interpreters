@@ -6,12 +6,30 @@ use tracing::error;
 
 use crate::chunk::*;
 use crate::scanner::*;
+use crate::value::*;
 use crate::vm::*;
+
+/// Precedence levels, lowest to highest
+#[derive(Debug, PartialOrd, Ord, PartialEq, Eq)]
+enum Precedence {
+    None,
+    Assignment, // =
+    Or,         // or
+    And,        // and
+    Equality,   // ==, !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
+    Primary,
+}
 
 /// Lox parser
 #[derive(Debug)]
-struct Parser<'a> {
+pub struct Parser<'a> {
     scanner: Scanner<'a>,
+    chunk: RefCell<&'a mut Chunk>,
 
     current: RefCell<Token<'a>>,
     previous: RefCell<Token<'a>>,
@@ -21,9 +39,10 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn new(scanner: Scanner<'a>) -> Self {
+    fn new(scanner: Scanner<'a>, chunk: &'a mut Chunk) -> Self {
         Self {
             scanner,
+            chunk: RefCell::new(chunk),
             current: RefCell::new(Token::default()),
             previous: RefCell::new(Token::default()),
             had_error: RefCell::new(false),
@@ -43,6 +62,7 @@ impl<'a> Parser<'a> {
         *self.previous.borrow_mut() = *self.current.borrow();
 
         loop {
+            // consume tokens until we hit one that is not an error
             *self.current.borrow_mut() = self.scanner.scan_token();
             if self.current.borrow().r#type != TokenType::Error {
                 break;
@@ -60,6 +80,65 @@ impl<'a> Parser<'a> {
 
         self.error_at_current(message);
     }
+
+    //#region should this go in a top-level compiler type?
+
+    fn expression(&self) {
+        // start with the lowest level precedence
+        self.parse_precedence(Precedence::Assignment);
+    }
+
+    fn grouping(&'a self) {
+        self.expression();
+        self.consume(TokenType::RightParen, "Expect ')' after expression.");
+    }
+
+    fn parse_precedence(&self, _precedence: Precedence) {
+        // TODO: what goes here?
+    }
+
+    fn unary(&self) {
+        let operator = self.previous.borrow().r#type;
+
+        self.parse_precedence(Precedence::Unary);
+
+        #[allow(clippy::single_match)]
+        match operator {
+            TokenType::Minus => self.emit_instruction(OpCode::Negate),
+            _ => (),
+        }
+    }
+
+    fn emit_instruction(&self, instruction: OpCode) {
+        self.chunk
+            .borrow_mut()
+            .write(instruction, self.previous.borrow().line);
+    }
+
+    fn make_constant(&self, value: Value) -> u8 {
+        let idx = self.chunk.borrow_mut().add_constant(value);
+        if idx > u8::MAX as usize {
+            self.error("Too many constants in one chunk.");
+            return 0;
+        }
+        idx as u8
+    }
+
+    /// Emits a constant to the bytecode chunk
+    pub fn emit_constant(&self, value: Value) {
+        let constant = self.make_constant(value);
+        self.emit_instruction(OpCode::Constant(constant));
+    }
+
+    fn emit_return(&self) {
+        self.emit_instruction(OpCode::Return);
+    }
+
+    fn end_compiler(&self) {
+        self.emit_return()
+    }
+
+    //#endregion
 
     fn error_at_current(&self, message: impl AsRef<str>) {
         self.error_at(&self.current.borrow(), message);
@@ -96,14 +175,15 @@ impl<'a> Parser<'a> {
 
 /// Compiles lox source
 pub fn compile(input: String) -> Result<Chunk, InterpretError> {
-    let chunk = Chunk::new();
+    let mut chunk = Chunk::new();
 
     let scanner = Scanner::new(&input);
-    let parser = Parser::new(scanner);
+    let parser = Parser::new(scanner, &mut chunk);
 
     parser.advance();
-    //parser.expression();
+    parser.expression();
     parser.consume(TokenType::Eof, "Expect end of expression.");
+    parser.end_compiler();
 
     if parser.had_error() {
         Err(InterpretError::Compile)
