@@ -221,7 +221,12 @@ impl<'a> Parser<'a> {
     }
 
     fn end_compiler(&mut self) {
-        self.emit_return()
+        self.emit_return();
+
+        #[cfg(feature = "debug_code")]
+        if !self.had_error() {
+            self.chunk.disassemble("code");
+        }
     }
 
     fn error_at_current(&self, message: impl AsRef<str>) {

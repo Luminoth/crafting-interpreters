@@ -16,7 +16,8 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 [features]
-default = ["debug_trace"]
+default = ["debug_code", "debug_trace"]
+debug_code = []
 debug_trace = []
 dynamic_stack = []
 native_print = []
