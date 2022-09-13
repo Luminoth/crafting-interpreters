@@ -72,10 +72,7 @@ impl VM {
         *self.chunk.borrow_mut() = chunk;
         *self.ip.borrow_mut() = 0;
 
-        // TODO: maybe this should be an error?
-        if self.chunk.borrow().size() < 1 {
-            return Ok(());
-        }
+        // TODO: reset the stack?
 
         self.run()
     }

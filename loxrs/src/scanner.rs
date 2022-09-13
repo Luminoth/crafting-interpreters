@@ -2,10 +2,10 @@
 
 use std::cell::RefCell;
 
-use crate::compiler::*;
-
 /// Lox token type
-#[derive(Debug, Default, PartialEq, Eq, Copy, Clone, strum_macros::Display)]
+#[derive(
+    Debug, Default, PartialEq, Eq, Copy, Clone, strum_macros::Display, strum_macros::AsRefStr,
+)]
 pub enum TokenType {
     // single character tokens
     LeftParen,
@@ -77,20 +77,6 @@ pub struct Token<'a> {
 
     /// The line the token is from
     pub line: usize,
-}
-
-impl<'a> Token<'a> {
-    /// Emit the instruction associated with the token's type
-    pub fn emit_instruction(&self, parser: &mut Parser) {
-        #[allow(clippy::single_match)]
-        match self.r#type {
-            TokenType::Number => {
-                let v = self.lexeme.unwrap().parse().unwrap();
-                parser.emit_constant(v);
-            }
-            _ => (),
-        }
-    }
 }
 
 /// Lox source scanner

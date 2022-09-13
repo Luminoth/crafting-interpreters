@@ -7,9 +7,7 @@ use crate::value::*;
 /// Bytecode operation codes
 // TODO: this is currently less memory efficient than the book's implementation
 // probably want to keep an eye on things to see if it gets really bad
-#[derive(
-    Debug, PartialEq, Eq, strum_macros::Display, strum_macros::AsRefStr, strum_macros::EnumCount,
-)]
+#[derive(Debug, PartialEq, Eq, strum_macros::Display, strum_macros::AsRefStr)]
 pub enum OpCode {
     /// A constant value
     #[strum(serialize = "OP_CONSTANT")]
