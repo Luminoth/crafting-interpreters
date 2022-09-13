@@ -92,7 +92,9 @@ impl VM {
 
     fn pop(&self) -> Value {
         #[cfg(feature = "dynamic_stack")]
-        return self.stack.borrow_mut().pop().unwrap();
+        {
+            self.stack.borrow_mut().pop().unwrap()
+        }
 
         #[cfg(not(feature = "dynamic_stack"))]
         {
@@ -106,7 +108,10 @@ impl VM {
 
     fn peek(&self, distance: isize) -> Value {
         #[cfg(feature = "dynamic_stack")]
-        return self.stack.borrow()[self.stack.len() - 1 - distance];
+        {
+            let sp = self.stack.borrow().len() as isize - 1 - distance;
+            self.stack.borrow()[sp as usize].clone()
+        }
 
         #[cfg(not(feature = "dynamic_stack"))]
         {
