@@ -115,6 +115,11 @@ impl Chunk {
         &self.code[ip]
     }
 
+    #[inline]
+    pub fn get_line(&self, ip: usize) -> usize {
+        self.lines[ip]
+    }
+
     /// Write an opcode to the chunk
     pub fn write(&mut self, opcode: OpCode, line: usize) {
         self.code.push(opcode);
@@ -172,20 +177,20 @@ mod tests {
     fn test_constant() {
         let mut chunk = Chunk::new();
 
-        let constant = chunk.add_constant(1.2);
+        let constant = chunk.add_constant(Value::Number(1.2));
         chunk.write(OpCode::Constant(constant as u8), 123);
         let idx = constant as usize;
         assert_eq!(chunk.code[idx], OpCode::Constant(0));
         assert_eq!(chunk.lines[idx], 123);
-        assert_eq!(chunk.constants[idx], 1.2);
-        assert_eq!(*chunk.get_constant(idx as u8), 1.2);
+        assert_eq!(chunk.constants[idx], Value::Number(1.2));
+        assert_eq!(*chunk.get_constant(idx as u8), Value::Number(1.2));
 
-        let constant = chunk.add_constant(2.1);
+        let constant = chunk.add_constant(Value::Number(2.1));
         chunk.write(OpCode::Constant(constant as u8), 124);
         let idx = constant as usize;
         assert_eq!(chunk.code[idx], OpCode::Constant(1));
         assert_eq!(chunk.lines[idx], 124);
-        assert_eq!(chunk.constants[idx], 2.1);
-        assert_eq!(*chunk.get_constant(idx as u8), 2.1);
+        assert_eq!(chunk.constants[idx], Value::Number(2.1));
+        assert_eq!(*chunk.get_constant(idx as u8), Value::Number(2.1));
     }
 }

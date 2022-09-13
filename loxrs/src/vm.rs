@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::fmt::Write;
 
 use thiserror::Error;
-use tracing::info;
+use tracing::{error, info};
 
 use crate::chunk::*;
 use crate::value::*;
@@ -56,7 +56,7 @@ impl VM {
         #[cfg(feature = "dynamic_stack")]
         let stack = Stack::with_capacity(STACK_MAX);
         #[cfg(not(feature = "dynamic_stack"))]
-        let stack = [Value::default(); STACK_MAX];
+        let stack = [(); STACK_MAX].map(|_| Value::default());
 
         Self {
             chunk: RefCell::new(Chunk::new()),
@@ -97,10 +97,21 @@ impl VM {
         #[cfg(not(feature = "dynamic_stack"))]
         {
             let sp = *self.sp.borrow() - 1;
-            let ret = self.stack.borrow()[sp];
+            let ret = self.stack.borrow()[sp].clone();
             *self.sp.borrow_mut() -= 1;
 
             ret
+        }
+    }
+
+    fn peek(&self, distance: isize) -> Value {
+        #[cfg(feature = "dynamic_stack")]
+        return self.stack.borrow()[self.stack.len() - 1 - distance];
+
+        #[cfg(not(feature = "dynamic_stack"))]
+        {
+            let sp = *self.sp.borrow() as isize - 1 - distance;
+            self.stack.borrow()[sp as usize].clone()
         }
     }
 
@@ -149,24 +160,31 @@ impl VM {
             match instruction {
                 OpCode::Constant(idx) => {
                     let constant = chunk.get_constant(*idx);
-                    self.push(*constant);
+                    self.push(constant.clone());
                 }
                 OpCode::Add => {
-                    self.binary_op(|a, b| a + b);
+                    //self.binary_op(|a, b| a + b);
                 }
                 OpCode::Subtract => {
-                    self.binary_op(|a, b| a - b);
+                    //self.binary_op(|a, b| a - b);
                 }
                 OpCode::Multiply => {
-                    self.binary_op(|a, b| a * b);
+                    //self.binary_op(|a, b| a * b);
                 }
                 OpCode::Divide => {
                     // TODO: divide by 0 error
-                    self.binary_op(|a, b| a / b);
+                    //self.binary_op(|a, b| a / b);
                 }
-                OpCode::Negate => {
-                    self.push(-self.pop());
-                }
+                OpCode::Negate => match self.peek(0) {
+                    Value::Number(v) => {
+                        self.pop();
+                        self.push(Value::Number(-v));
+                    }
+                    _ => {
+                        self.runtime_error("Operand must be a number.");
+                        return Err(InterpretError::Runtime);
+                    }
+                },
                 OpCode::Return => {
                     let value = self.pop();
                     info!("{}", value);
@@ -174,6 +192,14 @@ impl VM {
                 }
             }
         }
+    }
+
+    fn runtime_error(&self, message: impl AsRef<str>) {
+        error!("{}", message.as_ref());
+        error!(
+            "[line {}] in script\n",
+            self.chunk.borrow().get_line(*self.ip.borrow() - 1)
+        );
     }
 }
 

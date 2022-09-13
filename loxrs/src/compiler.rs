@@ -209,8 +209,8 @@ impl<'a> Parser<'a> {
     }
 
     fn number(&mut self) {
-        let v = self.previous.borrow().lexeme.unwrap().parse().unwrap();
-        self.emit_constant(v);
+        let value = self.previous.borrow().lexeme.unwrap().parse().unwrap();
+        self.emit_constant(Value::Number(value));
     }
 
     fn emit_instruction(&mut self, instruction: OpCode) {
