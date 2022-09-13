@@ -1,6 +1,7 @@
 //! Lox Virtual Machine
 
 use std::cell::RefCell;
+#[cfg(feature = "debug_trace")]
 use std::fmt::Write;
 
 use thiserror::Error;
