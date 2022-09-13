@@ -131,13 +131,15 @@ impl VM {
     }
 
     #[inline]
-    fn binary_op<C>(&self, op: C)
+    fn binary_op<C>(&self, op: C) -> Result<(), InterpretError>
     where
-        C: FnOnce(Value, Value) -> Value,
+        C: FnOnce(Value, Value) -> Result<Value, InterpretError>,
     {
         let b = self.pop();
         let a = self.pop();
-        self.push(op(a, b));
+        self.push(op(a, b)?);
+
+        Ok(())
     }
 
     fn run(&self) -> Result<(), InterpretError> {
@@ -168,17 +170,71 @@ impl VM {
                     self.push(constant.clone());
                 }
                 OpCode::Add => {
-                    //self.binary_op(|a, b| a + b);
+                    // TODO: concatenate strings
+                    self.binary_op(|a, b| match a {
+                        Value::Number(a) => match b {
+                            Value::Number(b) => Ok(Value::Number(a + b)),
+                            _ => {
+                                self.runtime_error("Operands must be numbers.");
+                                Err(InterpretError::Runtime)
+                            }
+                        },
+                        _ => {
+                            self.runtime_error("Operands must be numbers.");
+                            Err(InterpretError::Runtime)
+                        }
+                    })?;
                 }
                 OpCode::Subtract => {
-                    //self.binary_op(|a, b| a - b);
+                    self.binary_op(|a, b| match a {
+                        Value::Number(a) => match b {
+                            Value::Number(b) => Ok(Value::Number(a - b)),
+                            _ => {
+                                self.runtime_error("Operands must be numbers.");
+                                Err(InterpretError::Runtime)
+                            }
+                        },
+                        _ => {
+                            self.runtime_error("Operands must be numbers.");
+                            Err(InterpretError::Runtime)
+                        }
+                    })?;
                 }
                 OpCode::Multiply => {
-                    //self.binary_op(|a, b| a * b);
+                    self.binary_op(|a, b| match a {
+                        Value::Number(a) => match b {
+                            Value::Number(b) => Ok(Value::Number(a * b)),
+                            _ => {
+                                self.runtime_error("Operands must be numbers.");
+                                Err(InterpretError::Runtime)
+                            }
+                        },
+                        _ => {
+                            self.runtime_error("Operands must be numbers.");
+                            Err(InterpretError::Runtime)
+                        }
+                    })?;
                 }
                 OpCode::Divide => {
-                    // TODO: divide by 0 error
-                    //self.binary_op(|a, b| a / b);
+                    self.binary_op(|a, b| match a {
+                        Value::Number(a) => match b {
+                            Value::Number(b) => {
+                                if b == 0.0 {
+                                    self.runtime_error("Illegal divide by zero.");
+                                    return Err(InterpretError::Runtime);
+                                }
+                                Ok(Value::Number(a / b))
+                            }
+                            _ => {
+                                self.runtime_error("Operands must be numbers.");
+                                Err(InterpretError::Runtime)
+                            }
+                        },
+                        _ => {
+                            self.runtime_error("Operands must be numbers.");
+                            Err(InterpretError::Runtime)
+                        }
+                    })?;
                 }
                 OpCode::Negate => match self.peek(0) {
                     Value::Number(v) => {
