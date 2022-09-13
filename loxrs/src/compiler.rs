@@ -25,6 +25,7 @@ use crate::vm::*;
 enum Precedence {
     None,
     Assignment, // =
+    Ternary,    // ?:
     Or,         // or
     And,        // and
     Equality,   // ==, !=
@@ -48,6 +49,7 @@ impl TokenType {
         match self {
             Self::Minus | Self::Plus => Precedence::Term,
             Self::Slash | Self::Star => Precedence::Factor,
+            Self::Question | Self::Colon => Precedence::Ternary,
             _ => Precedence::None,
         }
     }
@@ -129,6 +131,7 @@ impl<'a> Parser<'a> {
             TokenType::Minus | TokenType::Plus | TokenType::Slash | TokenType::Star => {
                 self.binary()
             }
+            TokenType::Question => self.ternary(),
             _ => return false,
         }
 
@@ -179,6 +182,18 @@ impl<'a> Parser<'a> {
             TokenType::Slash => self.emit_instruction(OpCode::Divide),
             _ => (),
         }
+    }
+
+    fn ternary(&mut self) {
+        // TODO: emit the instructions associated with this
+
+        // TODO: pretty sure this isn't right in terms of the precedences of this operator
+
+        self.parse_precedence(TokenType::Question.precedence().next());
+
+        self.consume(TokenType::Colon, "Expect ':' after expression.");
+
+        self.parse_precedence(TokenType::Colon.precedence().next());
     }
 
     fn unary(&mut self) {
