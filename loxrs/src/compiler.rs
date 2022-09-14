@@ -47,6 +47,10 @@ impl TokenType {
     /// Pratt Parser precedence rule
     fn precedence(&self) -> Precedence {
         match self {
+            Self::BangEqual | Self::EqualEqual => Precedence::Equality,
+            Self::Greater | Self::GreaterEqual | Self::Less | Self::LessEqual => {
+                Precedence::Comparison
+            }
             Self::Minus | Self::Plus => Precedence::Term,
             Self::Slash | Self::Star => Precedence::Factor,
             Self::Question | Self::Colon => Precedence::Ternary,
@@ -118,7 +122,7 @@ impl<'a> Parser<'a> {
         match r#type {
             TokenType::Nil | TokenType::False | TokenType::True => self.literal(),
             TokenType::LeftParen => self.grouping(),
-            TokenType::Minus => self.unary(),
+            TokenType::Minus | TokenType::Bang => self.unary(),
             TokenType::Number => self.number(),
             _ => return false,
         }
@@ -129,9 +133,16 @@ impl<'a> Parser<'a> {
     /// Pratt Praser infix parsing rule
     fn infix(&mut self, r#type: TokenType) -> bool {
         match r#type {
-            TokenType::Minus | TokenType::Plus | TokenType::Slash | TokenType::Star => {
-                self.binary()
-            }
+            TokenType::BangEqual
+            | TokenType::EqualEqual
+            | TokenType::Greater
+            | TokenType::GreaterEqual
+            | TokenType::Less
+            | TokenType::LessEqual
+            | TokenType::Minus
+            | TokenType::Plus
+            | TokenType::Slash
+            | TokenType::Star => self.binary(),
             TokenType::Question => self.ternary(),
             _ => return false,
         }
@@ -177,6 +188,14 @@ impl<'a> Parser<'a> {
         self.parse_precedence(operator.precedence().next());
 
         match operator {
+            TokenType::BangEqual => self.emit_instructions(&[OpCode::Equal, OpCode::Not]),
+            TokenType::EqualEqual => self.emit_instruction(OpCode::Equal),
+            TokenType::Greater => self.emit_instruction(OpCode::Greater),
+            // a >= b == !(a < b)
+            TokenType::GreaterEqual => self.emit_instructions(&[OpCode::Less, OpCode::Not]),
+            TokenType::Less => self.emit_instruction(OpCode::Less),
+            // a <= b == !(a > b)
+            TokenType::LessEqual => self.emit_instructions(&[OpCode::Greater, OpCode::Not]),
             TokenType::Plus => self.emit_instruction(OpCode::Add),
             TokenType::Minus => self.emit_instruction(OpCode::Subtract),
             TokenType::Star => self.emit_instruction(OpCode::Multiply),
@@ -205,6 +224,7 @@ impl<'a> Parser<'a> {
         #[allow(clippy::single_match)]
         match operator {
             TokenType::Minus => self.emit_instruction(OpCode::Negate),
+            TokenType::Bang => self.emit_instruction(OpCode::Not),
             _ => (),
         }
     }
@@ -226,6 +246,12 @@ impl<'a> Parser<'a> {
 
     fn emit_instruction(&mut self, instruction: OpCode) {
         self.chunk.write(instruction, self.previous.borrow().line);
+    }
+
+    fn emit_instructions(&mut self, instructions: impl AsRef<[OpCode]>) {
+        for instruction in instructions.as_ref() {
+            self.emit_instruction(*instruction);
+        }
     }
 
     fn make_constant(&mut self, value: Value) -> u8 {

@@ -5,9 +5,10 @@ use tracing::info;
 use crate::value::*;
 
 /// Bytecode operation codes
-// TODO: this is currently less memory efficient than the book's implementation
+// TODO: this is currently slightly less memory efficient than the book's implementation
 // probably want to keep an eye on things to see if it gets really bad
-#[derive(Debug, PartialEq, Eq, strum_macros::Display, strum_macros::AsRefStr)]
+// TODO: we could get a little more VM speed by adding NotEqual, GreaterEqual, and LessEqual
+#[derive(Debug, Copy, Clone, PartialEq, Eq, strum_macros::Display, strum_macros::AsRefStr)]
 pub enum OpCode {
     /// A constant value
     #[strum(serialize = "OP_CONSTANT")]
@@ -24,6 +25,18 @@ pub enum OpCode {
     /// A false value
     #[strum(serialize = "OP_FALSE")]
     False,
+
+    /// Equality
+    #[strum(serialize = "OP_EQUAL")]
+    Equal,
+
+    /// Greater than
+    #[strum(serialize = "OP_GREATER")]
+    Greater,
+
+    /// Less than
+    #[strum(serialize = "OP_LESS")]
+    Less,
 
     /// Addition
     #[strum(serialize = "OP_ADD")]
@@ -45,6 +58,10 @@ pub enum OpCode {
     #[strum(serialize = "OP_NEGATE")]
     Negate,
 
+    /// Logical not
+    #[strum(serialize = "OP_NOT")]
+    Not,
+
     /// Return from the current function
     #[strum(serialize = "OP_RETURN")]
     Return,
@@ -58,15 +75,7 @@ impl OpCode {
     pub fn size(&self) -> usize {
         match self {
             Self::Constant(_) => 2,
-            Self::Nil
-            | Self::True
-            | Self::False
-            | Self::Add
-            | Self::Subtract
-            | Self::Multiply
-            | Self::Divide
-            | Self::Negate
-            | Self::Return => 1,
+            _ => 1,
         }
     }
 
@@ -82,15 +91,7 @@ impl OpCode {
                     chunk.constants[*idx as usize]
                 );
             }
-            Self::Nil
-            | Self::True
-            | Self::False
-            | Self::Add
-            | Self::Subtract
-            | Self::Multiply
-            | Self::Divide
-            | Self::Negate
-            | Self::Return => {
+            _ => {
                 info!("{}{}", header.as_ref(), self);
             }
         }

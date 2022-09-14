@@ -69,7 +69,7 @@
 
 * clock()
 
-### Deviations
+### GoLox Deviations
 
 * Multi-line comments
 * Comma expressions
@@ -78,6 +78,11 @@
 * Divide by zero runtime error
 * Prompt prints expression results
 * break and continue
+
+### LoxRs Deviations
+
+* Multi-line comments
+* Divide by zero runtime error
 
 ### TODO:
 

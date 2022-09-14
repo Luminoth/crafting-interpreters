@@ -185,6 +185,21 @@ impl VM {
                 OpCode::Nil => self.push(Value::Nil),
                 OpCode::False => self.push(Value::Bool(false)),
                 OpCode::True => self.push(Value::Bool(true)),
+                OpCode::Equal => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.push(Value::Bool(a == b));
+                }
+                OpCode::Less => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.push(Value::Bool(a < b));
+                }
+                OpCode::Greater => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.push(Value::Bool(a > b));
+                }
                 OpCode::Add => {
                     // TODO: concatenate strings
                     self.binary_op_number(|a, b| Ok(a + b))?;
@@ -214,6 +229,7 @@ impl VM {
                         return Err(InterpretError::Runtime);
                     }
                 },
+                OpCode::Not => self.push(Value::Bool(self.pop().is_falsey())),
                 OpCode::Return => {
                     let value = self.pop();
                     info!("{}", value);
