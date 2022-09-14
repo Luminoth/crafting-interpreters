@@ -78,6 +78,17 @@ func (v Value) String() string {
 	return ""
 }
 
+func (v *Value) isTruthy() bool {
+	switch v.Type {
+	case ValueTypeNil:
+		return false
+	case ValueTypeBool:
+		return v.BoolValue
+	default:
+		return true
+	}
+}
+
 func (v *Value) Equals(other *Value) bool {
 	switch v.Type {
 	case ValueTypeNil:

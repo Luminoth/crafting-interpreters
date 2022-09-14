@@ -152,7 +152,7 @@ func (i *Interpreter) VisitIfStatement(statement *IfStatement) (value *Value, er
 		return
 	}
 
-	if i.isTruthy(&condition) {
+	if condition.isTruthy() {
 		return i.execute(statement.Then)
 	}
 
@@ -186,7 +186,7 @@ func (i *Interpreter) VisitWhileStatement(statement *WhileStatement) (value *Val
 			return
 		}
 
-		if !i.isTruthy(&condition) {
+		if !condition.isTruthy() {
 			break
 		}
 
@@ -356,9 +356,9 @@ func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value
 		}
 		value = NewBoolValue(left.NumberValue <= right.NumberValue)
 	case BangEqual:
-		value = NewBoolValue(!i.isEqual(&left, &right))
+		value = NewBoolValue(!left.Equals(&right))
 	case EqualEqual:
-		value = NewBoolValue(i.isEqual(&left, &right))
+		value = NewBoolValue(left.Equals(&right))
 	case Minus:
 		err = i.checkNumberOperands(expression.Operator, &left, &right)
 		if err != nil {
@@ -415,7 +415,7 @@ func (i *Interpreter) VisitTernaryExpression(expression *TernaryExpression) (val
 		return
 	}
 
-	if i.isTruthy(&condition) {
+	if condition.isTruthy() {
 		return i.evaluate(expression.True)
 	} else {
 		return i.evaluate(expression.False)
@@ -428,7 +428,7 @@ func (i *Interpreter) VisitLogicalExpression(expression *LogicalExpression) (val
 		return
 	}
 
-	isTruthy := i.isTruthy(&value)
+	isTruthy := value.isTruthy()
 
 	// short circuit
 	switch expression.Operator.Type {
@@ -462,7 +462,7 @@ func (i *Interpreter) VisitUnaryExpression(expression *UnaryExpression) (value V
 		}
 		value = NewNumberValue(-right.NumberValue)
 	case Bang:
-		value = NewBoolValue(!i.isTruthy(&right))
+		value = NewBoolValue(!right.isTruthy())
 	default:
 		err = fmt.Errorf("unsupported unary operator type %v", expression.Operator.Type)
 	}
@@ -637,21 +637,6 @@ func (i *Interpreter) VisitVariableExpression(expression *VariableExpression) (v
 	}
 	value = *v
 	return
-}
-
-func (i *Interpreter) isEqual(left *Value, right *Value) bool {
-	return left.Equals(right)
-}
-
-func (i *Interpreter) isTruthy(value *Value) bool {
-	switch value.Type {
-	case ValueTypeNil:
-		return false
-	case ValueTypeBool:
-		return value.BoolValue
-	default:
-		return true
-	}
 }
 
 func (i *Interpreter) evaluate(expression Expression) (Value, error) {
