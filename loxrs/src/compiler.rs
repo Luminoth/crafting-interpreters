@@ -116,6 +116,7 @@ impl<'a> Parser<'a> {
     /// Pratt Parser prefix parsing rule
     fn prefix(&mut self, r#type: TokenType) -> bool {
         match r#type {
+            TokenType::Nil | TokenType::False | TokenType::True => self.literal(),
             TokenType::LeftParen => self.grouping(),
             TokenType::Minus => self.unary(),
             TokenType::Number => self.number(),
@@ -136,16 +137,6 @@ impl<'a> Parser<'a> {
         }
 
         true
-    }
-
-    fn expression(&mut self) {
-        // start with the lowest level precedence
-        self.parse_precedence(Precedence::None.next());
-    }
-
-    fn grouping(&mut self) {
-        self.expression();
-        self.consume(TokenType::RightParen, "Expect ')' after expression.");
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) {
@@ -169,6 +160,16 @@ impl<'a> Parser<'a> {
             let r#type = self.previous.borrow().r#type;
             self.infix(r#type);
         }
+    }
+
+    fn expression(&mut self) {
+        // start with the lowest level precedence
+        self.parse_precedence(Precedence::None.next());
+    }
+
+    fn grouping(&mut self) {
+        self.expression();
+        self.consume(TokenType::RightParen, "Expect ')' after expression.");
     }
 
     fn binary(&mut self) {
@@ -211,6 +212,16 @@ impl<'a> Parser<'a> {
     fn number(&mut self) {
         let value = self.previous.borrow().lexeme.unwrap().parse().unwrap();
         self.emit_constant(Value::Number(value));
+    }
+
+    fn literal(&mut self) {
+        let token = self.previous.borrow().r#type;
+        match token {
+            TokenType::Nil => self.emit_instruction(OpCode::Nil),
+            TokenType::False => self.emit_instruction(OpCode::False),
+            TokenType::True => self.emit_instruction(OpCode::True),
+            _ => (),
+        }
     }
 
     fn emit_instruction(&mut self, instruction: OpCode) {

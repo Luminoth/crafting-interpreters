@@ -182,6 +182,9 @@ impl VM {
                     let constant = chunk.get_constant(*idx);
                     self.push(constant.clone());
                 }
+                OpCode::Nil => self.push(Value::Nil),
+                OpCode::False => self.push(Value::Bool(false)),
+                OpCode::True => self.push(Value::Bool(true)),
                 OpCode::Add => {
                     // TODO: concatenate strings
                     self.binary_op_number(|a, b| Ok(a + b))?;

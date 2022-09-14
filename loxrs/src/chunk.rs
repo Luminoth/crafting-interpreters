@@ -13,6 +13,18 @@ pub enum OpCode {
     #[strum(serialize = "OP_CONSTANT")]
     Constant(u8),
 
+    /// A nil value
+    #[strum(serialize = "OP_NIL")]
+    Nil,
+
+    /// A true value
+    #[strum(serialize = "OP_TRUE")]
+    True,
+
+    /// A false value
+    #[strum(serialize = "OP_FALSE")]
+    False,
+
     /// Addition
     #[strum(serialize = "OP_ADD")]
     Add,
@@ -46,7 +58,10 @@ impl OpCode {
     pub fn size(&self) -> usize {
         match self {
             Self::Constant(_) => 2,
-            Self::Add
+            Self::Nil
+            | Self::True
+            | Self::False
+            | Self::Add
             | Self::Subtract
             | Self::Multiply
             | Self::Divide
@@ -67,7 +82,10 @@ impl OpCode {
                     chunk.constants[*idx as usize]
                 );
             }
-            Self::Add
+            Self::Nil
+            | Self::True
+            | Self::False
+            | Self::Add
             | Self::Subtract
             | Self::Multiply
             | Self::Divide
