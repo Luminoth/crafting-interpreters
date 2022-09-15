@@ -38,6 +38,7 @@ enum Precedence {
 }
 
 impl Precedence {
+    #[inline]
     fn next(&self) -> Precedence {
         Self::from_repr(*self as usize + 1).unwrap()
     }
@@ -86,10 +87,12 @@ impl<'a> Parser<'a> {
         }
     }
 
+    #[inline]
     fn had_error(&self) -> bool {
         *self.had_error.borrow()
     }
 
+    #[inline]
     fn is_panic_mode(&self) -> bool {
         *self.panic_mode.borrow()
     }

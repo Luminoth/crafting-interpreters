@@ -120,7 +120,6 @@ impl VM {
         }
     }
 
-    // READ_BYTE()
     #[inline]
     fn read_byte<'a>(&self, chunk: &'a Chunk) -> &'a OpCode {
         let ip = *self.ip.borrow();
@@ -131,26 +130,13 @@ impl VM {
     }
 
     #[inline]
-    fn binary_op_number<C>(&self, op: C) -> Result<(), InterpretError>
+    fn binary_op<C>(&self, op: C) -> Result<(), InterpretError>
     where
-        C: FnOnce(f64, f64) -> Result<f64, InterpretError>,
+        C: FnOnce(Value, Value) -> Result<Value, InterpretError>,
     {
         let b = self.pop();
         let a = self.pop();
-
-        self.push(Value::Number(match a {
-            Value::Number(a) => match b {
-                Value::Number(b) => op(a, b)?,
-                _ => {
-                    self.runtime_error("Operands must be numbers.");
-                    return Err(InterpretError::Runtime);
-                }
-            },
-            _ => {
-                self.runtime_error("Operands must be numbers.");
-                return Err(InterpretError::Runtime);
-            }
-        }));
+        self.push(op(a, b)?);
 
         Ok(())
     }
@@ -219,34 +205,23 @@ impl VM {
                     self.push(Value::Bool(a >= b));
                 }
                 OpCode::Add => {
-                    // TODO: concatenate strings
-                    self.binary_op_number(|a, b| Ok(a + b))?;
+                    self.binary_op(|a, b| a.add(b, self))?;
                 }
                 OpCode::Subtract => {
-                    self.binary_op_number(|a, b| Ok(a - b))?;
+                    self.binary_op(|a, b| a.subtract(b, self))?;
                 }
                 OpCode::Multiply => {
-                    self.binary_op_number(|a, b| Ok(a * b))?;
+                    self.binary_op(|a, b| a.multiply(b, self))?;
                 }
                 OpCode::Divide => {
-                    self.binary_op_number(|a, b| {
-                        if b == 0.0 {
-                            self.runtime_error("Illegal divide by zero.");
-                            return Err(InterpretError::Runtime);
-                        }
-                        Ok(a / b)
-                    })?;
+                    self.binary_op(|a, b| a.divide(b, self))?;
                 }
-                OpCode::Negate => match self.peek(0) {
-                    Value::Number(v) => {
-                        self.pop();
-                        self.push(Value::Number(-v));
-                    }
-                    _ => {
-                        self.runtime_error("Operand must be a number.");
-                        return Err(InterpretError::Runtime);
-                    }
-                },
+                OpCode::Negate => {
+                    let v = self.peek(0).negate(self)?;
+
+                    self.pop();
+                    self.push(v);
+                }
                 OpCode::Not => self.push(Value::Bool(self.pop().is_falsey())),
                 OpCode::Return => {
                     let value = self.pop();
@@ -257,7 +232,7 @@ impl VM {
         }
     }
 
-    fn runtime_error(&self, message: impl AsRef<str>) {
+    pub fn runtime_error(&self, message: impl AsRef<str>) {
         error!("{}", message.as_ref());
         error!(
             "[line {}] in script\n",

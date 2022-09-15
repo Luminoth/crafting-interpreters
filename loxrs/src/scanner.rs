@@ -210,6 +210,7 @@ impl<'a> Scanner<'a> {
         self.source.as_bytes()[self.current() + 1] as char
     }
 
+    #[inline]
     fn advance(&self) -> char {
         let current = self.peek();
         *self.current.borrow_mut() += 1;
@@ -409,6 +410,7 @@ impl<'a> Scanner<'a> {
         self.make_token(TokenType::Number)
     }
 
+    #[inline]
     fn make_token(&self, r#type: TokenType) -> Token<'a> {
         Token {
             r#type,
@@ -417,6 +419,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    #[inline]
     fn error_token(&self, message: &'static str) -> Token<'a> {
         Token {
             r#type: TokenType::Error,

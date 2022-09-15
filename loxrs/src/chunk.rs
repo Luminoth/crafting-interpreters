@@ -137,6 +137,7 @@ impl Chunk {
     }
 
     /// The number of opcodes in the chunk
+    #[inline]
     pub fn size(&self) -> usize {
         self.code.len()
     }
@@ -153,6 +154,7 @@ impl Chunk {
     }
 
     /// Write an opcode to the chunk
+    #[inline]
     pub fn write(&mut self, opcode: OpCode, line: usize) {
         self.code.push(opcode);
         self.lines.push(line);
@@ -165,6 +167,7 @@ impl Chunk {
     }
 
     /// Add a constant to the chunk and return its index
+    #[inline]
     pub fn add_constant(&mut self, value: Value) -> usize {
         self.constants.push(value);
         self.constants.len() - 1
