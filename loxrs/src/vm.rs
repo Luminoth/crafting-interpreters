@@ -190,15 +190,33 @@ impl VM {
                     let a = self.pop();
                     self.push(Value::Bool(a == b));
                 }
+                #[cfg(feature = "extended_opcodes")]
+                OpCode::NotEqual => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.push(Value::Bool(a != b));
+                }
                 OpCode::Less => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(Value::Bool(a < b));
                 }
+                #[cfg(feature = "extended_opcodes")]
+                OpCode::LessEqual => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.push(Value::Bool(a <= b));
+                }
                 OpCode::Greater => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(Value::Bool(a > b));
+                }
+                #[cfg(feature = "extended_opcodes")]
+                OpCode::GreaterEqual => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.push(Value::Bool(a >= b));
                 }
                 OpCode::Add => {
                     // TODO: concatenate strings

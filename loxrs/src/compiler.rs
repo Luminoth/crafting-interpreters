@@ -188,14 +188,32 @@ impl<'a> Parser<'a> {
         self.parse_precedence(operator.precedence().next());
 
         match operator {
-            TokenType::BangEqual => self.emit_instructions(&[OpCode::Equal, OpCode::Not]),
+            TokenType::BangEqual => {
+                #[cfg(feature = "extended_opcodes")]
+                self.emit_instruction(OpCode::NotEqual);
+
+                #[cfg(not(feature = "extended_opcodes"))]
+                self.emit_instructions(&[OpCode::Equal, OpCode::Not]);
+            }
             TokenType::EqualEqual => self.emit_instruction(OpCode::Equal),
             TokenType::Greater => self.emit_instruction(OpCode::Greater),
-            // a >= b == !(a < b)
-            TokenType::GreaterEqual => self.emit_instructions(&[OpCode::Less, OpCode::Not]),
+            TokenType::GreaterEqual => {
+                #[cfg(feature = "extended_opcodes")]
+                self.emit_instruction(OpCode::GreaterEqual);
+
+                // a >= b == !(a < b)
+                #[cfg(not(feature = "extended_opcodes"))]
+                self.emit_instructions(&[OpCode::Less, OpCode::Not]);
+            }
             TokenType::Less => self.emit_instruction(OpCode::Less),
-            // a <= b == !(a > b)
-            TokenType::LessEqual => self.emit_instructions(&[OpCode::Greater, OpCode::Not]),
+            TokenType::LessEqual => {
+                #[cfg(feature = "extended_opcodes")]
+                self.emit_instruction(OpCode::LessEqual);
+
+                // a <= b == !(a > b)
+                #[cfg(not(feature = "extended_opcodes"))]
+                self.emit_instructions(&[OpCode::Greater, OpCode::Not]);
+            }
             TokenType::Plus => self.emit_instruction(OpCode::Add),
             TokenType::Minus => self.emit_instruction(OpCode::Subtract),
             TokenType::Star => self.emit_instruction(OpCode::Multiply),

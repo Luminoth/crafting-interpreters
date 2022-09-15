@@ -7,7 +7,6 @@ use crate::value::*;
 /// Bytecode operation codes
 // TODO: this is currently slightly less memory efficient than the book's implementation
 // probably want to keep an eye on things to see if it gets really bad
-// TODO: we could get a little more VM speed by adding NotEqual, GreaterEqual, and LessEqual
 #[derive(Debug, Copy, Clone, PartialEq, Eq, strum_macros::Display, strum_macros::AsRefStr)]
 pub enum OpCode {
     /// A constant value
@@ -30,13 +29,28 @@ pub enum OpCode {
     #[strum(serialize = "OP_EQUAL")]
     Equal,
 
+    /// Not equality
+    #[cfg(feature = "extended_opcodes")]
+    #[strum(serialize = "OP_NOT_EQUAL")]
+    NotEqual,
+
     /// Greater than
     #[strum(serialize = "OP_GREATER")]
     Greater,
 
+    /// Greater than or equal
+    #[cfg(feature = "extended_opcodes")]
+    #[strum(serialize = "OP_GREATER_EQUAL")]
+    GreaterEqual,
+
     /// Less than
     #[strum(serialize = "OP_LESS")]
     Less,
+
+    /// Less than or equal
+    #[cfg(feature = "extended_opcodes")]
+    #[strum(serialize = "OP_LESS_EQUAL")]
+    LessEqual,
 
     /// Addition
     #[strum(serialize = "OP_ADD")]
@@ -128,7 +142,6 @@ impl Chunk {
     }
 
     /// Reads the instruction at ip
-    // READ_BYTE()
     #[inline]
     pub fn read(&self, ip: usize) -> &OpCode {
         &self.code[ip]
@@ -146,7 +159,6 @@ impl Chunk {
     }
 
     /// Gets the constant at the given index
-    // READ_CONSTANT()
     #[inline]
     pub fn get_constant(&self, idx: u8) -> &Value {
         &self.constants[idx as usize]
