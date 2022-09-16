@@ -182,40 +182,16 @@ impl VM {
                     let a = self.pop();
                     self.push(Value::Bool(a != b));
                 }
-                OpCode::Less => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(Value::Bool(a < b));
-                }
+                OpCode::Less => self.binary_op(|a, b| a.less(b, self))?,
                 #[cfg(feature = "extended_opcodes")]
-                OpCode::LessEqual => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(Value::Bool(a <= b));
-                }
-                OpCode::Greater => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(Value::Bool(a > b));
-                }
+                OpCode::LessEqual => self.binary_op(|a, b| a.less_equal(b, self))?,
+                OpCode::Greater => self.binary_op(|a, b| a.greater(b, self))?,
                 #[cfg(feature = "extended_opcodes")]
-                OpCode::GreaterEqual => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(Value::Bool(a >= b));
-                }
-                OpCode::Add => {
-                    self.binary_op(|a, b| a.add(b, self))?;
-                }
-                OpCode::Subtract => {
-                    self.binary_op(|a, b| a.subtract(b, self))?;
-                }
-                OpCode::Multiply => {
-                    self.binary_op(|a, b| a.multiply(b, self))?;
-                }
-                OpCode::Divide => {
-                    self.binary_op(|a, b| a.divide(b, self))?;
-                }
+                OpCode::GreaterEqual => self.binary_op(|a, b| a.greater_equal(b, self))?,
+                OpCode::Add => self.binary_op(|a, b| a.add(b, self))?,
+                OpCode::Subtract => self.binary_op(|a, b| a.subtract(b, self))?,
+                OpCode::Multiply => self.binary_op(|a, b| a.multiply(b, self))?,
+                OpCode::Divide => self.binary_op(|a, b| a.divide(b, self))?,
                 OpCode::Negate => {
                     let v = self.peek(0).negate(self)?;
 

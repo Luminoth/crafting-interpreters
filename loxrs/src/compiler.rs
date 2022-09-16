@@ -126,6 +126,7 @@ impl<'a> Parser<'a> {
             TokenType::Nil | TokenType::False | TokenType::True => self.literal(),
             TokenType::LeftParen => self.grouping(),
             TokenType::Minus | TokenType::Bang => self.unary(),
+            TokenType::String => self.string(),
             TokenType::Number => self.number(),
             _ => return false,
         }
@@ -248,6 +249,11 @@ impl<'a> Parser<'a> {
             TokenType::Bang => self.emit_instruction(OpCode::Not),
             _ => (),
         }
+    }
+
+    fn string(&mut self) {
+        let value = self.previous.borrow().lexeme.unwrap();
+        self.emit_constant(Value::Object(Object::String(value.to_owned())));
     }
 
     fn number(&mut self) {
