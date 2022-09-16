@@ -39,7 +39,7 @@ enum Precedence {
 
 impl Precedence {
     #[inline]
-    fn next(&self) -> Precedence {
+    fn next(&self) -> Self {
         Self::from_repr(*self as usize + 1).unwrap()
     }
 }

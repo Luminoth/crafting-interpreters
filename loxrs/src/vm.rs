@@ -171,17 +171,9 @@ impl VM {
                 OpCode::Nil => self.push(Value::Nil),
                 OpCode::False => self.push(false.into()),
                 OpCode::True => self.push(true.into()),
-                OpCode::Equal => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push((a == b).into());
-                }
+                OpCode::Equal => self.binary_op(|a, b| Ok(a.equals(b)))?,
                 #[cfg(feature = "extended_opcodes")]
-                OpCode::NotEqual => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(V(a != b).into());
-                }
+                OpCode::NotEqual => self.binary_op(|a, b| Ok(a.not_equals(b)))?,
                 OpCode::Less => self.binary_op(|a, b| a.less(b, self))?,
                 #[cfg(feature = "extended_opcodes")]
                 OpCode::LessEqual => self.binary_op(|a, b| a.less_equal(b, self))?,
@@ -225,6 +217,7 @@ mod tests {
     fn test_interpret_basic() {
         let vm = VM::new();
         let mut chunk = Chunk::new();
+        chunk.write(OpCode::Nil, 123);
         chunk.write(OpCode::Return, 123);
         assert_eq!(vm.interpret(chunk).unwrap(), ());
     }

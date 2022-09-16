@@ -216,15 +216,21 @@ mod tests {
         let idx = constant as usize;
         assert_eq!(chunk.code[idx], OpCode::Constant(0));
         assert_eq!(chunk.lines[idx], 123);
-        assert_eq!(chunk.constants[idx], 1.2.into());
-        assert_eq!(*chunk.get_constant(idx as u8), 1.2.into());
+        assert_eq!(chunk.constants[idx].equals(1.2.into()), true.into());
+        assert_eq!(
+            chunk.get_constant(idx as u8).equals(1.2.into()),
+            true.into()
+        );
 
         let constant = chunk.add_constant(2.1.into());
         chunk.write(OpCode::Constant(constant as u8), 124);
         let idx = constant as usize;
         assert_eq!(chunk.code[idx], OpCode::Constant(1));
         assert_eq!(chunk.lines[idx], 124);
-        assert_eq!(chunk.constants[idx], 2.1.into());
-        assert_eq!(*chunk.get_constant(idx as u8), 2.1.into());
+        assert_eq!(chunk.constants[idx].equals(2.1.into()), true.into());
+        assert_eq!(
+            chunk.get_constant(idx as u8).equals(2.1.into()),
+            true.into()
+        );
     }
 }
