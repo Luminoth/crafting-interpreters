@@ -253,12 +253,18 @@ impl<'a> Parser<'a> {
 
     fn string(&mut self) {
         let value = self.previous.borrow().lexeme.unwrap();
-        self.emit_constant(Value::Object(Object::String(value.to_owned())));
+        self.emit_constant(Object::from(value).into());
     }
 
     fn number(&mut self) {
-        let value = self.previous.borrow().lexeme.unwrap().parse().unwrap();
-        self.emit_constant(Value::Number(value));
+        let value = self
+            .previous
+            .borrow()
+            .lexeme
+            .unwrap()
+            .parse::<f64>()
+            .unwrap();
+        self.emit_constant(value.into());
     }
 
     fn literal(&mut self) {

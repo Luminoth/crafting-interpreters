@@ -10,8 +10,6 @@ pub enum Object {
     String(String),
 }
 
-// TODO: impl From<> for strings
-
 impl std::fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -20,6 +18,7 @@ impl std::fmt::Display for Object {
     }
 }
 
+// TODO: remove this
 impl PartialEq for Object {
     fn eq(&self, other: &Self) -> bool {
         match self {
@@ -27,6 +26,18 @@ impl PartialEq for Object {
                 Self::String(b) => a.eq(b),
             },
         }
+    }
+}
+
+impl From<String> for Object {
+    fn from(v: String) -> Self {
+        Self::String(v)
+    }
+}
+
+impl From<&str> for Object {
+    fn from(v: &str) -> Self {
+        v.to_owned().into()
     }
 }
 
@@ -42,8 +53,6 @@ pub enum Value {
     Object(Object),
 }
 
-// TODO: impl From<> for bool, f64, and strings
-
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -55,6 +64,7 @@ impl std::fmt::Display for Value {
     }
 }
 
+// TODO: remove this
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match self {
@@ -75,6 +85,24 @@ impl PartialEq for Value {
     }
 }
 
+impl From<bool> for Value {
+    fn from(v: bool) -> Self {
+        Self::Bool(v)
+    }
+}
+
+impl From<f64> for Value {
+    fn from(v: f64) -> Self {
+        Self::Number(v)
+    }
+}
+
+impl From<Object> for Value {
+    fn from(v: Object) -> Self {
+        Self::Object(v)
+    }
+}
+
 impl Value {
     /// Is this value "falsey"
     pub fn is_falsey(&self) -> bool {
@@ -88,7 +116,7 @@ impl Value {
     /// Negate a (number) value
     pub fn negate(&self, vm: &VM) -> Result<Value, InterpretError> {
         match self {
-            Self::Number(v) => Ok(Value::Number(-v)),
+            Self::Number(v) => Ok((-v).into()),
             _ => {
                 vm.runtime_error("Operand must be a number.");
                 Err(InterpretError::Runtime)
@@ -118,24 +146,24 @@ impl Value {
 
     /// Compare two (number) values - less than
     pub fn less(&self, other: Value, vm: &VM) -> Result<Value, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok(Value::Bool(a < b)))
+        self.number_op(other, vm, |a, b| Ok((a < b).into()))
     }
 
     /// Compare two (number) values - less than or equal
     #[cfg(feature = "extended_opcodes")]
     pub fn less_equal(&self, other: Value, vm: &VM) -> Result<Value, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok(Value::Bool(a <= b)))
+        self.number_op(other, vm, |a, b| Ok((a <= b).into()))
     }
 
     /// Compare two (number) values - greater than
     pub fn greater(&self, other: Value, vm: &VM) -> Result<Value, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok(Value::Bool(a > b)))
+        self.number_op(other, vm, |a, b| Ok((a > b).into()))
     }
 
     /// Compare two (number) values - less than or equal
     #[cfg(feature = "extended_opcodes")]
     pub fn greater_equal(&self, other: Value, vm: &VM) -> Result<Value, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok(Value::Bool(a >= b)))
+        self.number_op(other, vm, |a, b| Ok((a >= b).into()))
     }
 
     /// Add two (number) values, or concatenate strings
@@ -143,7 +171,7 @@ impl Value {
         // TODO: concatenate strings
         match self {
             Self::Number(a) => match other {
-                Self::Number(b) => Ok(Value::Number(a + b)),
+                Self::Number(b) => Ok((a + b).into()),
                 _ => {
                     vm.runtime_error("Operands must be numbers.");
                     Err(InterpretError::Runtime)
@@ -158,12 +186,12 @@ impl Value {
 
     /// Subtract two (number) values
     pub fn subtract(&self, other: Value, vm: &VM) -> Result<Value, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok(Value::Number(a - b)))
+        self.number_op(other, vm, |a, b| Ok((a - b).into()))
     }
 
     /// Multiply two (number) values
     pub fn multiply(&self, other: Value, vm: &VM) -> Result<Value, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok(Value::Number(a * b)))
+        self.number_op(other, vm, |a, b| Ok((a * b).into()))
     }
 
     /// Divide two (number) values
@@ -173,7 +201,7 @@ impl Value {
                 vm.runtime_error("Illegal divide by zero.");
                 return Err(InterpretError::Runtime);
             }
-            Ok(Value::Number(a / b))
+            Ok((a / b).into())
         })
     }
 }

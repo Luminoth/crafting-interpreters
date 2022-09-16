@@ -211,20 +211,20 @@ mod tests {
     fn test_constant() {
         let mut chunk = Chunk::new();
 
-        let constant = chunk.add_constant(Value::Number(1.2));
+        let constant = chunk.add_constant(1.2.into());
         chunk.write(OpCode::Constant(constant as u8), 123);
         let idx = constant as usize;
         assert_eq!(chunk.code[idx], OpCode::Constant(0));
         assert_eq!(chunk.lines[idx], 123);
-        assert_eq!(chunk.constants[idx], Value::Number(1.2));
-        assert_eq!(*chunk.get_constant(idx as u8), Value::Number(1.2));
+        assert_eq!(chunk.constants[idx], 1.2.into());
+        assert_eq!(*chunk.get_constant(idx as u8), 1.2.into());
 
-        let constant = chunk.add_constant(Value::Number(2.1));
+        let constant = chunk.add_constant(2.1.into());
         chunk.write(OpCode::Constant(constant as u8), 124);
         let idx = constant as usize;
         assert_eq!(chunk.code[idx], OpCode::Constant(1));
         assert_eq!(chunk.lines[idx], 124);
-        assert_eq!(chunk.constants[idx], Value::Number(2.1));
-        assert_eq!(*chunk.get_constant(idx as u8), Value::Number(2.1));
+        assert_eq!(chunk.constants[idx], 2.1.into());
+        assert_eq!(*chunk.get_constant(idx as u8), 2.1.into());
     }
 }

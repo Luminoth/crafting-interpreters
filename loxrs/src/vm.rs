@@ -169,18 +169,18 @@ impl VM {
                     self.push(constant.clone());
                 }
                 OpCode::Nil => self.push(Value::Nil),
-                OpCode::False => self.push(Value::Bool(false)),
-                OpCode::True => self.push(Value::Bool(true)),
+                OpCode::False => self.push(false.into()),
+                OpCode::True => self.push(true.into()),
                 OpCode::Equal => {
                     let b = self.pop();
                     let a = self.pop();
-                    self.push(Value::Bool(a == b));
+                    self.push((a == b).into());
                 }
                 #[cfg(feature = "extended_opcodes")]
                 OpCode::NotEqual => {
                     let b = self.pop();
                     let a = self.pop();
-                    self.push(Value::Bool(a != b));
+                    self.push(V(a != b).into());
                 }
                 OpCode::Less => self.binary_op(|a, b| a.less(b, self))?,
                 #[cfg(feature = "extended_opcodes")]
@@ -198,7 +198,7 @@ impl VM {
                     self.pop();
                     self.push(v);
                 }
-                OpCode::Not => self.push(Value::Bool(self.pop().is_falsey())),
+                OpCode::Not => self.push(self.pop().is_falsey().into()),
                 OpCode::Return => {
                     let value = self.pop();
                     info!("{}", value);
