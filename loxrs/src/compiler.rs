@@ -336,10 +336,10 @@ impl<'a> Parser<'a> {
 }
 
 /// Compiles lox source
-pub fn compile(input: String) -> Result<Chunk, InterpretError> {
+pub fn compile(input: &str) -> Result<Chunk, InterpretError> {
     let mut chunk = Chunk::new();
 
-    let scanner = Scanner::new(&input);
+    let scanner = Scanner::new(input);
     let mut parser = Parser::new(scanner, &mut chunk);
 
     parser.advance();
