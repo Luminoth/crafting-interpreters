@@ -215,28 +215,37 @@ impl Value {
     #[inline]
     pub fn add(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         match self {
-            Self::Number(a) => match other {
-                Self::Number(b) => Ok((a + b).into()),
-                _ => {
-                    vm.runtime_error("Operands must be numbers.");
-                    Err(InterpretError::Runtime)
-                }
-            },
-            Self::Object(a) => match other {
-                Self::Object(b) => match a {
-                    Object::String(a) => match b {
-                        Object::String(b) => Ok(Object::from(a + &b).into()),
-                    },
+            Self::Nil => match other {
+                Self::Object(b) => match b {
+                    Object::String(b) => Ok(Object::from(format!("{}{}", self, b)).into()),
                 },
                 _ => {
-                    vm.runtime_error("Operands must be strings.");
+                    vm.runtime_error("Operands must be numbers or strings.");
                     Err(InterpretError::Runtime)
                 }
             },
-            _ => {
-                vm.runtime_error("Operands must be numbers.");
-                Err(InterpretError::Runtime)
-            }
+            Self::Bool(a) => match other {
+                Self::Object(b) => match b {
+                    Object::String(b) => Ok(Object::from(format!("{}{}", a, b)).into()),
+                },
+                _ => {
+                    vm.runtime_error("Operands must be numbers or strings.");
+                    Err(InterpretError::Runtime)
+                }
+            },
+            Self::Number(a) => match other {
+                Self::Number(b) => Ok((a + b).into()),
+                Self::Object(b) => match b {
+                    Object::String(b) => Ok(Object::from(format!("{}{}", a, b)).into()),
+                },
+                _ => {
+                    vm.runtime_error("Operands must be numbers or strings.");
+                    Err(InterpretError::Runtime)
+                }
+            },
+            Self::Object(a) => match a {
+                Object::String(a) => Ok(Object::from(format!("{}{}", a, other)).into()),
+            },
         }
     }
 
