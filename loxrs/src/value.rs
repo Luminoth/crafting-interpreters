@@ -5,7 +5,7 @@ use std::fmt;
 use crate::vm::*;
 
 /// An heap allocated value
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Object {
     String(String),
 }
@@ -213,13 +213,23 @@ impl Value {
 
     /// Add two (number) values, or concatenate strings
     #[inline]
-    pub fn add(&self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
-        // TODO: concatenate strings
+    pub fn add(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         match self {
             Self::Number(a) => match other {
                 Self::Number(b) => Ok((a + b).into()),
                 _ => {
                     vm.runtime_error("Operands must be numbers.");
+                    Err(InterpretError::Runtime)
+                }
+            },
+            Self::Object(a) => match other {
+                Self::Object(b) => match a {
+                    Object::String(a) => match b {
+                        Object::String(b) => Ok(Object::from(a + &b).into()),
+                    },
+                },
+                _ => {
+                    vm.runtime_error("Operands must be strings.");
                     Err(InterpretError::Runtime)
                 }
             },
@@ -232,19 +242,19 @@ impl Value {
 
     /// Subtract two (number) values
     #[inline]
-    pub fn subtract(&self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
+    pub fn subtract(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         self.number_op(other, vm, |a, b| Ok((a - b).into()))
     }
 
     /// Multiply two (number) values
     #[inline]
-    pub fn multiply(&self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
+    pub fn multiply(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         self.number_op(other, vm, |a, b| Ok((a * b).into()))
     }
 
     /// Divide two (number) values
     #[inline]
-    pub fn divide(&self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
+    pub fn divide(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         self.number_op(other, vm, |a, b| {
             if b == 0.0 {
                 vm.runtime_error("Illegal divide by zero.");
