@@ -94,6 +94,8 @@
 * Chapter 12
   * Static methods
   * getters / setters
+* Chapter 19
+  * Constant string Objects can point directly to the source slice
 
 ### Grammar
 
