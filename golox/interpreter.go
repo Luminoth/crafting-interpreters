@@ -378,7 +378,7 @@ func (i *Interpreter) VisitBinaryExpression(expression *BinaryExpression) (value
 			value = NewStringValue(left.String() + right.StringValue)
 		} else {
 			err = &RuntimeError{
-				Message: "Operands must be numbers or strings.",
+				Message: "Operands must be two numbers or two strings.",
 				Token:   expression.Operator,
 			}
 		}

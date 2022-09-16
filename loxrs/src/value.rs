@@ -220,7 +220,7 @@ impl Value {
                     Object::String(b) => Ok(Object::from(format!("{}{}", self, b)).into()),
                 },
                 _ => {
-                    vm.runtime_error("Operands must be numbers or strings.");
+                    vm.runtime_error("Operands must be two numbers or two strings.");
                     Err(InterpretError::Runtime)
                 }
             },
@@ -229,7 +229,7 @@ impl Value {
                     Object::String(b) => Ok(Object::from(format!("{}{}", a, b)).into()),
                 },
                 _ => {
-                    vm.runtime_error("Operands must be numbers or strings.");
+                    vm.runtime_error("Operands must be two numbers or two strings.");
                     Err(InterpretError::Runtime)
                 }
             },
@@ -239,7 +239,7 @@ impl Value {
                     Object::String(b) => Ok(Object::from(format!("{}{}", a, b)).into()),
                 },
                 _ => {
-                    vm.runtime_error("Operands must be numbers or strings.");
+                    vm.runtime_error("Operands must be two numbers or two strings.");
                     Err(InterpretError::Runtime)
                 }
             },
