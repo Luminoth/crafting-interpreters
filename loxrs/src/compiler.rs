@@ -121,12 +121,12 @@ impl<'a> Parser<'a> {
     }
 
     /// Pratt Parser prefix parsing rule
-    fn prefix(&mut self, r#type: TokenType) -> bool {
+    fn prefix(&mut self, r#type: TokenType, vm: &VM) -> bool {
         match r#type {
             TokenType::Nil | TokenType::False | TokenType::True => self.literal(),
-            TokenType::LeftParen => self.grouping(),
-            TokenType::Minus | TokenType::Bang => self.unary(),
-            TokenType::String => self.string(),
+            TokenType::LeftParen => self.grouping(vm),
+            TokenType::Minus | TokenType::Bang => self.unary(vm),
+            TokenType::String => self.string(vm),
             TokenType::Number => self.number(),
             _ => return false,
         }
@@ -135,7 +135,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Pratt Praser infix parsing rule
-    fn infix(&mut self, r#type: TokenType) -> bool {
+    fn infix(&mut self, r#type: TokenType, vm: &VM) -> bool {
         match r#type {
             TokenType::BangEqual
             | TokenType::EqualEqual
@@ -146,20 +146,20 @@ impl<'a> Parser<'a> {
             | TokenType::Minus
             | TokenType::Plus
             | TokenType::Slash
-            | TokenType::Star => self.binary(),
-            TokenType::Question => self.ternary(),
+            | TokenType::Star => self.binary(vm),
+            TokenType::Question => self.ternary(vm),
             _ => return false,
         }
 
         true
     }
 
-    fn parse_precedence(&mut self, precedence: Precedence) {
+    fn parse_precedence(&mut self, precedence: Precedence, vm: &VM) {
         self.advance();
 
         // handle prefix expression to start
         let r#type = self.previous.borrow().r#type;
-        if !self.prefix(r#type) {
+        if !self.prefix(r#type, vm) {
             self.error("Expect expression.")
         }
 
@@ -173,23 +173,23 @@ impl<'a> Parser<'a> {
             self.advance();
 
             let r#type = self.previous.borrow().r#type;
-            self.infix(r#type);
+            self.infix(r#type, vm);
         }
     }
 
-    fn expression(&mut self) {
+    fn expression(&mut self, vm: &VM) {
         // start with the lowest level precedence
-        self.parse_precedence(Precedence::None.next());
+        self.parse_precedence(Precedence::None.next(), vm);
     }
 
-    fn grouping(&mut self) {
-        self.expression();
+    fn grouping(&mut self, vm: &VM) {
+        self.expression(vm);
         self.consume(TokenType::RightParen, "Expect ')' after expression.");
     }
 
-    fn binary(&mut self) {
+    fn binary(&mut self, vm: &VM) {
         let operator = self.previous.borrow().r#type;
-        self.parse_precedence(operator.precedence().next());
+        self.parse_precedence(operator.precedence().next(), vm);
 
         match operator {
             TokenType::BangEqual => {
@@ -226,22 +226,22 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn ternary(&mut self) {
+    fn ternary(&mut self, vm: &VM) {
         // TODO: emit the instructions associated with this
 
         // TODO: pretty sure this isn't right in terms of the precedences of this operator
 
-        self.parse_precedence(TokenType::Question.precedence().next());
+        self.parse_precedence(TokenType::Question.precedence().next(), vm);
 
         self.consume(TokenType::Colon, "Expect ':' after expression.");
 
-        self.parse_precedence(TokenType::Colon.precedence().next());
+        self.parse_precedence(TokenType::Colon.precedence().next(), vm);
     }
 
-    fn unary(&mut self) {
+    fn unary(&mut self, vm: &VM) {
         let operator = self.previous.borrow().r#type;
 
-        self.parse_precedence(Precedence::Unary);
+        self.parse_precedence(Precedence::Unary, vm);
 
         #[allow(clippy::single_match)]
         match operator {
@@ -251,9 +251,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn string(&mut self) {
+    fn string(&mut self, vm: &VM) {
         let value = self.previous.borrow().lexeme.unwrap();
-        self.emit_constant(Object::from(value).into());
+        self.emit_constant(Object::from_str(value, vm).into());
     }
 
     fn number(&mut self) {
@@ -348,14 +348,14 @@ impl<'a> Parser<'a> {
 }
 
 /// Compiles lox source
-pub fn compile(input: &str) -> Result<Chunk, InterpretError> {
+pub fn compile(input: &str, vm: &VM) -> Result<Chunk, InterpretError> {
     let mut chunk = Chunk::new();
 
     let scanner = Scanner::new(input);
     let mut parser = Parser::new(scanner, &mut chunk);
 
     parser.advance();
-    parser.expression();
+    parser.expression(vm);
     parser.consume(TokenType::Eof, "Expect end of expression.");
     parser.end_compiler();
 

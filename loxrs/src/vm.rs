@@ -1,8 +1,10 @@
 //! Lox Virtual Machine
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 #[cfg(feature = "debug_trace")]
 use std::fmt::Write;
+use std::rc::Rc;
 
 use thiserror::Error;
 use tracing::{error, info};
@@ -48,6 +50,12 @@ pub struct VM {
     /// Stack pointer
     #[cfg(not(feature = "dynamic_stack"))]
     sp: RefCell<usize>,
+
+    /// Objects for GC
+    objects: Vec<Object>,
+
+    /// String table
+    strings: HashMap<u64, Rc<String>>,
 }
 
 impl VM {
@@ -65,6 +73,9 @@ impl VM {
 
             #[cfg(not(feature = "dynamic_stack"))]
             sp: RefCell::new(0),
+
+            objects: Vec::new(),
+            strings: HashMap::new(),
         }
     }
 
