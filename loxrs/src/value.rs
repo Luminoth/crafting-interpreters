@@ -22,26 +22,36 @@ impl std::fmt::Display for Object {
 }
 
 impl Object {
-    pub fn from_string(v: String, _vm: &VM) -> Self {
+    pub fn from_string(v: String, vm: &VM) -> Self {
         let mut hasher = DefaultHasher::new();
         hasher.write(v.as_bytes());
         let hash = hasher.finish();
 
-        // TODO: lookup the string in the VM
-        // add the Object to the VM
+        // TODO: add the Object to the VM
 
-        Self::String(Rc::new(v), hash)
+        if let Some(v) = vm.find_string(hash) {
+            return Self::String(v, hash);
+        }
+
+        let v = Rc::new(v);
+        vm.add_string(hash, v.clone());
+        Self::String(v, hash)
     }
 
-    pub fn from_str(v: &str, _vm: &VM) -> Self {
+    pub fn from_str(v: &str, vm: &VM) -> Self {
         let mut hasher = DefaultHasher::new();
         hasher.write(v.as_bytes());
         let hash = hasher.finish();
 
-        // TODO: lookup the string in the VM
-        // add the Object to the VM
+        // TODO: add the Object to the VM
 
-        Self::String(Rc::new(v.to_owned()), hash)
+        if let Some(v) = vm.find_string(hash) {
+            return Self::String(v, hash);
+        }
+
+        let v = Rc::new(v.to_owned());
+        vm.add_string(hash, v.clone());
+        Self::String(v, hash)
     }
 
     /// Compare two objects - equal

@@ -7,7 +7,7 @@ use std::fmt::Write;
 use std::rc::Rc;
 
 use thiserror::Error;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::chunk::*;
 use crate::value::*;
@@ -52,10 +52,10 @@ pub struct VM {
     sp: RefCell<usize>,
 
     /// Objects for GC
-    objects: Vec<Object>,
+    objects: RefCell<Vec<Object>>,
 
     /// String table
-    strings: HashMap<u64, Rc<String>>,
+    strings: RefCell<HashMap<u64, Rc<String>>>,
 }
 
 impl VM {
@@ -74,8 +74,20 @@ impl VM {
             #[cfg(not(feature = "dynamic_stack"))]
             sp: RefCell::new(0),
 
-            objects: Vec::new(),
-            strings: HashMap::new(),
+            objects: RefCell::new(Vec::new()),
+            strings: RefCell::new(HashMap::new()),
+        }
+    }
+
+    /// Looks up a string in the string table
+    pub fn find_string(&self, hash: u64) -> Option<Rc<String>> {
+        self.strings.borrow().get(&hash).cloned()
+    }
+
+    /// Adds a string to the string table
+    pub fn add_string(&self, hash: u64, v: Rc<String>) {
+        if self.strings.borrow_mut().insert(hash, v).is_some() {
+            warn!("string table overwrite!");
         }
     }
 
