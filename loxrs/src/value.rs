@@ -21,8 +21,27 @@ impl std::fmt::Display for Object {
     }
 }
 
+#[cfg(feature = "gc_leak_check")]
+impl Drop for Object {
+    fn drop(&mut self) {
+        match self {
+            Self::String(v, _) => {
+                let count = Rc::strong_count(v);
+                if count > 1 {
+                    tracing::warn!("leaking {} string strong references", count);
+                }
+
+                let count = Rc::weak_count(v);
+                if count > 0 {
+                    tracing::warn!("leaking {} string weak references", count);
+                }
+            }
+        }
+    }
+}
+
 impl Object {
-    pub fn from_string(v: String, vm: &VM) -> Self {
+    pub fn from_string(v: String, vm: &VM) -> Rc<Self> {
         let mut hasher = DefaultHasher::new();
         hasher.write(v.as_bytes());
         let hash = hasher.finish();
@@ -30,15 +49,20 @@ impl Object {
         // TODO: add the Object to the VM
 
         if let Some(v) = vm.find_string(hash) {
-            return Self::String(v, hash);
+            let this = Rc::new(Self::String(v, hash));
+            vm.add_object(this.clone());
+            return this;
         }
 
         let v = Rc::new(v);
         vm.add_string(hash, v.clone());
-        Self::String(v, hash)
+
+        let this = Rc::new(Self::String(v, hash));
+        vm.add_object(this.clone());
+        this
     }
 
-    pub fn from_str(v: &str, vm: &VM) -> Self {
+    pub fn from_str(v: &str, vm: &VM) -> Rc<Self> {
         let mut hasher = DefaultHasher::new();
         hasher.write(v.as_bytes());
         let hash = hasher.finish();
@@ -46,20 +70,25 @@ impl Object {
         // TODO: add the Object to the VM
 
         if let Some(v) = vm.find_string(hash) {
-            return Self::String(v, hash);
+            let this = Rc::new(Self::String(v, hash));
+            vm.add_object(this.clone());
+            return this;
         }
 
         let v = Rc::new(v.to_owned());
         vm.add_string(hash, v.clone());
-        Self::String(v, hash)
+
+        let this = Rc::new(Self::String(v, hash));
+        vm.add_object(this.clone());
+        this
     }
 
     /// Compare two objects - equal
     #[inline]
-    pub fn equals(&self, other: Self) -> bool {
+    pub fn equals(&self, other: &Self) -> bool {
         match self {
             Self::String(a, _) => match other {
-                Self::String(b, _) => *a == b,
+                Self::String(b, _) => a == b,
             },
         }
     }
@@ -85,7 +114,7 @@ pub enum Value {
     Number(f64),
     // TODO: would it be possible to support "constant" strings
     // by storing a reference to their slice of the source?
-    Object(Object),
+    Object(Rc<Object>),
 }
 
 impl std::fmt::Display for Value {
@@ -113,9 +142,9 @@ impl From<f64> for Value {
     }
 }
 
-impl From<Object> for Value {
+impl From<Rc<Object>> for Value {
     #[inline]
-    fn from(v: Object) -> Self {
+    fn from(v: Rc<Object>) -> Self {
         Self::Object(v)
     }
 }
@@ -177,7 +206,7 @@ impl Value {
                 _ => false,
             },
             Self::Object(a) => match other {
-                Self::Object(b) => a.equals(b),
+                Self::Object(b) => a.equals(b.as_ref()),
                 _ => false,
             },
         }
@@ -237,7 +266,7 @@ impl Value {
     pub fn add(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         match self {
             Self::Nil => match other {
-                Self::Object(b) => match b {
+                Self::Object(b) => match b.as_ref() {
                     Object::String(b, _) => {
                         Ok(Object::from_string(format!("{}{}", self, b), vm).into())
                     }
@@ -248,7 +277,7 @@ impl Value {
                 }
             },
             Self::Bool(a) => match other {
-                Self::Object(b) => match b {
+                Self::Object(b) => match b.as_ref() {
                     Object::String(b, _) => {
                         Ok(Object::from_string(format!("{}{}", a, b), vm).into())
                     }
@@ -260,7 +289,7 @@ impl Value {
             },
             Self::Number(a) => match other {
                 Self::Number(b) => Ok((a + b).into()),
-                Self::Object(b) => match b {
+                Self::Object(b) => match b.as_ref() {
                     Object::String(b, _) => {
                         Ok(Object::from_string(format!("{}{}", a, b), vm).into())
                     }
@@ -270,7 +299,7 @@ impl Value {
                     Err(InterpretError::Runtime)
                 }
             },
-            Self::Object(a) => match a {
+            Self::Object(a) => match a.as_ref() {
                 Object::String(a, _) => {
                     Ok(Object::from_string(format!("{}{}", a, other), vm).into())
                 }

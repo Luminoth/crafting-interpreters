@@ -51,11 +51,17 @@ pub struct VM {
     #[cfg(not(feature = "dynamic_stack"))]
     sp: RefCell<usize>,
 
-    /// Objects for GC
-    objects: RefCell<Vec<Object>>,
+    /// Objects for garbage collection
+    objects: RefCell<Vec<Rc<Object>>>,
 
     /// String table
     strings: RefCell<HashMap<u64, Rc<String>>>,
+}
+
+impl Drop for VM {
+    fn drop(&mut self) {
+        self.free_objects()
+    }
 }
 
 impl VM {
@@ -77,6 +83,33 @@ impl VM {
             objects: RefCell::new(Vec::new()),
             strings: RefCell::new(HashMap::new()),
         }
+    }
+
+    /// Adds an Object for garbage collection
+    pub fn add_object(&self, object: Rc<Object>) {
+        self.objects.borrow_mut().push(object);
+    }
+
+    /// Free all of the VM Objects
+    pub fn free_objects(&self) {
+        self.strings.borrow_mut().clear();
+
+        // TODO: we need a hash set or something for this to actually work
+        // I'm pretty sure the object list itself is over-holding references
+        #[cfg(feature = "gc_leak_check")]
+        for object in self.objects.borrow().iter() {
+            let count = Rc::strong_count(object);
+            if count > 1 {
+                tracing::warn!("leaking {} object strong references", count);
+            }
+
+            let count = Rc::weak_count(object);
+            if count > 0 {
+                tracing::warn!("leaking {} object weak references", count);
+            }
+        }
+
+        self.objects.borrow_mut().clear();
     }
 
     /// Looks up a string in the string table

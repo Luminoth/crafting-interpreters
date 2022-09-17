@@ -17,9 +17,10 @@ tracing-subscriber = "0.3"
 
 [features]
 #default = []
-default = ["debug_code", "debug_trace"]
+default = ["debug_code", "debug_trace", "gc_leak_check"]
 debug_code = []
 debug_trace = []
 dynamic_stack = []
 native_print = []
 extended_opcodes = []
+gc_leak_check = []
