@@ -82,8 +82,8 @@
 ### LoxRs Deviations
 
 * Multi-line comments
-* Divide by zero runtime error
 * Extended string concatenation
+* Divide by zero runtime error
 
 ### TODO:
 

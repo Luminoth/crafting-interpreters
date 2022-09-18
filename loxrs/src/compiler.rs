@@ -115,6 +115,10 @@ impl<'a> Parser<'a> {
         self.current.borrow().r#type == r#type
     }
 
+    fn check_previous(&self, r#type: TokenType) -> bool {
+        self.previous.borrow().r#type == r#type
+    }
+
     fn r#match(&self, r#type: TokenType) -> bool {
         if !self.check(r#type) {
             return false;
@@ -193,6 +197,10 @@ impl<'a> Parser<'a> {
     fn declaration(&mut self, vm: &VM) {
         // declaration -> statement
         self.statement(vm);
+
+        if self.is_panic_mode() {
+            self.synchronize();
+        }
     }
 
     fn statement(&mut self, vm: &VM) {
@@ -393,6 +401,35 @@ impl<'a> Parser<'a> {
         );
 
         *self.had_error.borrow_mut() = true;
+    }
+
+    fn synchronize(&self) {
+        *self.panic_mode.borrow_mut() = false;
+
+        loop {
+            if self.check(TokenType::Eof) {
+                break;
+            }
+
+            // synchronize on statement end (semicolon)
+            if self.check_previous(TokenType::Semicolon) {
+                return;
+            }
+
+            // synchronize on statement begin
+            let current = self.current.borrow().r#type;
+            match current {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => (),
+            }
+        }
     }
 }
 
