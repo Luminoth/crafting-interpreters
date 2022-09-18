@@ -247,11 +247,12 @@ impl VM {
                     self.push(v);
                 }
                 OpCode::Not => self.push(self.pop().is_falsey().into()),
-                OpCode::Return => {
-                    let value = self.pop();
-                    info!("{}", value);
-                    return Ok(());
+                OpCode::Pop => {
+                    self.pop();
+                    ()
                 }
+                OpCode::Print => println!("{}\n", self.pop()),
+                OpCode::Return => return Ok(()),
             }
         }
     }

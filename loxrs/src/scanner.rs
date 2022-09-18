@@ -53,7 +53,7 @@ pub enum TokenType {
     Break,
     Continue,
     Nil,
-    #[cfg(not(feature = "native_print"))]
+    // TODO: #[cfg(not(feature = "native_print"))]
     Print,
     Return,
     Var,
@@ -363,7 +363,7 @@ impl<'a> Scanner<'a> {
             'i' => self.check_keyword(1, "f", TokenType::If),
             'n' => self.check_keyword(1, "il", TokenType::Nil),
             'o' => self.check_keyword(1, "r", TokenType::Or),
-            #[cfg(not(feature = "native_print"))]
+            // TODO: #[cfg(not(feature = "native_print"))]
             'p' => self.check_keyword(1, "rint", TokenType::Print),
             'r' => self.check_keyword(1, "eturn", TokenType::Return),
             's' => self.check_keyword(1, "uper", TokenType::Super),

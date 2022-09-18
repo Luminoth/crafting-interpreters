@@ -103,7 +103,7 @@ impl<'a> Parser<'a> {
         loop {
             // consume tokens until we hit one that is not an error
             *self.current.borrow_mut() = self.scanner.scan_token();
-            if self.current.borrow().r#type != TokenType::Error {
+            if !self.check(TokenType::Error) {
                 break;
             }
 
@@ -111,8 +111,21 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn check(&self, r#type: TokenType) -> bool {
+        self.current.borrow().r#type == r#type
+    }
+
+    fn r#match(&self, r#type: TokenType) -> bool {
+        if !self.check(r#type) {
+            return false;
+        }
+
+        self.advance();
+        true
+    }
+
     fn consume(&self, r#type: TokenType, message: impl AsRef<str>) {
-        if self.current.borrow().r#type == r#type {
+        if self.check(r#type) {
             self.advance();
             return;
         }
@@ -177,13 +190,47 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn declaration(&mut self, vm: &VM) {
+        // declaration -> statement
+        self.statement(vm);
+    }
+
+    fn statement(&mut self, vm: &VM) {
+        // statement -> expression_statement | print_statement
+
+        // TODO: #[cfg(not(feature = "native_print"))]
+        if self.r#match(TokenType::Print) {
+            self.print_statement(vm);
+            return;
+        }
+
+        self.expression_statement(vm);
+    }
+
+    // TODO: #[cfg(not(feature = "native_print"))]
+    fn print_statement(&mut self, vm: &VM) {
+        // print_statement -> "print" expression ";"
+        self.expression(vm);
+        self.consume(TokenType::Semicolon, "Expect ';' after value.");
+        self.emit_instruction(OpCode::Print)
+    }
+
+    fn expression_statement(&mut self, vm: &VM) {
+        // expression_statement -> expression ";"
+        self.expression(vm);
+        self.consume(TokenType::Semicolon, "Expect ';' after expression.");
+        self.emit_instruction(OpCode::Pop);
+    }
+
     fn expression(&mut self, vm: &VM) {
+        // expression -> assignment ( "," expression )*
         // start with the lowest level precedence
         self.parse_precedence(Precedence::None.next(), vm);
     }
 
     fn grouping(&mut self, vm: &VM) {
         self.expression(vm);
+
         self.consume(TokenType::RightParen, "Expect ')' after expression.");
     }
 
@@ -227,6 +274,8 @@ impl<'a> Parser<'a> {
     }
 
     fn ternary(&mut self, vm: &VM) {
+        // ternary -> logical_or ( "?" expression ":" ternary )?
+
         // TODO: emit the instructions associated with this
 
         // TODO: pretty sure this isn't right in terms of the precedences of this operator
@@ -354,9 +403,18 @@ pub fn compile(input: &str, vm: &VM) -> Result<Chunk, InterpretError> {
     let scanner = Scanner::new(input);
     let mut parser = Parser::new(scanner, &mut chunk);
 
+    // prime the parser
     parser.advance();
-    parser.expression(vm);
-    parser.consume(TokenType::Eof, "Expect end of expression.");
+
+    // program -> declaration* EOF
+    loop {
+        if parser.r#match(TokenType::Eof) {
+            break;
+        }
+
+        parser.declaration(vm);
+    }
+
     parser.end_compiler();
 
     if parser.had_error() {

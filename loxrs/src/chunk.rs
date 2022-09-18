@@ -76,7 +76,15 @@ pub enum OpCode {
     #[strum(serialize = "OP_NOT")]
     Not,
 
-    /// Return from the current function
+    /// Pop the top of the stack and discard it
+    #[strum(serialize = "OP_POP")]
+    Pop,
+
+    /// Print a value
+    #[strum(serialize = "OP_PRINT")]
+    Print,
+
+    /// Return from the current function / program
     #[strum(serialize = "OP_RETURN")]
     Return,
 }
