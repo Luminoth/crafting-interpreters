@@ -83,6 +83,7 @@
 
 * Multi-line comments
 * Divide by zero runtime error
+* Extended string concatenation
 
 ### TODO:
 

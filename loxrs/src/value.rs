@@ -265,6 +265,7 @@ impl Value {
     #[inline]
     pub fn add(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         match self {
+            #[cfg(feature = "extended_string_concat")]
             Self::Nil => match other {
                 Self::Object(b) => match b.as_ref() {
                     Object::String(b, _) => {
@@ -276,6 +277,7 @@ impl Value {
                     Err(InterpretError::Runtime)
                 }
             },
+            #[cfg(feature = "extended_string_concat")]
             Self::Bool(a) => match other {
                 Self::Object(b) => match b.as_ref() {
                     Object::String(b, _) => {
@@ -289,6 +291,7 @@ impl Value {
             },
             Self::Number(a) => match other {
                 Self::Number(b) => Ok((a + b).into()),
+                #[cfg(feature = "extended_string_concat")]
                 Self::Object(b) => match b.as_ref() {
                     Object::String(b, _) => {
                         Ok(Object::from_string(format!("{}{}", a, b), vm).into())
@@ -301,9 +304,30 @@ impl Value {
             },
             Self::Object(a) => match a.as_ref() {
                 Object::String(a, _) => {
-                    Ok(Object::from_string(format!("{}{}", a, other), vm).into())
+                    #[cfg(feature = "extended_string_concat")]
+                    {
+                        Ok(Object::from_string(format!("{}{}", a, other), vm).into())
+                    }
+
+                    #[cfg(not(feature = "extended_string_concat"))]
+                    match other {
+                        Self::Object(b) => match b.as_ref() {
+                            Object::String(b, _) => {
+                                Ok(Object::from_string(format!("{}{}", a, b), vm).into())
+                            }
+                        },
+                        _ => {
+                            vm.runtime_error("Operands must be two numbers or two strings.");
+                            Err(InterpretError::Runtime)
+                        }
+                    }
                 }
             },
+            #[cfg(not(feature = "extended_string_concat"))]
+            _ => {
+                vm.runtime_error("Operands must be two numbers or two strings.");
+                Err(InterpretError::Runtime)
+            }
         }
     }
 
