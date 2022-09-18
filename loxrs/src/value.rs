@@ -41,12 +41,13 @@ impl Drop for Object {
 }
 
 impl Object {
-    pub fn from_string(v: String, vm: &VM) -> Rc<Self> {
+    /// Creates a new string Object from a String
+    pub fn from_string(v: impl Into<String>, vm: &VM) -> Rc<Self> {
+        let v = v.into();
+
         let mut hasher = DefaultHasher::new();
         hasher.write(v.as_bytes());
         let hash = hasher.finish();
-
-        // TODO: add the Object to the VM
 
         if let Some(v) = vm.find_string(hash) {
             let this = Rc::new(Self::String(v, hash));
@@ -62,12 +63,13 @@ impl Object {
         this
     }
 
-    pub fn from_str(v: &str, vm: &VM) -> Rc<Self> {
+    /// Creates a new string Object from a string slice
+    pub fn from_str(v: impl AsRef<str>, vm: &VM) -> Rc<Self> {
+        let v = v.as_ref();
+
         let mut hasher = DefaultHasher::new();
         hasher.write(v.as_bytes());
         let hash = hasher.finish();
-
-        // TODO: add the Object to the VM
 
         if let Some(v) = vm.find_string(hash) {
             let this = Rc::new(Self::String(v, hash));
@@ -81,6 +83,15 @@ impl Object {
         let this = Rc::new(Self::String(v, hash));
         vm.add_object(this.clone());
         this
+    }
+
+    /// Gets the Object string value
+    ///
+    /// This will panic if the object is not a string object
+    pub fn as_string(&self) -> (&String, u64) {
+        match self {
+            Self::String(v, hash) => (v, *hash),
+        }
     }
 
     /// Compare two objects - equal
@@ -150,6 +161,16 @@ impl From<Rc<Object>> for Value {
 }
 
 impl Value {
+    /// Gets the value as a string object
+    ///
+    /// This will panic if the value is not a string object
+    pub fn as_string(&self) -> (&String, u64) {
+        match self {
+            Self::Object(v) => v.as_string(),
+            _ => panic!("Invalid Value to String"),
+        }
+    }
+
     /// Is this value "falsey"
     #[inline]
     pub fn is_falsey(&self) -> bool {

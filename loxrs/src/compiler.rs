@@ -111,10 +111,12 @@ impl<'a> Parser<'a> {
         }
     }
 
+    #[inline]
     fn check(&self, r#type: TokenType) -> bool {
         self.current.borrow().r#type == r#type
     }
 
+    #[inline]
     fn check_previous(&self, r#type: TokenType) -> bool {
         self.previous.borrow().r#type == r#type
     }
@@ -128,13 +130,13 @@ impl<'a> Parser<'a> {
         true
     }
 
-    fn consume(&self, r#type: TokenType, message: impl AsRef<str>) {
+    fn consume(&self, r#type: TokenType, error_message: impl AsRef<str>) {
         if self.check(r#type) {
             self.advance();
             return;
         }
 
-        self.error_at_current(message);
+        self.error_at_current(error_message);
     }
 
     /// Pratt Parser prefix parsing rule
@@ -145,6 +147,7 @@ impl<'a> Parser<'a> {
             TokenType::Minus | TokenType::Bang => self.unary(vm),
             TokenType::String => self.string(vm),
             TokenType::Number => self.number(),
+            TokenType::Identifier => self.variable(vm),
             _ => return false,
         }
 
@@ -194,13 +197,53 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn declaration(&mut self, vm: &VM) {
-        // declaration -> statement
-        self.statement(vm);
+    fn identifier_constant(&mut self, name: impl AsRef<str>, vm: &VM) -> u8 {
+        self.make_constant(Object::from_str(name.as_ref(), vm).into())
+    }
 
+    fn parse_variable(&mut self, vm: &VM, error_message: impl AsRef<str>) -> u8 {
+        self.consume(TokenType::Identifier, error_message);
+
+        let name = self.previous.borrow().lexeme.unwrap();
+        self.identifier_constant(name, vm)
+    }
+
+    fn define_variable(&mut self, idx: u8) {
+        self.emit_instruction(OpCode::DefineGlobal(idx));
+    }
+
+    fn declaration(&mut self, vm: &VM) {
+        // declaration -> variable_declaration | statement
+        if self.r#match(TokenType::Var) {
+            self.variable_declaration(vm);
+        } else {
+            self.statement(vm);
+        }
+
+        // error recovery
         if self.is_panic_mode() {
             self.synchronize();
         }
+    }
+
+    fn variable_declaration(&mut self, vm: &VM) {
+        // variable_declaration -> "var" IDENTIFIER ( "=" expression )? ";"
+
+        let global = self.parse_variable(vm, "Expect variable name.");
+
+        // initializer
+        if self.r#match(TokenType::Equal) {
+            self.expression(vm);
+        } else {
+            self.emit_instruction(OpCode::Nil);
+        }
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        );
+
+        self.define_variable(global);
     }
 
     fn statement(&mut self, vm: &VM) {
@@ -324,6 +367,16 @@ impl<'a> Parser<'a> {
         self.emit_constant(value.into());
     }
 
+    fn named_variable(&mut self, name: impl AsRef<str>, vm: &VM) {
+        let idx = self.identifier_constant(name, vm);
+        self.emit_instruction(OpCode::GetGlobal(idx));
+    }
+
+    fn variable(&mut self, vm: &VM) {
+        let name = self.previous.borrow().lexeme.unwrap();
+        self.named_variable(name, vm);
+    }
+
     fn literal(&mut self) {
         let token = self.previous.borrow().r#type;
         match token {
@@ -434,10 +487,10 @@ impl<'a> Parser<'a> {
 }
 
 /// Compiles lox source
-pub fn compile(input: &str, vm: &VM) -> Result<Chunk, InterpretError> {
+pub fn compile(input: impl AsRef<str>, vm: &VM) -> Result<Chunk, InterpretError> {
     let mut chunk = Chunk::new();
 
-    let scanner = Scanner::new(input);
+    let scanner = Scanner::new(input.as_ref());
     let mut parser = Parser::new(scanner, &mut chunk);
 
     // prime the parser

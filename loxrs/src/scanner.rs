@@ -331,7 +331,14 @@ impl<'a> Scanner<'a> {
         self.make_token(self.identifier_type())
     }
 
-    fn check_keyword(&self, keyword_start: usize, rest: &str, r#type: TokenType) -> TokenType {
+    fn check_keyword(
+        &self,
+        keyword_start: usize,
+        rest: impl AsRef<str>,
+        r#type: TokenType,
+    ) -> TokenType {
+        let rest = rest.as_ref();
+
         if self.current() - self.start() == keyword_start + rest.len() {
             let start = self.start() + keyword_start;
             let source = &self.source[start..start + rest.len()];

@@ -7,7 +7,7 @@ use std::fmt::Write;
 use std::rc::Rc;
 
 use thiserror::Error;
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 
 use crate::chunk::*;
 use crate::value::*;
@@ -56,6 +56,9 @@ pub struct VM {
 
     /// String table
     strings: RefCell<HashMap<u64, Rc<String>>>,
+
+    /// Global variables
+    globals: RefCell<HashMap<u64, Value>>,
 }
 
 impl Drop for VM {
@@ -82,6 +85,7 @@ impl VM {
 
             objects: RefCell::new(Vec::new()),
             strings: RefCell::new(HashMap::new()),
+            globals: RefCell::new(HashMap::new()),
         }
     }
 
@@ -186,6 +190,12 @@ impl VM {
     }
 
     #[inline]
+    fn read_string<'a>(&self, chunk: &'a Chunk, idx: u8) -> (&'a String, u64) {
+        let constant = chunk.get_constant(idx);
+        constant.as_string()
+    }
+
+    #[inline]
     fn binary_op<C>(&self, op: C) -> Result<(), InterpretError>
     where
         C: FnOnce(Value, Value) -> Result<Value, InterpretError>,
@@ -214,7 +224,7 @@ impl VM {
                     write!(stack, "[ {} ]", self.stack.borrow()[slot])
                         .map_err(|_| InterpretError::Internal)?;
                 }
-                info!("{}", stack);
+                tracing::info!("{}", stack);
 
                 instruction.disassemble("", &chunk);
             }
@@ -223,6 +233,28 @@ impl VM {
                 OpCode::Constant(idx) => {
                     let constant = chunk.get_constant(*idx);
                     self.push(constant.clone());
+                }
+                OpCode::DefineGlobal(idx) => {
+                    // look up the variable name
+                    let (_, hash) = self.read_string(&chunk, *idx);
+
+                    // insert the variable into the globals
+                    // peek and then pop to avoid the GC missing the value mid-operation
+                    // Lox allows global overwrites
+                    self.globals.borrow_mut().insert(hash, self.peek(0));
+                    self.pop();
+                }
+                OpCode::GetGlobal(idx) => {
+                    // look up the variable name
+                    let (name, hash) = self.read_string(&chunk, *idx);
+
+                    if let Some(value) = self.globals.borrow().get(&hash) {
+                        // copy the value to the stack
+                        self.push(value.clone());
+                    } else {
+                        self.runtime_error(format!("Undefined variable '{}'.", name));
+                        return Err(InterpretError::Runtime);
+                    }
                 }
                 OpCode::Nil => self.push(Value::Nil),
                 OpCode::False => self.push(false.into()),
