@@ -281,7 +281,6 @@ impl VM {
                 OpCode::Not => self.push(self.pop().is_falsey().into()),
                 OpCode::Pop => {
                     self.pop();
-                    ()
                 }
                 OpCode::Print => println!("{}\n", self.pop()),
                 OpCode::Return => return Ok(()),
