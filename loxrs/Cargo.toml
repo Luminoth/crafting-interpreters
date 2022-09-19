@@ -8,10 +8,11 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 argh = "0.1"
+console-subscriber = "0.1.8"
 strum = "0.24"
 strum_macros = "0.24"
 thiserror = "1.0"
-tokio = { version = "1.21", features = ["full"] }
+tokio = { version = "1.21", features = ["full", "tracing"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 
