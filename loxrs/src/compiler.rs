@@ -499,6 +499,8 @@ impl<'a> Parser<'a> {
                 | TokenType::Return => return,
                 _ => (),
             }
+
+            self.advance();
         }
     }
 }
