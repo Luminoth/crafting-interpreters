@@ -17,9 +17,9 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 [features]
-#default = []
-#default = ["extended_string_concat"]
-default = ["extended_string_concat", "debug_code", "debug_trace", "gc_leak_check"]
+#default = ["allow_divide_by_zero"]
+#default = ["allow_divide_by_zero", "extended_string_concat"]
+default = ["allow_divide_by_zero", "extended_string_concat", "debug_code", "debug_trace", "gc_leak_check"]
 debug_code = []
 debug_trace = []
 dynamic_stack = []
@@ -27,3 +27,4 @@ native_print = []
 extended_opcodes = []
 gc_leak_check = []
 extended_string_concat = []
+allow_divide_by_zero = []

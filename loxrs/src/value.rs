@@ -368,6 +368,7 @@ impl Value {
     #[inline]
     pub fn divide(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         self.number_op(other, vm, |a, b| {
+            #[cfg(not(feature = "allow_divide_by_zero"))]
             if b == 0.0 {
                 vm.runtime_error("Illegal divide by zero.");
                 return Err(InterpretError::Runtime);
