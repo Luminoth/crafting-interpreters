@@ -32,5 +32,5 @@ cd -
 
 cd craftinginterpreters
 #dart tool/bin/test.dart clox --interpreter ../$CLOX/$CLOX
-dart tool/bin/test.dart chap19_strings --interpreter ../$CLOX/$CLOX
+dart tool/bin/test.dart chap21_global --interpreter ../$CLOX/$CLOX
 cd -

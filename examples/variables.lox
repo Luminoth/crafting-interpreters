@@ -1,8 +1,8 @@
 var a = 10;
 var b = 1 + 5 + a * 2;  // 26
 
-print "a = " + a;
-print "b = " + b;
+print "a = " + a; // 10
+print "b = " + b; // 26
 
 // lox allows re-defining variables
 var a = "a has changed type!";

@@ -140,14 +140,14 @@ impl<'a> Parser<'a> {
     }
 
     /// Pratt Parser prefix parsing rule
-    fn prefix(&mut self, r#type: TokenType, vm: &VM) -> bool {
+    fn prefix(&mut self, r#type: TokenType, can_assign: bool, vm: &VM) -> bool {
         match r#type {
             TokenType::Nil | TokenType::False | TokenType::True => self.literal(),
             TokenType::LeftParen => self.grouping(vm),
             TokenType::Minus | TokenType::Bang => self.unary(vm),
             TokenType::String => self.string(vm),
             TokenType::Number => self.number(),
-            TokenType::Identifier => self.variable(vm),
+            TokenType::Identifier => self.variable(can_assign, vm),
             _ => return false,
         }
 
@@ -155,7 +155,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Pratt Praser infix parsing rule
-    fn infix(&mut self, r#type: TokenType, vm: &VM) -> bool {
+    fn infix(&mut self, r#type: TokenType, _can_assign: bool, vm: &VM) -> bool {
         match r#type {
             TokenType::BangEqual
             | TokenType::EqualEqual
@@ -177,9 +177,12 @@ impl<'a> Parser<'a> {
     fn parse_precedence(&mut self, precedence: Precedence, vm: &VM) {
         self.advance();
 
+        // assignment is only allowed for lower precedences
+        let can_assign = precedence <= Precedence::Assignment;
+
         // handle prefix expression to start
         let r#type = self.previous.borrow().r#type;
-        if !self.prefix(r#type, vm) {
+        if !self.prefix(r#type, can_assign, vm) {
             self.error("Expect expression.")
         }
 
@@ -193,7 +196,11 @@ impl<'a> Parser<'a> {
             self.advance();
 
             let r#type = self.previous.borrow().r#type;
-            self.infix(r#type, vm);
+            self.infix(r#type, can_assign, vm);
+        }
+
+        if can_assign && self.r#match(TokenType::Equal) {
+            self.error("Invalid assignment target.");
         }
     }
 
@@ -371,14 +378,20 @@ impl<'a> Parser<'a> {
         self.emit_constant(value.into());
     }
 
-    fn named_variable(&mut self, name: impl AsRef<str>, vm: &VM) {
+    fn named_variable(&mut self, name: impl AsRef<str>, can_assign: bool, vm: &VM) {
         let idx = self.identifier_constant(name, vm);
-        self.emit_instruction(OpCode::GetGlobal(idx));
+
+        if can_assign && self.r#match(TokenType::Equal) {
+            self.expression(vm);
+            self.emit_instruction(OpCode::SetGlobal(idx));
+        } else {
+            self.emit_instruction(OpCode::GetGlobal(idx));
+        }
     }
 
-    fn variable(&mut self, vm: &VM) {
+    fn variable(&mut self, can_assign: bool, vm: &VM) {
         let name = self.previous.borrow().lexeme.unwrap();
-        self.named_variable(name, vm);
+        self.named_variable(name, can_assign, vm);
     }
 
     fn literal(&mut self) {

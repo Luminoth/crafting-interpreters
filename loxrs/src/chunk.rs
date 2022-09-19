@@ -21,6 +21,10 @@ pub enum OpCode {
     #[strum(serialize = "OP_GET_GLOBAL")]
     GetGlobal(u8),
 
+    /// Set a global variable value
+    #[strum(serialize = "OP_SET_GLOBAL")]
+    SetGlobal(u8),
+
     /// A nil value
     #[strum(serialize = "OP_NIL")]
     Nil,
@@ -104,7 +108,9 @@ impl OpCode {
     /// but we still need to mirror the right offset in disassembly
     pub fn size(&self) -> usize {
         match self {
-            Self::Constant(_) | Self::DefineGlobal(_) | Self::GetGlobal(_) => 2,
+            Self::Constant(_) | Self::DefineGlobal(_) | Self::GetGlobal(_) | Self::SetGlobal(_) => {
+                2
+            }
             _ => 1,
         }
     }
@@ -112,7 +118,10 @@ impl OpCode {
     /// Disassemble the opcode to stdout
     pub fn disassemble(&self, header: impl AsRef<str>, chunk: &Chunk) {
         match self {
-            Self::Constant(idx) | Self::DefineGlobal(idx) | Self::GetGlobal(idx) => {
+            Self::Constant(idx)
+            | Self::DefineGlobal(idx)
+            | Self::GetGlobal(idx)
+            | Self::SetGlobal(idx) => {
                 info!(
                     "{}{:<16} {:>4} '{}'",
                     header.as_ref(),

@@ -256,6 +256,24 @@ impl VM {
                         return Err(InterpretError::Runtime);
                     }
                 }
+                OpCode::SetGlobal(idx) => {
+                    // look up the variable name
+                    let (name, hash) = self.read_string(&chunk, *idx);
+
+                    // variable values are not popped off the stack
+                    // since assignment is an expression
+                    if self
+                        .globals
+                        .borrow_mut()
+                        .insert(hash, self.peek(0))
+                        .is_none()
+                    {
+                        // if the variable didn't exist then it's undefined
+                        self.globals.borrow_mut().remove(&hash);
+                        self.runtime_error(format!("Undefined variable '{}'.", name));
+                        return Err(InterpretError::Runtime);
+                    }
+                }
                 OpCode::Nil => self.push(Value::Nil),
                 OpCode::False => self.push(false.into()),
                 OpCode::True => self.push(true.into()),
