@@ -353,6 +353,10 @@ impl<'a> Parser<'a> {
 
     fn string(&mut self, vm: &VM) {
         let value = self.previous.borrow().lexeme.unwrap();
+
+        // string lexemes include the quotes, so we need to cut them off
+        let value = &value[1..value.len() - 1];
+
         self.emit_constant(Object::from_str(value, vm).into());
     }
 
