@@ -41,7 +41,12 @@ fn init_logging() -> anyhow::Result<()> {
 async fn main() -> anyhow::Result<()> {
     let options: Options = argh::from_env();
 
-    init_logging()?;
+    // TODO: make this not mutually exclusive
+    if options.tracing {
+        console_subscriber::init();
+    } else {
+        init_logging()?
+    };
 
     if let Some(filepath) = options.filepath {
         run_file(filepath).await?;

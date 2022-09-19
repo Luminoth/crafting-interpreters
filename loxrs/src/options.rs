@@ -10,4 +10,8 @@ pub struct Options {
     /// an optional script to run
     #[argh(positional)]
     pub filepath: Option<PathBuf>,
+
+    /// enable tokio tracing
+    #[argh(switch)]
+    pub tracing: bool,
 }
