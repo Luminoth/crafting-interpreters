@@ -14,6 +14,7 @@ use std::path::Path;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::Level;
+use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::FmtSubscriber;
 
 use compiler::*;
@@ -21,11 +22,14 @@ use options::*;
 use vm::*;
 
 fn init_logging() -> anyhow::Result<()> {
+    let stderr = std::io::stderr.with_max_level(Level::ERROR);
+
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::INFO)
         .without_time()
         .with_level(false)
         .with_target(false)
+        .map_writer(move |w| stderr.or_else(w))
         .finish();
 
     tracing::subscriber::set_global_default(subscriber)?;
