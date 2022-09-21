@@ -379,6 +379,8 @@ impl<'a> Parser<'a> {
     }
 
     fn named_variable(&mut self, name: impl AsRef<str>, can_assign: bool, vm: &VM) {
+        // TODO: this adds the constant to the chunk
+        // even if it already exists, that's not great
         let idx = self.identifier_constant(name, vm);
 
         if can_assign && self.r#match(TokenType::Equal) {

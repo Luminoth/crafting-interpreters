@@ -191,6 +191,10 @@ impl Chunk {
         &self.constants[idx as usize]
     }
 
+    pub fn free_constants(&mut self) {
+        self.constants.clear();
+    }
+
     /// Add a constant to the chunk and return its index
     #[inline]
     pub fn add_constant(&mut self, value: Value) -> usize {

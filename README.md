@@ -97,6 +97,8 @@
   * getters / setters
 * Chapter 19
   * Constant string Objects can point directly to the source slice
+* Chapter 21
+  * Optimize adding to the constant table every time a global is encountered
 
 ### Grammar
 

@@ -28,12 +28,12 @@ impl Drop for Object {
             Self::String(v, _) => {
                 let count = Rc::strong_count(v);
                 if count > 1 {
-                    tracing::warn!("leaking {} string strong references", count);
+                    tracing::warn!("leaking {} string '{}' strong references", count, v);
                 }
 
                 let count = Rc::weak_count(v);
                 if count > 0 {
-                    tracing::warn!("leaking {} string weak references", count);
+                    tracing::warn!("leaking {} string '{}' weak references", count, v);
                 }
             }
         }

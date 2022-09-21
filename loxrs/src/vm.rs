@@ -51,14 +51,14 @@ pub struct VM {
     #[cfg(not(feature = "dynamic_stack"))]
     sp: RefCell<usize>,
 
-    /// Objects for garbage collection
-    objects: RefCell<Vec<Rc<Object>>>,
-
     /// String table
     strings: RefCell<HashMap<u64, Rc<String>>>,
 
     /// Global variables
     globals: RefCell<HashMap<u64, Value>>,
+
+    /// Objects for garbage collection
+    objects: RefCell<Vec<Rc<Object>>>,
 }
 
 impl Drop for VM {
@@ -83,9 +83,9 @@ impl VM {
             #[cfg(not(feature = "dynamic_stack"))]
             sp: RefCell::new(0),
 
-            objects: RefCell::new(Vec::new()),
             strings: RefCell::new(HashMap::new()),
             globals: RefCell::new(HashMap::new()),
+            objects: RefCell::new(Vec::new()),
         }
     }
 
@@ -96,20 +96,34 @@ impl VM {
 
     /// Free all of the VM Objects
     pub fn free_objects(&self) {
+        self.chunk.borrow_mut().free_constants();
+
+        #[cfg(feature = "dynamic_stack")]
+        self.stack.borrow_mut().clear();
+        #[cfg(not(feature = "dynamic_stack"))]
+        for v in self.stack.borrow_mut().iter_mut() {
+            *v = Value::default();
+        }
+
         self.strings.borrow_mut().clear();
+
+        self.globals.borrow_mut().clear();
 
         // TODO: we need a hash set or something for this to actually work
         // I'm pretty sure the object list itself is over-holding references
         #[cfg(feature = "gc_leak_check")]
-        for object in self.objects.borrow().iter() {
-            let count = Rc::strong_count(object);
-            if count > 1 {
-                tracing::warn!("leaking {} object strong references", count);
-            }
+        {
+            tracing::info!("checking for leaked objects");
+            for object in self.objects.borrow().iter() {
+                let count = Rc::strong_count(object);
+                if count > 1 {
+                    tracing::warn!("leaking {} object strong references", count);
+                }
 
-            let count = Rc::weak_count(object);
-            if count > 0 {
-                tracing::warn!("leaking {} object weak references", count);
+                let count = Rc::weak_count(object);
+                if count > 0 {
+                    tracing::warn!("leaking {} object weak references", count);
+                }
             }
         }
 
