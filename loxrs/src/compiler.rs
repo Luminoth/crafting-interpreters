@@ -60,11 +60,42 @@ impl TokenType {
     }
 }
 
+const LOCALS_MAX: usize = std::u8::MAX as usize + 1;
+
+/// Local variable state
+#[derive(Debug, Default)]
+struct Local<'a> {
+    name: Token<'a>,
+    depth: usize,
+}
+
+/// Lox compiler state
+#[derive(Debug)]
+struct Compiler<'a> {
+    locals: [Local<'a>; LOCALS_MAX],
+    local_count: usize,
+    scope_depth: usize,
+}
+
+impl<'a> Default for Compiler<'a> {
+    fn default() -> Self {
+        let locals = [(); LOCALS_MAX].map(|_| Local::default());
+
+        Self {
+            locals,
+            local_count: 0,
+            scope_depth: 0,
+        }
+    }
+}
+
 /// Lox parser
 ///
 /// Sort of implements the Pratt Parser from the book but without building the table
 #[derive(Debug)]
 struct Parser<'a> {
+    compiler: Compiler<'a>,
+
     scanner: Scanner<'a>,
     chunk: &'a mut Chunk,
 
@@ -78,6 +109,7 @@ struct Parser<'a> {
 impl<'a> Parser<'a> {
     fn new(scanner: Scanner<'a>, chunk: &'a mut Chunk) -> Self {
         Self {
+            compiler: Compiler::default(),
             scanner,
             chunk,
             current: RefCell::new(Token::default()),
