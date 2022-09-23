@@ -66,7 +66,7 @@ const LOCALS_MAX: usize = std::u8::MAX as usize + 1;
 #[derive(Debug, Default)]
 struct Local<'a> {
     name: Token<'a>,
-    depth: usize,
+    depth: isize,
 }
 
 /// Lox compiler state
@@ -74,7 +74,7 @@ struct Local<'a> {
 struct Compiler<'a> {
     locals: [Local<'a>; LOCALS_MAX],
     local_count: usize,
-    scope_depth: usize,
+    scope_depth: isize,
 }
 
 impl<'a> Default for Compiler<'a> {
@@ -90,12 +90,61 @@ impl<'a> Default for Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
-    fn begin_scope(&mut self) {
+    pub fn is_local_scope(&self) -> bool {
+        self.scope_depth > 0
+    }
+
+    pub fn begin_scope(&mut self) {
         self.scope_depth += 1;
     }
 
-    fn end_scope(&mut self) {
+    pub fn end_scope(&mut self) -> usize {
         self.scope_depth -= 1;
+
+        let mut count = 0;
+        loop {
+            if self.local_count == 0 || self.locals[self.local_count - 1].depth <= self.scope_depth
+            {
+                break;
+            }
+
+            count += 1;
+            self.local_count -= 1;
+        }
+
+        count
+    }
+
+    pub fn is_local_declared(&self, name: &Token<'a>) -> bool {
+        // current scope should be at the end of the set
+        for idx in (0..self.local_count).rev() {
+            let local = &self.locals[idx];
+
+            // if we're outside the current scope, we're good
+            if local.depth != -1 && local.depth < self.scope_depth {
+                return false;
+            }
+
+            if name.lexeme == local.name.lexeme {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn add_local(&mut self, name: Token<'a>) -> Result<(), &'static str> {
+        if self.local_count >= LOCALS_MAX {
+            return Err("Too many local variables in function");
+        }
+
+        let local = &mut self.locals[self.local_count];
+        self.local_count += 1;
+
+        local.name = name;
+        local.depth = self.scope_depth;
+
+        Ok(())
     }
 }
 
@@ -261,11 +310,42 @@ impl<'a> Parser<'a> {
     fn parse_variable(&mut self, vm: &VM, error_message: impl AsRef<str>) -> u8 {
         self.consume(TokenType::Identifier, error_message);
 
+        self.declare_variable();
+
+        // local variables don't go in the constants table
+        if self.compiler.is_local_scope() {
+            return 0;
+        }
+
         let name = self.previous.borrow().lexeme.unwrap();
         self.identifier_constant(name, vm)
     }
 
+    fn declare_variable(&mut self) {
+        // global variables go in the constants table
+        if !self.compiler.is_local_scope() {
+            return;
+        }
+
+        let name = self.previous.borrow();
+
+        // check for redeclarations
+        if self.compiler.is_local_declared(&name) {
+            self.error("Already a variable with this name in this scope.");
+        }
+
+        if let Err(err) = self.compiler.add_local(*name) {
+            self.error(err);
+        }
+    }
+
     fn define_variable(&mut self, idx: u8) {
+        // local variables are on the stack
+        // rather than the globals table
+        if self.compiler.is_local_scope() {
+            return;
+        }
+
         self.emit_instruction(OpCode::DefineGlobal(idx));
     }
 
@@ -304,16 +384,22 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self, vm: &VM) {
-        // statement -> expression_statement | print_statement
+        // statement -> expression_statement | print_statement | block
 
         // TODO: #[cfg(not(feature = "native_print"))]
         if self.r#match(TokenType::Print) {
             self.print_statement(vm);
             return;
         } else if self.r#match(TokenType::LeftBrace) {
+            // blocks create new scopes
             self.compiler.begin_scope();
             self.block_statement(vm);
-            self.compiler.end_scope();
+
+            let local_count = self.compiler.end_scope();
+            for _ in 0..local_count {
+                self.emit_instruction(OpCode::Pop);
+            }
+
             return;
         }
 
@@ -336,6 +422,7 @@ impl<'a> Parser<'a> {
     }
 
     fn block_statement(&mut self, vm: &VM) {
+        // block -> "{" declaration* "}"
         loop {
             if self.check(TokenType::RightBrace) || self.check(TokenType::Eof) {
                 break;
