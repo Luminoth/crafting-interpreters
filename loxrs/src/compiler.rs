@@ -89,6 +89,16 @@ impl<'a> Default for Compiler<'a> {
     }
 }
 
+impl<'a> Compiler<'a> {
+    fn begin_scope(&mut self) {
+        self.scope_depth += 1;
+    }
+
+    fn end_scope(&mut self) {
+        self.scope_depth -= 1;
+    }
+}
+
 /// Lox parser
 ///
 /// Sort of implements the Pratt Parser from the book but without building the table
@@ -236,6 +246,14 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn begin_scope(&mut self) {
+        self.compiler.scope_depth += 1;
+    }
+
+    fn end_scope(&mut self) {
+        self.compiler.scope_depth -= 1;
+    }
+
     fn identifier_constant(&mut self, name: impl AsRef<str>, vm: &VM) -> u8 {
         self.make_constant(Object::from_str(name.as_ref(), vm).into())
     }
@@ -292,6 +310,11 @@ impl<'a> Parser<'a> {
         if self.r#match(TokenType::Print) {
             self.print_statement(vm);
             return;
+        } else if self.r#match(TokenType::LeftBrace) {
+            self.compiler.begin_scope();
+            self.block_statement(vm);
+            self.compiler.end_scope();
+            return;
         }
 
         self.expression_statement(vm);
@@ -310,6 +333,18 @@ impl<'a> Parser<'a> {
         self.expression(vm);
         self.consume(TokenType::Semicolon, "Expect ';' after expression.");
         self.emit_instruction(OpCode::Pop);
+    }
+
+    fn block_statement(&mut self, vm: &VM) {
+        loop {
+            if self.check(TokenType::RightBrace) || self.check(TokenType::Eof) {
+                break;
+            }
+
+            self.declaration(vm);
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after block.");
     }
 
     fn expression(&mut self, vm: &VM) {
