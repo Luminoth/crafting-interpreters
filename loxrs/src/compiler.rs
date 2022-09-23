@@ -46,6 +46,7 @@ impl Precedence {
 
 impl TokenType {
     /// Pratt Parser precedence rule
+    #[inline]
     fn precedence(&self) -> Precedence {
         match self {
             Self::BangEqual | Self::EqualEqual => Precedence::Equality,
@@ -74,6 +75,7 @@ struct Local<'a> {
 struct Compiler<'a> {
     locals: [Local<'a>; LOCALS_MAX],
     local_count: usize,
+
     scope_depth: isize,
 }
 
@@ -90,17 +92,25 @@ impl<'a> Default for Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
-    pub fn is_local_scope(&self) -> bool {
+    /// Is this compiler currently in a local scope?
+    #[inline]
+    fn is_local_scope(&self) -> bool {
         self.scope_depth > 0
     }
 
+    /// Begin a new local scope
+    #[inline]
     pub fn begin_scope(&mut self) {
         self.scope_depth += 1;
     }
 
+    /// End the last local scope
+    ///
+    /// This returns the number of local values that should be pop'd from the stack
     pub fn end_scope(&mut self) -> usize {
         self.scope_depth -= 1;
 
+        // purge the scope's locals
         let mut count = 0;
         loop {
             if self.local_count == 0 || self.locals[self.local_count - 1].depth <= self.scope_depth
@@ -115,8 +125,9 @@ impl<'a> Compiler<'a> {
         count
     }
 
-    pub fn is_local_declared(&self, name: &Token<'a>) -> bool {
-        // current scope should be at the end of the set
+    /// Is the given local name currently declared?
+    pub fn is_local_declared(&self, name: impl AsRef<str>) -> bool {
+        // current scope is at the end of the set
         for idx in (0..self.local_count).rev() {
             let local = &self.locals[idx];
 
@@ -125,7 +136,7 @@ impl<'a> Compiler<'a> {
                 return false;
             }
 
-            if name.lexeme == local.name.lexeme {
+            if name.as_ref() == local.name.lexeme.unwrap() {
                 return true;
             }
         }
@@ -133,6 +144,7 @@ impl<'a> Compiler<'a> {
         false
     }
 
+    /// Add a new local to the current scope
     pub fn add_local(&mut self, name: Token<'a>) -> Result<(), &'static str> {
         if self.local_count >= LOCALS_MAX {
             return Err("Too many local variables in function");
@@ -145,6 +157,19 @@ impl<'a> Compiler<'a> {
         local.depth = self.scope_depth;
 
         Ok(())
+    }
+
+    /// Resolve the stack index of the given local
+    pub fn resolve_local(&self, name: impl AsRef<str>) -> Option<u8> {
+        // current scope is at the end of the set
+        for idx in (0..self.local_count).rev() {
+            let local = &self.locals[idx];
+            if name.as_ref() == local.name.lexeme.unwrap() {
+                return Some(idx as u8);
+            }
+        }
+
+        None
     }
 }
 
@@ -330,7 +355,7 @@ impl<'a> Parser<'a> {
         let name = self.previous.borrow();
 
         // check for redeclarations
-        if self.compiler.is_local_declared(&name) {
+        if self.compiler.is_local_declared(name.lexeme.unwrap()) {
             self.error("Already a variable with this name in this scope.");
         }
 
@@ -533,15 +558,21 @@ impl<'a> Parser<'a> {
     }
 
     fn named_variable(&mut self, name: impl AsRef<str>, can_assign: bool, vm: &VM) {
-        // TODO: this adds the constant to the chunk
-        // even if it already exists, that's not great
-        let idx = self.identifier_constant(name, vm);
+        let (get, set) = match self.compiler.resolve_local(&name) {
+            Some(idx) => (OpCode::GetLocal(idx), OpCode::SetLocal(idx)),
+            None => {
+                // TODO: this adds the constant to the chunk
+                // even if it already exists, that's not great
+                let idx = self.identifier_constant(&name, vm);
+                (OpCode::GetGlobal(idx), OpCode::SetGlobal(idx))
+            }
+        };
 
         if can_assign && self.r#match(TokenType::Equal) {
             self.expression(vm);
-            self.emit_instruction(OpCode::SetGlobal(idx));
+            self.emit_instruction(set);
         } else {
-            self.emit_instruction(OpCode::GetGlobal(idx));
+            self.emit_instruction(get);
         }
     }
 

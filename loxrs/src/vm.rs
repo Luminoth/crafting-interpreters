@@ -258,6 +258,11 @@ impl VM {
                     self.globals.borrow_mut().insert(hash, self.peek(0));
                     self.pop();
                 }
+                OpCode::GetLocal(idx) => {
+                    let v = self.stack.borrow()[*idx as usize].clone();
+                    self.push(v);
+                }
+                OpCode::SetLocal(idx) => self.stack.borrow_mut()[*idx as usize] = self.peek(0),
                 OpCode::GetGlobal(idx) => {
                     // look up the variable name
                     let (name, hash) = self.read_string(&chunk, *idx);
