@@ -1,5 +1,7 @@
 //! Lox compiler
 
+// TODO: I would definitely prefer a better split between the parser and the compiler here
+
 use std::cell::RefCell;
 
 use tracing::error;
@@ -67,7 +69,7 @@ const LOCALS_MAX: usize = std::u8::MAX as usize + 1;
 #[derive(Debug, Default)]
 struct Local<'a> {
     name: Token<'a>,
-    depth: isize,
+    depth: Option<usize>,
 }
 
 /// Lox compiler state
@@ -76,7 +78,7 @@ struct Compiler<'a> {
     locals: [Local<'a>; LOCALS_MAX],
     local_count: usize,
 
-    scope_depth: isize,
+    scope_depth: usize,
 }
 
 impl<'a> Default for Compiler<'a> {
@@ -113,7 +115,8 @@ impl<'a> Compiler<'a> {
         // purge the scope's locals
         let mut count = 0;
         loop {
-            if self.local_count == 0 || self.locals[self.local_count - 1].depth <= self.scope_depth
+            if self.local_count == 0
+                || self.locals[self.local_count - 1].depth.unwrap() <= self.scope_depth
             {
                 break;
             }
@@ -132,8 +135,10 @@ impl<'a> Compiler<'a> {
             let local = &self.locals[idx];
 
             // if we're outside the current scope, we're good
-            if local.depth != -1 && local.depth < self.scope_depth {
-                return false;
+            if let Some(depth) = local.depth {
+                if depth < self.scope_depth {
+                    return false;
+                }
             }
 
             if name.as_ref() == local.name.lexeme.unwrap() {
@@ -154,22 +159,33 @@ impl<'a> Compiler<'a> {
         self.local_count += 1;
 
         local.name = name;
-        local.depth = self.scope_depth;
+        local.depth = None;
 
         Ok(())
     }
 
+    /// Mark the last local as initialized
+    pub fn mark_initialized(&mut self) {
+        self.locals[self.local_count - 1].depth = Some(self.scope_depth);
+    }
+
     /// Resolve the stack index of the given local
-    pub fn resolve_local(&self, name: impl AsRef<str>) -> Option<u8> {
+    pub fn resolve_local(&self, name: impl AsRef<str>) -> Result<Option<u8>, (u8, &'static str)> {
         // current scope is at the end of the set
         for idx in (0..self.local_count).rev() {
             let local = &self.locals[idx];
             if name.as_ref() == local.name.lexeme.unwrap() {
-                return Some(idx as u8);
+                if local.depth.is_none() {
+                    return Err((
+                        idx as u8,
+                        "Can't read local variable in its own initializer.",
+                    ));
+                }
+                return Ok(Some(idx as u8));
             }
         }
 
-        None
+        Ok(None)
     }
 }
 
@@ -368,6 +384,7 @@ impl<'a> Parser<'a> {
         // local variables are on the stack
         // rather than the globals table
         if self.compiler.is_local_scope() {
+            self.compiler.mark_initialized();
             return;
         }
 
@@ -559,12 +576,18 @@ impl<'a> Parser<'a> {
 
     fn named_variable(&mut self, name: impl AsRef<str>, can_assign: bool, vm: &VM) {
         let (get, set) = match self.compiler.resolve_local(&name) {
-            Some(idx) => (OpCode::GetLocal(idx), OpCode::SetLocal(idx)),
-            None => {
-                // TODO: this adds the constant to the chunk
-                // even if it already exists, that's not great
-                let idx = self.identifier_constant(&name, vm);
-                (OpCode::GetGlobal(idx), OpCode::SetGlobal(idx))
+            Ok(idx) => match idx {
+                Some(idx) => (OpCode::GetLocal(idx), OpCode::SetLocal(idx)),
+                None => {
+                    // TODO: this adds the constant to the chunk
+                    // even if it already exists, that's not great
+                    let idx = self.identifier_constant(&name, vm);
+                    (OpCode::GetGlobal(idx), OpCode::SetGlobal(idx))
+                }
+            },
+            Err((idx, err)) => {
+                self.error(err);
+                (OpCode::GetLocal(idx), OpCode::SetLocal(idx))
             }
         };
 
