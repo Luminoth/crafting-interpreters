@@ -23,6 +23,7 @@ default = ["allow_divide_by_zero", "extended_string_concat", "debug_code", "debu
 debug_code = []
 debug_trace = []
 dynamic_stack = []
+dynamic_locals = []
 native_print = []
 extended_opcodes = []
 gc_leak_check = []

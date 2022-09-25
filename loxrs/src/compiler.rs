@@ -65,6 +65,11 @@ impl TokenType {
 
 const LOCALS_MAX: usize = std::u8::MAX as usize + 1;
 
+#[cfg(feature = "dynamic_locals")]
+type Locals<'a> = Vec<Local<'a>>;
+#[cfg(not(feature = "dynamic_locals"))]
+type Locals<'a> = [Local<'a>; LOCALS_MAX];
+
 /// Local variable state
 #[derive(Debug, Default)]
 struct Local<'a> {
@@ -75,20 +80,30 @@ struct Local<'a> {
 /// Lox compiler state
 #[derive(Debug)]
 struct Compiler<'a> {
-    locals: [Local<'a>; LOCALS_MAX],
-    local_count: usize,
-
+    /// The current scope depth
     scope_depth: usize,
+
+    /// Local variable storage
+    locals: Locals<'a>,
+
+    /// The local variable count
+    #[cfg(not(feature = "dynamic_locals"))]
+    local_count: usize,
 }
 
 impl<'a> Default for Compiler<'a> {
     fn default() -> Self {
+        #[cfg(feature = "dynamic_locals")]
+        let locals = Locals::with_capacity(LOCALS_MAX);
+        #[cfg(not(feature = "dynamic_locals"))]
         let locals = [(); LOCALS_MAX].map(|_| Local::default());
 
         Self {
-            locals,
-            local_count: 0,
             scope_depth: 0,
+            locals,
+
+            #[cfg(not(feature = "dynamic_locals"))]
+            local_count: 0,
         }
     }
 }
@@ -96,7 +111,7 @@ impl<'a> Default for Compiler<'a> {
 impl<'a> Compiler<'a> {
     /// Is this compiler currently in a local scope?
     #[inline]
-    fn is_local_scope(&self) -> bool {
+    pub fn is_local_scope(&self) -> bool {
         self.scope_depth > 0
     }
 
@@ -115,23 +130,68 @@ impl<'a> Compiler<'a> {
         // purge the scope's locals
         let mut count = 0;
         loop {
-            if self.local_count == 0
-                || self.locals[self.local_count - 1].depth.unwrap() <= self.scope_depth
+            if self.local_count() == 0
+                || self.locals[self.local_count() - 1].depth.unwrap() <= self.scope_depth
             {
                 break;
             }
 
             count += 1;
-            self.local_count -= 1;
+
+            self.pop_local();
         }
 
         count
     }
 
+    #[inline]
+    fn local_count(&self) -> usize {
+        #[cfg(feature = "dynamic_locals")]
+        {
+            self.locals.len()
+        }
+
+        #[cfg(not(feature = "dynamic_locals"))]
+        {
+            self.local_count
+        }
+    }
+
+    fn push_local(&mut self, name: Token<'a>) {
+        #[cfg(feature = "dynamic_locals")]
+        {
+            self.locals.push(Local {
+                name,
+                ..Default::default()
+            });
+        }
+
+        #[cfg(not(feature = "dynamic_locals"))]
+        {
+            let local = &mut self.locals[self.local_count()];
+            local.name = name;
+            local.depth = None;
+
+            self.local_count += 1;
+        }
+    }
+
+    fn pop_local(&mut self) {
+        #[cfg(feature = "dynamic_locals")]
+        {
+            self.locals.pop();
+        }
+
+        #[cfg(not(feature = "dynamic_locals"))]
+        {
+            self.local_count -= 1;
+        }
+    }
+
     /// Is the given local name currently declared?
     pub fn is_local_declared(&self, name: impl AsRef<str>) -> bool {
         // current scope is at the end of the set
-        for idx in (0..self.local_count).rev() {
+        for idx in (0..self.local_count()).rev() {
             let local = &self.locals[idx];
 
             // if we're outside the current scope, we're good
@@ -151,28 +211,26 @@ impl<'a> Compiler<'a> {
 
     /// Add a new local to the current scope
     pub fn add_local(&mut self, name: Token<'a>) -> Result<(), &'static str> {
-        if self.local_count >= LOCALS_MAX {
+        #[cfg(not(feature = "dynamic_locals"))]
+        if self.local_count() >= LOCALS_MAX {
             return Err("Too many local variables in function");
         }
 
-        let local = &mut self.locals[self.local_count];
-        self.local_count += 1;
-
-        local.name = name;
-        local.depth = None;
+        self.push_local(name);
 
         Ok(())
     }
 
     /// Mark the last local as initialized
     pub fn mark_initialized(&mut self) {
-        self.locals[self.local_count - 1].depth = Some(self.scope_depth);
+        let idx = self.local_count() - 1;
+        self.locals[idx].depth = Some(self.scope_depth);
     }
 
     /// Resolve the stack index of the given local
     pub fn resolve_local(&self, name: impl AsRef<str>) -> Result<Option<u8>, (u8, &'static str)> {
         // current scope is at the end of the set
-        for idx in (0..self.local_count).rev() {
+        for idx in (0..self.local_count()).rev() {
             let local = &self.locals[idx];
             if name.as_ref() == local.name.lexeme.unwrap() {
                 if local.depth.is_none() {
