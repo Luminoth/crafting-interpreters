@@ -123,16 +123,20 @@ impl OpCode {
     /// Operands are stored with opcodes here
     /// but we still need to mirror the right offset in disassembly
     pub fn size(&self) -> usize {
-        match self {
-            /*Self::Constant(_)
+        /*match self {
+            Self::Constant(_)
             | Self::DefineGlobal(_)
             | Self::GetLocal(_)
             | Self::SetLocal(_)
             | Self::GetGlobal(_)
             | Self::SetGlobal(_) => 2,
-            Self::Jump(_) | Self::JumpIfFalse(_) => 3,*/
+            Self::Jump(_) | Self::JumpIfFalse(_) => 3,
             _ => 1,
-        }
+        }*/
+
+        // TODO: the output is unreadable as bytes now that jump is supported
+        // so for now just do it per-opcode
+        1
     }
 
     /// Disassemble the opcode to stdout
