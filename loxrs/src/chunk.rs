@@ -104,30 +104,39 @@ pub enum OpCode {
     #[strum(serialize = "OP_PRINT")]
     Print,
 
+    /// Jump to an offset
+    #[strum(serialize = "OP_JUMP")]
+    Jump(u16),
+
+    /// Jump to an offset if the top of the stack is falsey
+    #[strum(serialize = "OP_JUMP_IF_FALSE")]
+    JumpIfFalse(u16),
+
     /// Return from the current function / program
     #[strum(serialize = "OP_RETURN")]
     Return,
 }
 
 impl OpCode {
-    /// Returns the "size" of the instruction
+    /// Returns the "size" of the instruction in bytes
     ///
     /// Operands are stored with opcodes here
     /// but we still need to mirror the right offset in disassembly
     pub fn size(&self) -> usize {
         match self {
-            Self::Constant(_)
+            /*Self::Constant(_)
             | Self::DefineGlobal(_)
             | Self::GetLocal(_)
             | Self::SetLocal(_)
             | Self::GetGlobal(_)
             | Self::SetGlobal(_) => 2,
+            Self::Jump(_) | Self::JumpIfFalse(_) => 3,*/
             _ => 1,
         }
     }
 
     /// Disassemble the opcode to stdout
-    pub fn disassemble(&self, header: impl AsRef<str>, chunk: &Chunk) {
+    pub fn disassemble(&self, header: impl AsRef<str>, chunk: &Chunk, ip: usize) {
         match self {
             // constant instructions
             Self::Constant(idx)
@@ -140,6 +149,16 @@ impl OpCode {
                     self,
                     idx,
                     chunk.constants[*idx as usize]
+                );
+            }
+            // jump instructions
+            Self::Jump(offset) | Self::JumpIfFalse(offset) => {
+                info!(
+                    "{}{:<16} {:0>4} -> {:0>4}",
+                    header.as_ref(),
+                    self,
+                    ip,
+                    ip + *offset as usize
                 );
             }
             // byte instructions
@@ -187,19 +206,32 @@ impl Chunk {
     /// Reads the instruction at ip
     #[inline]
     pub fn read(&self, ip: usize) -> &OpCode {
-        &self.code[ip]
+        self.code.get(ip).unwrap()
     }
 
     #[inline]
     pub fn get_line(&self, ip: usize) -> usize {
-        self.lines[ip]
+        *self.lines.get(ip).unwrap()
     }
 
     /// Write an opcode to the chunk
+    ///
+    /// Returns the index of the opcode
     #[inline]
-    pub fn write(&mut self, opcode: OpCode, line: usize) {
+    pub fn write(&mut self, opcode: OpCode, line: usize) -> usize {
         self.code.push(opcode);
         self.lines.push(line);
+
+        self.code.len() - 1
+    }
+
+    /// Patch the offset of the jump instruction at idx
+    #[inline]
+    pub fn patch_jump(&mut self, idx: usize, offset: u16) {
+        match self.code.get_mut(idx).unwrap() {
+            OpCode::Jump(v) | OpCode::JumpIfFalse(v) => *v = offset,
+            _ => unreachable!(),
+        }
     }
 
     /// Gets the constant at the given index
@@ -234,7 +266,7 @@ impl Chunk {
                     format!("{:>4} ", self.lines[idx])
                 }
             );
-            code.disassemble(header, self);
+            code.disassemble(header, self, idx);
             offset += code.size();
         }
     }

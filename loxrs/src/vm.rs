@@ -240,7 +240,7 @@ impl VM {
                 }
                 tracing::info!("{}", stack);
 
-                instruction.disassemble("", &chunk);
+                instruction.disassemble("", &chunk, *self.ip.borrow() - 1);
             }
 
             match instruction {
@@ -320,6 +320,12 @@ impl VM {
                     self.pop();
                 }
                 OpCode::Print => println!("{}", self.pop()),
+                OpCode::Jump(offset) => *self.ip.borrow_mut() += *offset as usize - 1,
+                OpCode::JumpIfFalse(offset) => {
+                    if self.peek(0).is_falsey() {
+                        *self.ip.borrow_mut() += *offset as usize - 1;
+                    }
+                }
                 OpCode::Return => return Ok(()),
             }
         }

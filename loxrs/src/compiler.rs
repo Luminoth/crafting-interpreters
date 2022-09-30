@@ -484,13 +484,20 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self, vm: &VM) {
-        // statement -> expression_statement | print_statement | block
+        // statement -> expression_statement | if_statement | print_statement | block
 
         // TODO: #[cfg(not(feature = "native_print"))]
         if self.r#match(TokenType::Print) {
             self.print_statement(vm);
             return;
-        } else if self.r#match(TokenType::LeftBrace) {
+        }
+
+        if self.r#match(TokenType::If) {
+            self.if_statement(vm);
+            return;
+        }
+
+        if self.r#match(TokenType::LeftBrace) {
             // blocks create new scopes
             self.compiler.begin_scope();
             self.block_statement(vm);
@@ -511,7 +518,30 @@ impl<'a> Parser<'a> {
         // print_statement -> "print" expression ";"
         self.expression(vm);
         self.consume(TokenType::Semicolon, "Expect ';' after value.");
-        self.emit_instruction(OpCode::Print)
+        self.emit_instruction(OpCode::Print);
+    }
+
+    fn if_statement(&mut self, vm: &VM) {
+        // print_statement -> "if" "(" expression ")" statement ( "else" statement )?
+
+        self.consume(TokenType::LeftParen, "Expect '(' after if.");
+        self.expression(vm);
+        self.consume(TokenType::RightParen, "Expect ')' after condition.");
+
+        let then_idx = self.emit_instruction(OpCode::JumpIfFalse(0));
+        self.emit_instruction(OpCode::Pop);
+
+        self.statement(vm);
+
+        let else_idx = self.emit_instruction(OpCode::Jump(0));
+
+        self.patch_jump(then_idx);
+        self.emit_instruction(OpCode::Pop);
+
+        if self.r#match(TokenType::Else) {
+            self.statement(vm);
+        }
+        self.patch_jump(else_idx);
     }
 
     fn expression_statement(&mut self, vm: &VM) {
@@ -558,8 +588,12 @@ impl<'a> Parser<'a> {
                 #[cfg(not(feature = "extended_opcodes"))]
                 self.emit_instructions(&[OpCode::Equal, OpCode::Not]);
             }
-            TokenType::EqualEqual => self.emit_instruction(OpCode::Equal),
-            TokenType::Greater => self.emit_instruction(OpCode::Greater),
+            TokenType::EqualEqual => {
+                self.emit_instruction(OpCode::Equal);
+            }
+            TokenType::Greater => {
+                self.emit_instruction(OpCode::Greater);
+            }
             TokenType::GreaterEqual => {
                 #[cfg(feature = "extended_opcodes")]
                 self.emit_instruction(OpCode::GreaterEqual);
@@ -568,7 +602,9 @@ impl<'a> Parser<'a> {
                 #[cfg(not(feature = "extended_opcodes"))]
                 self.emit_instructions(&[OpCode::Less, OpCode::Not]);
             }
-            TokenType::Less => self.emit_instruction(OpCode::Less),
+            TokenType::Less => {
+                self.emit_instruction(OpCode::Less);
+            }
             TokenType::LessEqual => {
                 #[cfg(feature = "extended_opcodes")]
                 self.emit_instruction(OpCode::LessEqual);
@@ -577,11 +613,19 @@ impl<'a> Parser<'a> {
                 #[cfg(not(feature = "extended_opcodes"))]
                 self.emit_instructions(&[OpCode::Greater, OpCode::Not]);
             }
-            TokenType::Plus => self.emit_instruction(OpCode::Add),
-            TokenType::Minus => self.emit_instruction(OpCode::Subtract),
-            TokenType::Star => self.emit_instruction(OpCode::Multiply),
-            TokenType::Slash => self.emit_instruction(OpCode::Divide),
-            _ => (),
+            TokenType::Plus => {
+                self.emit_instruction(OpCode::Add);
+            }
+            TokenType::Minus => {
+                self.emit_instruction(OpCode::Subtract);
+            }
+            TokenType::Star => {
+                self.emit_instruction(OpCode::Multiply);
+            }
+            TokenType::Slash => {
+                self.emit_instruction(OpCode::Divide);
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -606,9 +650,13 @@ impl<'a> Parser<'a> {
 
         #[allow(clippy::single_match)]
         match operator {
-            TokenType::Minus => self.emit_instruction(OpCode::Negate),
-            TokenType::Bang => self.emit_instruction(OpCode::Not),
-            _ => (),
+            TokenType::Minus => {
+                self.emit_instruction(OpCode::Negate);
+            }
+            TokenType::Bang => {
+                self.emit_instruction(OpCode::Not);
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -665,21 +713,36 @@ impl<'a> Parser<'a> {
     fn literal(&mut self) {
         let token = self.previous.borrow().r#type;
         match token {
-            TokenType::Nil => self.emit_instruction(OpCode::Nil),
-            TokenType::False => self.emit_instruction(OpCode::False),
-            TokenType::True => self.emit_instruction(OpCode::True),
-            _ => (),
+            TokenType::Nil => {
+                self.emit_instruction(OpCode::Nil);
+            }
+            TokenType::False => {
+                self.emit_instruction(OpCode::False);
+            }
+            TokenType::True => {
+                self.emit_instruction(OpCode::True);
+            }
+            _ => unreachable!(),
         }
     }
 
-    fn emit_instruction(&mut self, instruction: OpCode) {
-        self.chunk.write(instruction, self.previous.borrow().line);
+    fn emit_instruction(&mut self, instruction: OpCode) -> usize {
+        self.chunk.write(instruction, self.previous.borrow().line)
     }
 
     fn emit_instructions(&mut self, instructions: impl AsRef<[OpCode]>) {
         for instruction in instructions.as_ref() {
             self.emit_instruction(*instruction);
         }
+    }
+
+    fn patch_jump(&mut self, idx: usize) {
+        let jump = self.chunk.size() - idx;
+        if jump > std::u16::MAX as usize {
+            self.error("Too much code to jump over.");
+        }
+
+        self.chunk.patch_jump(idx, jump as u16)
     }
 
     fn make_constant(&mut self, value: Value) -> u8 {
