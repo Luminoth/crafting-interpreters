@@ -636,6 +636,7 @@ impl<'a> Parser<'a> {
         // ternary -> logical_or ( "?" expression ":" ternary )?
 
         // TODO: should this use parse_precedence()?
+        // I honestly have no idea what to do with this thing lol
 
         // condition
         // TODO: self.logical_or(vm);
