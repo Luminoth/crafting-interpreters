@@ -524,15 +524,18 @@ impl<'a> Parser<'a> {
     fn if_statement(&mut self, vm: &VM) {
         // print_statement -> "if" "(" expression ")" statement ( "else" statement )?
 
+        // condition
         self.consume(TokenType::LeftParen, "Expect '(' after if.");
         self.expression(vm);
         self.consume(TokenType::RightParen, "Expect ')' after condition.");
 
+        // then
         let then_idx = self.emit_instruction(OpCode::JumpIfFalse(0));
         self.emit_instruction(OpCode::Pop);
 
         self.statement(vm);
 
+        // else
         let else_idx = self.emit_instruction(OpCode::Jump(0));
 
         self.patch_jump(then_idx);
@@ -632,15 +635,32 @@ impl<'a> Parser<'a> {
     fn ternary(&mut self, vm: &VM) {
         // ternary -> logical_or ( "?" expression ":" ternary )?
 
-        // TODO: emit the instructions associated with this
+        // TODO: should this use parse_precedence()?
 
-        // TODO: pretty sure this isn't right in terms of the precedences of this operator
+        // condition
+        // TODO: self.logical_or(vm);
 
-        self.parse_precedence(TokenType::Question.precedence().next(), vm);
+        if !self.r#match(TokenType::Question) {
+            return;
+        }
+
+        // then
+        let then_idx = self.emit_instruction(OpCode::JumpIfFalse(0));
+        self.emit_instruction(OpCode::Pop);
+
+        self.expression(vm);
 
         self.consume(TokenType::Colon, "Expect ':' after expression.");
 
-        self.parse_precedence(TokenType::Colon.precedence().next(), vm);
+        // else
+        let else_idx = self.emit_instruction(OpCode::Jump(0));
+
+        self.patch_jump(then_idx);
+        self.emit_instruction(OpCode::Pop);
+
+        self.ternary(vm);
+
+        self.patch_jump(else_idx);
     }
 
     fn unary(&mut self, vm: &VM) {
