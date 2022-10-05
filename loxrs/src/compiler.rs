@@ -51,13 +51,15 @@ impl TokenType {
     #[inline]
     fn precedence(&self) -> Precedence {
         match self {
+            Self::Question | Self::Colon => Precedence::Ternary,
+            Self::And => Precedence::And,
+            Self::Or => Precedence::Or,
             Self::BangEqual | Self::EqualEqual => Precedence::Equality,
             Self::Greater | Self::GreaterEqual | Self::Less | Self::LessEqual => {
                 Precedence::Comparison
             }
             Self::Minus | Self::Plus => Precedence::Term,
             Self::Slash | Self::Star => Precedence::Factor,
-            Self::Question | Self::Colon => Precedence::Ternary,
             _ => Precedence::None,
         }
     }
@@ -345,7 +347,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Pratt Praser infix parsing rule
-    fn infix(&mut self, r#type: TokenType, _can_assign: bool, vm: &VM) -> bool {
+    fn infix(&mut self, r#type: TokenType, can_assign: bool, vm: &VM) -> bool {
         match r#type {
             TokenType::BangEqual
             | TokenType::EqualEqual
@@ -358,6 +360,8 @@ impl<'a> Parser<'a> {
             | TokenType::Slash
             | TokenType::Star => self.binary(vm),
             TokenType::Question => self.ternary(vm),
+            TokenType::And => self.and(can_assign, vm),
+            TokenType::Or => self.or(can_assign, vm),
             _ => return false,
         }
 
@@ -641,6 +645,10 @@ impl<'a> Parser<'a> {
         // condition
         // TODO: self.logical_or(vm);
 
+        // left side has already been compiled
+        // so all we have to do is jump if the result was false
+        // otherwise finish parsing
+
         if !self.r#match(TokenType::Question) {
             return;
         }
@@ -679,6 +687,42 @@ impl<'a> Parser<'a> {
             }
             _ => unreachable!(),
         }
+    }
+
+    fn and(&mut self, _can_assign: bool, vm: &VM) {
+        // logical_and > equality ( "and" equality )* ;
+
+        // left side has already been compiled
+        // so all we have to do is jump if the result was false
+        // (short-circuit), otherwise finish parsing
+
+        let end_idx = self.emit_instruction(OpCode::JumpIfFalse(0));
+        self.emit_instruction(OpCode::Pop);
+
+        self.parse_precedence(Precedence::And, vm);
+
+        self.patch_jump(end_idx);
+    }
+
+    fn or(&mut self, _can_assign: bool, vm: &VM) {
+        // logical_or -> logical_and ( "or" logical_and )* ;
+
+        // left side has already been compiled
+        // so all we have to do is jump if the result was true
+        // - with an extra jump over that if the result was false -
+        // (short-circuit), otherwise finish parsing
+        // NOTE: this isn't the best way to do this, but the book
+        // does it to demonstrate the flexibility we have with implementation
+
+        let else_idx = self.emit_instruction(OpCode::JumpIfFalse(0));
+        let end_idx = self.emit_instruction(OpCode::Jump(0));
+
+        self.patch_jump(else_idx);
+        self.emit_instruction(OpCode::Pop);
+
+        self.parse_precedence(Precedence::Or, vm);
+
+        self.patch_jump(end_idx);
     }
 
     fn string(&mut self, vm: &VM) {
