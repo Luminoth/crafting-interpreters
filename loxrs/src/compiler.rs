@@ -506,6 +506,11 @@ impl<'a> Parser<'a> {
             return;
         }
 
+        if self.r#match(TokenType::For) {
+            self.for_statement(vm);
+            return;
+        }
+
         if self.r#match(TokenType::LeftBrace) {
             // blocks create new scopes
             self.compiler.begin_scope();
@@ -534,7 +539,7 @@ impl<'a> Parser<'a> {
         // print_statement -> "if" "(" expression ")" statement ( "else" statement )?
 
         // condition
-        self.consume(TokenType::LeftParen, "Expect '(' after if.");
+        self.consume(TokenType::LeftParen, "Expect '(' after 'if'.");
         self.expression(vm);
         self.consume(TokenType::RightParen, "Expect ')' after condition.");
 
@@ -562,7 +567,7 @@ impl<'a> Parser<'a> {
         let loop_start = self.chunk.size();
 
         // condition
-        self.consume(TokenType::LeftParen, "Expect '(' after while.");
+        self.consume(TokenType::LeftParen, "Expect '(' after 'while'.");
         self.expression(vm);
         self.consume(TokenType::RightParen, "Expect ')' after condition.");
 
@@ -575,6 +580,62 @@ impl<'a> Parser<'a> {
 
         self.patch_jump(exit_idx);
         self.emit_instruction(OpCode::Pop);
+    }
+
+    fn for_statement(&mut self, vm: &VM) {
+        // for_statement -> "for" "(" ( variable_declaration | expression_statement | ";" ) expression? ";" expression? ")" statement
+
+        self.begin_scope();
+
+        // initializer
+        self.consume(TokenType::LeftParen, "Expect '(' after 'for'.");
+        if self.r#match(TokenType::Semicolon) {
+            // no initializer
+        } else if self.r#match(TokenType::Var) {
+            self.variable_declaration(vm);
+        } else {
+            self.expression_statement(vm);
+        }
+
+        let mut loop_start = self.chunk.size();
+
+        // condition
+        let mut exit_idx = None;
+        if !self.r#match(TokenType::Semicolon) {
+            self.expression(vm);
+            self.consume(TokenType::Semicolon, "Expect ';' after loop condition.");
+
+            // exit
+            exit_idx = Some(self.emit_instruction(OpCode::JumpIfFalse(0)));
+            self.emit_instruction(OpCode::Pop);
+        }
+
+        // increment
+        if !self.r#match(TokenType::RightParen) {
+            // first pass jump to the body (no increment)
+            let body_idx = self.emit_instruction(OpCode::Jump(0));
+
+            let increment_start = self.chunk.size();
+            self.expression(vm);
+            self.emit_instruction(OpCode::Pop);
+
+            self.consume(TokenType::RightParen, "Expect ')' after for clauses.");
+
+            // loop start after the first pass is the increment
+            self.emit_loop(loop_start);
+            loop_start = increment_start;
+            self.patch_jump(body_idx);
+        }
+
+        self.statement(vm);
+        self.emit_loop(loop_start);
+
+        if let Some(exit_idx) = exit_idx {
+            self.patch_jump(exit_idx);
+            self.emit_instruction(OpCode::Pop);
+        }
+
+        self.end_scope();
     }
 
     fn expression_statement(&mut self, vm: &VM) {
