@@ -1,7 +1,5 @@
 //! Lox bytecode chunks
 
-use tracing::info;
-
 use crate::value::*;
 
 /// Bytecode operation codes
@@ -126,6 +124,7 @@ impl OpCode {
     ///
     /// Operands are stored with opcodes here
     /// but we still need to mirror the right offset in disassembly
+    #[cfg(any(feature = "debug_code", feature = "debug_trace"))]
     pub fn size(&self) -> usize {
         /*match self {
             Self::Constant(_)
@@ -144,6 +143,7 @@ impl OpCode {
     }
 
     /// Disassemble the opcode to stdout
+    #[cfg(any(feature = "debug_code", feature = "debug_trace"))]
     pub fn disassemble(&self, header: impl AsRef<str>, chunk: &Chunk, ip: usize) {
         match self {
             // constant instructions
@@ -151,7 +151,7 @@ impl OpCode {
             | Self::DefineGlobal(idx)
             | Self::GetGlobal(idx)
             | Self::SetGlobal(idx) => {
-                info!(
+                tracing::info!(
                     "{}{:<16} {:>4} '{}'",
                     header.as_ref(),
                     self,
@@ -161,7 +161,7 @@ impl OpCode {
             }
             // jump instructions
             Self::Jump(offset) | Self::JumpIfFalse(offset) => {
-                info!(
+                tracing::info!(
                     "{}{:<16} {:0>4} -> {:0>4}",
                     header.as_ref(),
                     self,
@@ -170,7 +170,7 @@ impl OpCode {
                 );
             }
             Self::Loop(offset) => {
-                info!(
+                tracing::info!(
                     "{}{:<16} {:0>4} -> {:0>4}",
                     header.as_ref(),
                     self,
@@ -180,11 +180,11 @@ impl OpCode {
             }
             // byte instructions
             Self::GetLocal(idx) | Self::SetLocal(idx) => {
-                info!("{}{:<16} {:>4}", header.as_ref(), self, idx);
+                tracing::info!("{}{:<16} {:>4}", header.as_ref(), self, idx);
             }
             // simple instructions
             _ => {
-                info!("{}{}", header.as_ref(), self);
+                tracing::info!("{}{}", header.as_ref(), self);
             }
         }
     }
@@ -269,8 +269,9 @@ impl Chunk {
     }
 
     /// Disassemble the chunk to stdout
+    #[cfg(any(feature = "debug_code", feature = "debug_trace"))]
     pub fn disassemble(&self, name: impl AsRef<str>) {
-        info!("== {} ==", name.as_ref());
+        tracing::info!("== {} ==", name.as_ref());
 
         let mut offset = 0;
         for (idx, code) in self.code.iter().enumerate() {

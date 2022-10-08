@@ -399,11 +399,14 @@ impl<'a> Parser<'a> {
     }
 
     fn begin_scope(&mut self) {
-        self.compiler.scope_depth += 1;
+        self.compiler.begin_scope();
     }
 
     fn end_scope(&mut self) {
-        self.compiler.scope_depth -= 1;
+        let local_count = self.compiler.end_scope();
+        for _ in 0..local_count {
+            self.emit_instruction(OpCode::Pop);
+        }
     }
 
     fn identifier_constant(&mut self, name: impl AsRef<str>, vm: &VM) -> u8 {
@@ -513,14 +516,9 @@ impl<'a> Parser<'a> {
 
         if self.r#match(TokenType::LeftBrace) {
             // blocks create new scopes
-            self.compiler.begin_scope();
+            self.begin_scope();
             self.block_statement(vm);
-
-            let local_count = self.compiler.end_scope();
-            for _ in 0..local_count {
-                self.emit_instruction(OpCode::Pop);
-            }
-
+            self.end_scope();
             return;
         }
 

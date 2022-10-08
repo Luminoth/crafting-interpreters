@@ -1,6 +1,5 @@
 //! Rust implementation of clox from Crafting Interpreters - Robert Nystrom
 
-#![allow(dead_code)]
 #![deny(warnings)]
 
 mod chunk;

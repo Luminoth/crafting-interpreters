@@ -50,8 +50,8 @@ pub enum TokenType {
     Fun,
     For,
     While,
-    Break,
-    Continue,
+    //Break,
+    //Continue,
     Nil,
     // TODO: #[cfg(not(feature = "native_print"))]
     Print,
