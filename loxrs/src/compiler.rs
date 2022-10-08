@@ -501,6 +501,11 @@ impl<'a> Parser<'a> {
             return;
         }
 
+        if self.r#match(TokenType::While) {
+            self.while_statement(vm);
+            return;
+        }
+
         if self.r#match(TokenType::LeftBrace) {
             // blocks create new scopes
             self.compiler.begin_scope();
@@ -549,6 +554,27 @@ impl<'a> Parser<'a> {
             self.statement(vm);
         }
         self.patch_jump(else_idx);
+    }
+
+    fn while_statement(&mut self, vm: &VM) {
+        // while_statement -> "while" "(" expression ")" statement
+
+        let loop_start = self.chunk.size();
+
+        // condition
+        self.consume(TokenType::LeftParen, "Expect '(' after while.");
+        self.expression(vm);
+        self.consume(TokenType::RightParen, "Expect ')' after condition.");
+
+        // exit
+        let exit_idx = self.emit_instruction(OpCode::JumpIfFalse(0));
+        self.emit_instruction(OpCode::Pop);
+
+        self.statement(vm);
+        self.emit_loop(loop_start);
+
+        self.patch_jump(exit_idx);
+        self.emit_instruction(OpCode::Pop);
     }
 
     fn expression_statement(&mut self, vm: &VM) {
@@ -799,6 +825,15 @@ impl<'a> Parser<'a> {
         for instruction in instructions.as_ref() {
             self.emit_instruction(*instruction);
         }
+    }
+
+    fn emit_loop(&mut self, idx: usize) {
+        let offset = self.chunk.size() - idx;
+        if offset > std::u16::MAX as usize {
+            self.error("Loop body too large.");
+        }
+
+        self.emit_instruction(OpCode::Loop(offset as u16));
     }
 
     fn patch_jump(&mut self, idx: usize) {

@@ -326,6 +326,7 @@ impl VM {
                         *self.ip.borrow_mut() += *offset as usize - 1;
                     }
                 }
+                OpCode::Loop(offset) => *self.ip.borrow_mut() -= *offset as usize + 1,
                 OpCode::Return => return Ok(()),
             }
         }

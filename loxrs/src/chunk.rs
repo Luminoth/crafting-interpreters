@@ -112,6 +112,10 @@ pub enum OpCode {
     #[strum(serialize = "OP_JUMP_IF_FALSE")]
     JumpIfFalse(u16),
 
+    /// Loop back by an offset
+    #[strum(serialize = "OP_LOOP")]
+    Loop(u16),
+
     /// Return from the current function / program
     #[strum(serialize = "OP_RETURN")]
     Return,
@@ -130,7 +134,7 @@ impl OpCode {
             | Self::SetLocal(_)
             | Self::GetGlobal(_)
             | Self::SetGlobal(_) => 2,
-            Self::Jump(_) | Self::JumpIfFalse(_) => 3,
+            Self::Jump(_) | Self::JumpIfFalse(_) | Self::Loop(_) => 3,
             _ => 1,
         }*/
 
@@ -163,6 +167,15 @@ impl OpCode {
                     self,
                     ip,
                     ip + *offset as usize
+                );
+            }
+            Self::Loop(offset) => {
+                info!(
+                    "{}{:<16} {:0>4} -> {:0>4}",
+                    header.as_ref(),
+                    self,
+                    ip,
+                    ip - *offset as usize
                 );
             }
             // byte instructions
