@@ -592,7 +592,7 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::LeftBrace, "Expect '{' after condition.");
 
         loop {
-            if self.r#match(TokenType::RightBrace) {
+            if self.r#match(TokenType::RightBrace) || self.check(TokenType::Eof) {
                 break;
             }
 
