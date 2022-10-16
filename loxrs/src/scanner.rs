@@ -19,7 +19,9 @@ pub enum TokenType {
     Semicolon,
     Slash,
     Star,
+    #[cfg(feature = "ternary")]
     Question,
+    #[cfg(any(feature = "ternary", feature = "switch"))]
     Colon,
 
     // one or two character tokens
@@ -42,6 +44,12 @@ pub enum TokenType {
     Or,
     If,
     Else,
+    #[cfg(feature = "switch")]
+    Switch,
+    #[cfg(feature = "switch")]
+    Case,
+    #[cfg(feature = "switch")]
+    Default,
     Class,
     Super,
     This,
@@ -142,7 +150,10 @@ impl<'a> Scanner<'a> {
             ';' => self.make_token(TokenType::Semicolon),
             '/' => self.make_token(TokenType::Slash),
             '*' => self.make_token(TokenType::Star),
+            #[cfg(feature = "ternary")]
             '?' => self.make_token(TokenType::Question),
+            #[cfg(feature = "ternary")]
+            #[cfg(feature = "switch")]
             ':' => self.make_token(TokenType::Colon),
 
             // one or two character tokens
@@ -353,7 +364,20 @@ impl<'a> Scanner<'a> {
     fn identifier_type(&self) -> TokenType {
         match self.peek_start() {
             'a' => self.check_keyword(1, "nd", TokenType::And),
-            'c' => self.check_keyword(1, "lass", TokenType::Class),
+            'c' => {
+                if self.current() - self.start() > 1 {
+                    match self.peek_start_next() {
+                        #[cfg(feature = "switch")]
+                        'a' => self.check_keyword(2, "se", TokenType::Case),
+                        'l' => self.check_keyword(2, "ass", TokenType::Class),
+                        _ => TokenType::Identifier,
+                    }
+                } else {
+                    TokenType::Identifier
+                }
+            }
+            #[cfg(feature = "switch")]
+            'd' => self.check_keyword(1, "efault", TokenType::Default),
             'e' => self.check_keyword(1, "lse", TokenType::Else),
             'f' => {
                 if self.current() - self.start() > 1 {
@@ -373,7 +397,18 @@ impl<'a> Scanner<'a> {
             // TODO: #[cfg(not(feature = "native_print"))]
             'p' => self.check_keyword(1, "rint", TokenType::Print),
             'r' => self.check_keyword(1, "eturn", TokenType::Return),
-            's' => self.check_keyword(1, "uper", TokenType::Super),
+            's' => {
+                if self.current() - self.start() > 1 {
+                    match self.peek_start_next() {
+                        'u' => self.check_keyword(2, "per", TokenType::Super),
+                        #[cfg(feature = "switch")]
+                        'w' => self.check_keyword(2, "itch", TokenType::Switch),
+                        _ => TokenType::Identifier,
+                    }
+                } else {
+                    TokenType::Identifier
+                }
+            }
             't' => {
                 if self.current() - self.start() > 1 {
                     match self.peek_start_next() {

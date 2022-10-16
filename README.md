@@ -101,6 +101,11 @@
   * Optimize adding to the constant table every time a global is encountered
 * Chapter 22
   * Single-assignment variables
+* Chapter 23
+  * Finish switch statement
+* Misc
+  * golox switch statement
+  * loxrs ternary
 
 ### Grammar
 
@@ -118,6 +123,7 @@ variable_declaration    -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement               -> expression_statement
                         | for_statement
                         | if_statement
+                        | switch_statement
                         | print_statement
                         | return_statement
                         | while_statement
@@ -130,6 +136,10 @@ for_statement           -> "for" "(" ( variable_declaration | expression_stateme
                             expression? ")" statement ;
 if_statement            -> "if" "(" expression ")" statement
                             ( "else" statement )? ;
+switch_statement        -> "switch" "(" expression ")"
+                            "{" switch_case* default_case? "}" ;
+switch_case             -> "case" expression ":" statement* ;
+default_case            -> "default" ":" statement* ;
 print_statement         -> "print" expression ";" ;
 return_statement        -> "return" expression? ";" ;
 while_statement         -> "while" "(" expression ")" statement ;

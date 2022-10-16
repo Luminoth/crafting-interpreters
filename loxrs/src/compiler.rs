@@ -27,7 +27,8 @@ use crate::vm::*;
 enum Precedence {
     None,
     Assignment, // =
-    Ternary,    // ?:
+    #[cfg(feature = "ternary")]
+    Ternary, // ?:
     Or,         // or
     And,        // and
     Equality,   // ==, !=
@@ -51,6 +52,7 @@ impl TokenType {
     #[inline]
     fn precedence(&self) -> Precedence {
         match self {
+            #[cfg(feature = "ternary")]
             Self::Question | Self::Colon => Precedence::Ternary,
             Self::And => Precedence::And,
             Self::Or => Precedence::Or,
@@ -289,6 +291,7 @@ impl<'a> Parser<'a> {
         *self.panic_mode.borrow()
     }
 
+    /// Advances the parser until it hits a non-error token
     fn advance(&self) {
         *self.previous.borrow_mut() = *self.current.borrow();
 
@@ -303,16 +306,23 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Returns true if the current token is of the given type
+    ///
+    /// This does not consume the token
     #[inline]
     fn check(&self, r#type: TokenType) -> bool {
         self.current.borrow().r#type == r#type
     }
 
+    /// Returns true if the previous token was of the given type
     #[inline]
     fn check_previous(&self, r#type: TokenType) -> bool {
         self.previous.borrow().r#type == r#type
     }
 
+    /// Returns true if the current token is of the given type
+    ///
+    /// This consumes the token if it is of the given type
     fn r#match(&self, r#type: TokenType) -> bool {
         if !self.check(r#type) {
             return false;
@@ -322,6 +332,9 @@ impl<'a> Parser<'a> {
         true
     }
 
+    /// Consume the current token if it is of the given type
+    ///
+    /// Produce an error if the token is not of the given type
     fn consume(&self, r#type: TokenType, error_message: impl AsRef<str>) {
         if self.check(r#type) {
             self.advance();
@@ -359,6 +372,7 @@ impl<'a> Parser<'a> {
             | TokenType::Plus
             | TokenType::Slash
             | TokenType::Star => self.binary(vm),
+            #[cfg(feature = "ternary")]
             TokenType::Question => self.ternary(vm),
             TokenType::And => self.and(can_assign, vm),
             TokenType::Or => self.or(can_assign, vm),
@@ -504,6 +518,12 @@ impl<'a> Parser<'a> {
             return;
         }
 
+        #[cfg(feature = "switch")]
+        if self.r#match(TokenType::Switch) {
+            self.switch_statement(vm);
+            return;
+        }
+
         if self.r#match(TokenType::While) {
             self.while_statement(vm);
             return;
@@ -528,13 +548,14 @@ impl<'a> Parser<'a> {
     // TODO: #[cfg(not(feature = "native_print"))]
     fn print_statement(&mut self, vm: &VM) {
         // print_statement -> "print" expression ";"
+
         self.expression(vm);
         self.consume(TokenType::Semicolon, "Expect ';' after value.");
         self.emit_instruction(OpCode::Print);
     }
 
     fn if_statement(&mut self, vm: &VM) {
-        // print_statement -> "if" "(" expression ")" statement ( "else" statement )?
+        // if_statement -> "if" "(" expression ")" statement ( "else" statement )?
 
         // condition
         self.consume(TokenType::LeftParen, "Expect '(' after 'if'.");
@@ -557,6 +578,76 @@ impl<'a> Parser<'a> {
             self.statement(vm);
         }
         self.patch_jump(else_idx);
+    }
+
+    #[cfg(feature = "switch")]
+    fn switch_statement(&mut self, vm: &VM) {
+        // switch_statement -> "switch" "(" expression ")" "{" switch_case* default_case? "}"
+
+        // condition
+        self.consume(TokenType::LeftParen, "Expect '(' after 'switch'.");
+        self.expression(vm);
+        self.consume(TokenType::RightParen, "Expect ')' after condition.");
+
+        self.consume(TokenType::LeftBrace, "Expect '{' after condition.");
+
+        loop {
+            if self.r#match(TokenType::RightBrace) {
+                break;
+            }
+
+            // TODO: handle the jumps required for this
+
+            if self.r#match(TokenType::Case) {
+                self.switch_case(vm);
+            } else if self.r#match(TokenType::Default) {
+                self.switch_default(vm);
+            }
+        }
+    }
+
+    #[cfg(feature = "switch")]
+    fn switch_case(&mut self, vm: &VM) {
+        // switch_case -> "case" expression ":" statement* ;
+
+        // TODO: handle the jumps required for this
+
+        self.expression(vm);
+
+        self.consume(TokenType::Colon, "Expect ':' after expression.");
+
+        loop {
+            if self.check(TokenType::RightBrace)
+                || self.check(TokenType::Case)
+                || self.check(TokenType::Default)
+                || self.check(TokenType::Eof)
+            {
+                break;
+            }
+
+            self.statement(vm);
+        }
+    }
+
+    #[cfg(feature = "switch")]
+    fn switch_default(&mut self, vm: &VM) {
+        // default_case -> "default" ":" statement*
+
+        // TODO: handle the jumps required for this
+
+        self.consume(TokenType::Colon, "Expect ':' after expression.");
+
+        loop {
+            if self.check(TokenType::RightBrace)
+                || self.check(TokenType::Case)
+                || self.check(TokenType::Default)
+                || self.check(TokenType::Eof)
+            {
+                break;
+            }
+
+            self.statement(vm);
+        }
     }
 
     fn while_statement(&mut self, vm: &VM) {
@@ -721,6 +812,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    #[cfg(feature = "ternary")]
     fn ternary(&mut self, vm: &VM) {
         // ternary -> logical_or ( "?" expression ":" ternary )?
 
@@ -931,14 +1023,17 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Produce an error at the current token
     fn error_at_current(&self, message: impl AsRef<str>) {
         self.error_at(&self.current.borrow(), message);
     }
 
+    /// Produce an error at the previous token
     fn error(&self, message: impl AsRef<str>) {
         self.error_at(&self.previous.borrow(), message);
     }
 
+    /// Produce an error at the given token
     fn error_at(&self, token: &Token, message: impl AsRef<str>) {
         // only print the first error
         if self.is_panic_mode() {
@@ -987,6 +1082,8 @@ impl<'a> Parser<'a> {
                 | TokenType::While
                 | TokenType::Print
                 | TokenType::Return => return,
+                #[cfg(feature = "switch")]
+                TokenType::Switch => return,
                 _ => (),
             }
 
