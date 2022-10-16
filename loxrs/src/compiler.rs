@@ -1084,6 +1084,8 @@ impl<'a> Parser<'a> {
                 | TokenType::Return => return,
                 #[cfg(feature = "switch")]
                 TokenType::Switch => return,
+                #[cfg(feature = "extended_loops")]
+                TokenType::Break | TokenType::Continue => return,
                 _ => (),
             }
 

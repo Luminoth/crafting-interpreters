@@ -58,8 +58,10 @@ pub enum TokenType {
     Fun,
     For,
     While,
-    //Break,
-    //Continue,
+    #[cfg(feature = "extended_loops")]
+    Break,
+    #[cfg(feature = "extended_loops")]
+    Continue,
     Nil,
     // TODO: #[cfg(not(feature = "native_print"))]
     Print,
@@ -364,12 +366,16 @@ impl<'a> Scanner<'a> {
     fn identifier_type(&self) -> TokenType {
         match self.peek_start() {
             'a' => self.check_keyword(1, "nd", TokenType::And),
+            #[cfg(feature = "extended_loops")]
+            'b' => self.check_keyword(1, "reak", TokenType::Break),
             'c' => {
                 if self.current() - self.start() > 1 {
                     match self.peek_start_next() {
                         #[cfg(feature = "switch")]
                         'a' => self.check_keyword(2, "se", TokenType::Case),
                         'l' => self.check_keyword(2, "ass", TokenType::Class),
+                        #[cfg(feature = "extended_loops")]
+                        'o' => self.check_keyword(2, "ntinue", TokenType::Continue),
                         _ => TokenType::Identifier,
                     }
                 } else {

@@ -103,6 +103,7 @@
   * Single-assignment variables
 * Chapter 23
   * Finish switch statement
+  * Finish break / continue statements
 * Misc
   * golox switch statement
   * loxrs ternary
