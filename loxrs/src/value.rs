@@ -1,120 +1,10 @@
 //! Value storage
 
-use std::collections::hash_map::DefaultHasher;
 use std::fmt;
-use std::hash::Hasher;
 use std::rc::Rc;
 
+use crate::object::*;
 use crate::vm::*;
-
-/// An heap allocated value
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Object {
-    String(Rc<String>, u64),
-}
-
-impl std::fmt::Display for Object {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::String(v, _) => v.fmt(f),
-        }
-    }
-}
-
-#[cfg(feature = "gc_leak_check")]
-impl Drop for Object {
-    fn drop(&mut self) {
-        match self {
-            Self::String(v, _) => {
-                let count = Rc::strong_count(v);
-                if count > 1 {
-                    tracing::warn!("leaking {} string '{}' strong references", count, v);
-                }
-
-                let count = Rc::weak_count(v);
-                if count > 0 {
-                    tracing::warn!("leaking {} string '{}' weak references", count, v);
-                }
-            }
-        }
-    }
-}
-
-impl Object {
-    /// Creates a new string Object from a String
-    pub fn from_string(v: impl Into<String>, vm: &VM) -> Rc<Self> {
-        let v = v.into();
-
-        let mut hasher = DefaultHasher::new();
-        hasher.write(v.as_bytes());
-        let hash = hasher.finish();
-
-        if let Some(v) = vm.find_string(hash) {
-            let this = Rc::new(Self::String(v, hash));
-            vm.add_object(this.clone());
-            return this;
-        }
-
-        let v = Rc::new(v);
-        vm.add_string(hash, v.clone());
-
-        let this = Rc::new(Self::String(v, hash));
-        vm.add_object(this.clone());
-        this
-    }
-
-    /// Creates a new string Object from a string slice
-    pub fn from_str(v: impl AsRef<str>, vm: &VM) -> Rc<Self> {
-        let v = v.as_ref();
-
-        let mut hasher = DefaultHasher::new();
-        hasher.write(v.as_bytes());
-        let hash = hasher.finish();
-
-        if let Some(v) = vm.find_string(hash) {
-            let this = Rc::new(Self::String(v, hash));
-            vm.add_object(this.clone());
-            return this;
-        }
-
-        let v = Rc::new(v.to_owned());
-        vm.add_string(hash, v.clone());
-
-        let this = Rc::new(Self::String(v, hash));
-        vm.add_object(this.clone());
-        this
-    }
-
-    /// Gets the Object string value
-    ///
-    /// This will panic if the object is not a string object
-    pub fn as_string(&self) -> (&String, u64) {
-        match self {
-            Self::String(v, hash) => (v, *hash),
-        }
-    }
-
-    /// Compare two objects - equal
-    #[inline]
-    pub fn equals(&self, other: &Self) -> bool {
-        match self {
-            Self::String(a, _) => match other {
-                Self::String(b, _) => a == b,
-            },
-        }
-    }
-
-    /// Compare two objects - not equal
-    #[cfg(feature = "extended_opcodes")]
-    #[inline]
-    pub fn not_equals(&self, other: Self) -> bool {
-        match self {
-            Self::String(a) => match other {
-                Self::String(b) => *a != b,
-            },
-        }
-    }
-}
 
 /// A Value
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -162,6 +52,8 @@ impl From<Rc<Object>> for Value {
 
 impl Value {
     /// Gets the value as a string object
+    ///
+    /// # Panics
     ///
     /// This will panic if the value is not a string object
     pub fn as_string(&self) -> (&String, u64) {
@@ -283,6 +175,10 @@ impl Value {
     }
 
     /// Add two (number) values, or concatenate strings
+    ///
+    /// # Panics
+    ///
+    /// This will panic when comparing non-String Objects
     #[inline]
     pub fn add(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
         match self {
@@ -292,6 +188,7 @@ impl Value {
                     Object::String(b, _) => {
                         Ok(Object::from_string(format!("{}{}", self, b), vm).into())
                     }
+                    _ => panic!("Invalid Object concat"),
                 },
                 _ => {
                     vm.runtime_error("Operands must be two numbers or two strings.");
@@ -304,6 +201,7 @@ impl Value {
                     Object::String(b, _) => {
                         Ok(Object::from_string(format!("{}{}", a, b), vm).into())
                     }
+                    _ => panic!("Invalid Object concat"),
                 },
                 _ => {
                     vm.runtime_error("Operands must be two numbers or two strings.");
@@ -317,6 +215,7 @@ impl Value {
                     Object::String(b, _) => {
                         Ok(Object::from_string(format!("{}{}", a, b), vm).into())
                     }
+                    _ => panic!("Invalid Object concat"),
                 },
                 _ => {
                     vm.runtime_error("Operands must be two numbers or two strings.");
@@ -343,6 +242,7 @@ impl Value {
                         }
                     }
                 }
+                _ => panic!("Invalid Object concat"),
             },
             #[cfg(not(feature = "extended_string_concat"))]
             _ => {

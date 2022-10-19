@@ -203,9 +203,8 @@ pub struct Chunk {
     constants: ValueArray,
 }
 
-impl Chunk {
-    /// Create a new chunk of bytecode
-    pub fn new() -> Self {
+impl Default for Chunk {
+    fn default() -> Self {
         // 8 here to match what GROW_CAPACITY starts with
         Self {
             code: Vec::with_capacity(8),
@@ -213,7 +212,9 @@ impl Chunk {
             constants: ValueArray::with_capacity(8),
         }
     }
+}
 
+impl Chunk {
     /// The number of opcodes in the chunk
     #[inline]
     pub fn size(&self) -> usize {
@@ -296,7 +297,7 @@ mod tests {
 
     #[test]
     fn test_write() {
-        let mut chunk = Chunk::new();
+        let mut chunk = Chunk::default();
         chunk.write(OpCode::Return, 123);
         assert_eq!(chunk.code[0], OpCode::Return);
         assert_eq!(*chunk.read(0), OpCode::Return);
@@ -305,7 +306,7 @@ mod tests {
 
     #[test]
     fn test_constant() {
-        let mut chunk = Chunk::new();
+        let mut chunk = Chunk::default();
 
         let constant = chunk.add_constant(1.2.into());
         chunk.write(OpCode::Constant(constant as u8), 123);

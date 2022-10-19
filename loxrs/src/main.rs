@@ -4,6 +4,7 @@
 
 mod chunk;
 mod compiler;
+mod object;
 mod options;
 mod scanner;
 mod value;

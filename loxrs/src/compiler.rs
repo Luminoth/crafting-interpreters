@@ -1,4 +1,4 @@
-//! Lox compiler
+//! Lox parser / compiler
 
 // TODO: I would definitely prefer a better split between the parser and the compiler here
 
@@ -7,6 +7,7 @@ use std::cell::RefCell;
 use tracing::error;
 
 use crate::chunk::*;
+use crate::object::*;
 use crate::scanner::*;
 use crate::value::*;
 use crate::vm::*;
@@ -1096,7 +1097,7 @@ impl<'a> Parser<'a> {
 
 /// Compiles lox source
 pub fn compile(input: impl AsRef<str>, vm: &VM) -> Result<Chunk, InterpretError> {
-    let mut chunk = Chunk::new();
+    let mut chunk = Chunk::default();
 
     let scanner = Scanner::new(input.as_ref());
     let mut parser = Parser::new(scanner, &mut chunk);

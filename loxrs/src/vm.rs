@@ -10,6 +10,7 @@ use thiserror::Error;
 use tracing::{error, warn};
 
 use crate::chunk::*;
+use crate::object::*;
 use crate::value::*;
 
 const STACK_MAX: usize = 256;
@@ -76,7 +77,7 @@ impl VM {
         let stack = [(); STACK_MAX].map(|_| Value::default());
 
         Self {
-            chunk: RefCell::new(Chunk::new()),
+            chunk: RefCell::new(Chunk::default()),
             ip: RefCell::new(0),
             stack: RefCell::new(stack),
 
@@ -348,7 +349,7 @@ mod tests {
     #[test]
     fn test_interpret_basic() {
         let vm = VM::new();
-        let mut chunk = Chunk::new();
+        let mut chunk = Chunk::default();
         chunk.write(OpCode::Nil, 123);
         chunk.write(OpCode::Return, 123);
         assert_eq!(vm.interpret(chunk).unwrap(), ());
