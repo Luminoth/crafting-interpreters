@@ -100,9 +100,9 @@ async fn run_file(filepath: impl AsRef<Path>) -> anyhow::Result<()> {
 async fn interpret(input: String) -> Result<(), InterpretError> {
     tokio::task::spawn_blocking(move || {
         let vm = VM::new();
-        let chunk = compile(&input, &vm)?;
+        let main = compile(&input, &vm)?;
 
-        vm.interpret(chunk)
+        vm.interpret(main)
     })
     .await
     .map_err(|_| InterpretError::Internal)

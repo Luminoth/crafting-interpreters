@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 
+use std::cell::RefCell;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::hash::Hasher;
@@ -26,10 +27,11 @@ impl std::fmt::Display for Object {
     }
 }
 
-#[cfg(feature = "gc_leak_check")]
+// TODO: this just does not work for leak checking
+// because it runs as things drop (so it prints on *every* drop)
+/*#[cfg(feature = "gc_leak_check")]
 impl Drop for Object {
     fn drop(&mut self) {
-        // TODO: this would be cleaner as a macro
         match self {
             Self::String(v, _) => {
                 let count = Rc::strong_count(v);
@@ -45,17 +47,17 @@ impl Drop for Object {
             Self::Function(v) => {
                 let count = Rc::strong_count(v);
                 if count > 1 {
-                    tracing::warn!("leaking {} function '{}' strong references", count, v);
+                    tracing::warn!("leaking {} function '{}' strong references", count, v.name);
                 }
 
                 let count = Rc::weak_count(v);
                 if count > 0 {
-                    tracing::warn!("leaking {} function '{}' weak references", count, v);
+                    tracing::warn!("leaking {} function '{}' weak references", count, v.name);
                 }
             }
         }
     }
-}
+}*/
 
 impl Object {
     /// Creates a new String Object from a String
@@ -103,8 +105,28 @@ impl Object {
     }
 
     /// Creates a new Function Object
-    pub fn new_function(name: impl AsRef<str>, vm: &VM) -> Rc<Self> {
+    pub fn function(name: impl AsRef<str>, vm: &VM) -> Rc<Self> {
         let name = Object::from_str(name, vm);
+
+        let this = Rc::new(Self::Function(Rc::new(Function::new(name))));
+        vm.add_object(this.clone());
+        this
+    }
+
+    /// Creates a new Function Object from a chunk
+    pub fn from_chunk(name: impl AsRef<str>, arity: usize, chunk: Chunk, vm: &VM) -> Rc<Self> {
+        let name = Object::from_str(name, vm);
+
+        let this = Rc::new(Self::Function(Rc::new(Function::from_chunk(
+            name, arity, chunk,
+        ))));
+        vm.add_object(this.clone());
+        this
+    }
+
+    /// Creates a new script Function Object
+    pub fn script(vm: &VM) -> Rc<Self> {
+        let name = Object::from_str("", vm);
 
         let this = Rc::new(Self::Function(Rc::new(Function::new(name))));
         vm.add_object(this.clone());
@@ -120,6 +142,18 @@ impl Object {
         match self {
             Self::String(v, hash) => (v, *hash),
             _ => panic!("Invalid Object as String"),
+        }
+    }
+
+    /// Gets the Object function
+    ///
+    /// # Panics
+    ///
+    /// This will panic if the Object is not a Function Object
+    pub fn as_function(&self) -> Rc<Function> {
+        match self {
+            Self::Function(f) => f.clone(),
+            _ => panic!("Invalid Object as Function"),
         }
     }
 
@@ -154,7 +188,7 @@ impl Object {
 #[derive(Debug)]
 pub struct Function {
     arity: usize,
-    chunk: Chunk,
+    chunk: RefCell<Chunk>,
 
     // must be an Object::String
     name: Rc<Object>,
@@ -172,15 +206,37 @@ impl PartialEq for Function {
     }
 }
 
+impl Eq for Function {}
+
 impl Function {
     fn new(name: Rc<Object>) -> Self {
         match name.as_ref() {
             Object::String(_, _) => Self {
                 arity: 0,
-                chunk: Chunk::default(),
+                chunk: RefCell::new(Chunk::default()),
                 name,
             },
             _ => panic!("Invalid function name!"),
         }
     }
+
+    fn from_chunk(name: Rc<Object>, arity: usize, chunk: Chunk) -> Self {
+        match name.as_ref() {
+            Object::String(_, _) => Self {
+                arity,
+                chunk: RefCell::new(chunk),
+                name,
+            },
+            _ => panic!("Invalid function name!"),
+        }
+    }
+
+    pub fn get_chunk(&self) -> &RefCell<Chunk> {
+        &self.chunk
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // TODO:
 }

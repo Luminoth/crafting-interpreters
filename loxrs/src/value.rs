@@ -181,6 +181,7 @@ impl Value {
     /// This will panic when comparing non-String Objects
     #[inline]
     pub fn add(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
+        // TODO: this is a mess
         match self {
             #[cfg(feature = "extended_string_concat")]
             Self::Nil => match other {
@@ -235,6 +236,7 @@ impl Value {
                             Object::String(b, _) => {
                                 Ok(Object::from_string(format!("{}{}", a, b), vm).into())
                             }
+                            _ => panic!("Invalid Object concat"),
                         },
                         _ => {
                             vm.runtime_error("Operands must be two numbers or two strings.");

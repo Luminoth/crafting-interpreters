@@ -39,8 +39,8 @@ pub enum InterpretError {
 /// The Lox Virtual Machine
 #[derive(Debug)]
 pub struct VM {
-    /// The chunk currently being processed
-    chunk: RefCell<Chunk>,
+    /// The function currently being processed
+    func: RefCell<Option<Rc<Function>>>,
 
     /// Instruction pointer / program counter
     ip: RefCell<usize>,
@@ -77,7 +77,7 @@ impl VM {
         let stack = [(); STACK_MAX].map(|_| Value::default());
 
         Self {
-            chunk: RefCell::new(Chunk::default()),
+            func: RefCell::new(None),
             ip: RefCell::new(0),
             stack: RefCell::new(stack),
 
@@ -97,7 +97,10 @@ impl VM {
 
     /// Free all of the VM Objects
     pub fn free_objects(&self) {
-        self.chunk.borrow_mut().free_constants();
+        if let Some(func) = self.func.borrow().as_ref() {
+            let mut chunk = func.get_chunk().borrow_mut();
+            chunk.free_constants();
+        }
 
         #[cfg(feature = "dynamic_stack")]
         self.stack.borrow_mut().clear();
@@ -144,8 +147,8 @@ impl VM {
     }
 
     /// Compile and interpret a Lox program
-    pub fn interpret(&self, chunk: Chunk) -> Result<(), InterpretError> {
-        *self.chunk.borrow_mut() = chunk;
+    pub fn interpret(&self, func: Rc<Function>) -> Result<(), InterpretError> {
+        *self.func.borrow_mut() = Some(func);
         *self.ip.borrow_mut() = 0;
 
         // TODO: reset the stack?
@@ -223,121 +226,132 @@ impl VM {
     }
 
     fn run(&self) -> Result<(), InterpretError> {
-        loop {
-            let chunk = self.chunk.borrow();
-            let instruction = self.read_byte(&chunk);
+        if let Some(func) = self.func.borrow().as_ref() {
+            let chunk = func.get_chunk().borrow();
+            loop {
+                let instruction = self.read_byte(&chunk);
 
-            #[cfg(feature = "debug_trace")]
-            {
-                let mut stack = String::from("          ");
-                #[cfg(feature = "dynamic_stack")]
-                for value in self.stack.borrow().iter() {
-                    write!(stack, "[ {} ]", value).map_err(|_| InterpretError::Internal)?;
-                }
-                #[cfg(not(feature = "dynamic_stack"))]
-                for slot in 0..*self.sp.borrow() {
-                    write!(stack, "[ {} ]", self.stack.borrow()[slot])
-                        .map_err(|_| InterpretError::Internal)?;
-                }
-                tracing::info!("{}", stack);
-
-                instruction.disassemble("", &chunk, *self.ip.borrow() - 1);
-            }
-
-            match instruction {
-                OpCode::Constant(idx) => {
-                    let constant = chunk.get_constant(*idx);
-                    self.push(constant.clone());
-                }
-                OpCode::DefineGlobal(idx) => {
-                    // look up the variable name
-                    let (_, hash) = self.read_string(&chunk, *idx);
-
-                    // insert the variable into the globals
-                    // peek and then pop to avoid the GC missing the value mid-operation
-                    // Lox allows global overwrites
-                    self.globals.borrow_mut().insert(hash, self.peek(0));
-                    self.pop();
-                }
-                OpCode::GetLocal(idx) => {
-                    let v = self.stack.borrow()[*idx as usize].clone();
-                    self.push(v);
-                }
-                OpCode::SetLocal(idx) => self.stack.borrow_mut()[*idx as usize] = self.peek(0),
-                OpCode::GetGlobal(idx) => {
-                    // look up the variable name
-                    let (name, hash) = self.read_string(&chunk, *idx);
-
-                    if let Some(value) = self.globals.borrow().get(&hash) {
-                        // copy the value to the stack
-                        self.push(value.clone());
-                    } else {
-                        self.runtime_error(format!("Undefined variable '{}'.", name));
-                        return Err(InterpretError::Runtime);
+                #[cfg(feature = "debug_trace")]
+                {
+                    let mut stack = String::from("          ");
+                    #[cfg(feature = "dynamic_stack")]
+                    for value in self.stack.borrow().iter() {
+                        write!(stack, "[ {} ]", value).map_err(|_| InterpretError::Internal)?;
                     }
-                }
-                OpCode::SetGlobal(idx) => {
-                    // look up the variable name
-                    let (name, hash) = self.read_string(&chunk, *idx);
-
-                    // variable values are not popped off the stack
-                    // since assignment is an expression
-                    if self
-                        .globals
-                        .borrow_mut()
-                        .insert(hash, self.peek(0))
-                        .is_none()
-                    {
-                        // if the variable didn't exist then it's undefined
-                        self.globals.borrow_mut().remove(&hash);
-                        self.runtime_error(format!("Undefined variable '{}'.", name));
-                        return Err(InterpretError::Runtime);
+                    #[cfg(not(feature = "dynamic_stack"))]
+                    for slot in 0..*self.sp.borrow() {
+                        write!(stack, "[ {} ]", self.stack.borrow()[slot])
+                            .map_err(|_| InterpretError::Internal)?;
                     }
-                }
-                OpCode::Nil => self.push(Value::Nil),
-                OpCode::False => self.push(false.into()),
-                OpCode::True => self.push(true.into()),
-                OpCode::Equal => self.binary_op(|a, b| Ok(a.equals(b)))?,
-                #[cfg(feature = "extended_opcodes")]
-                OpCode::NotEqual => self.binary_op(|a, b| Ok(a.not_equals(b)))?,
-                OpCode::Less => self.binary_op(|a, b| a.less(b, self))?,
-                #[cfg(feature = "extended_opcodes")]
-                OpCode::LessEqual => self.binary_op(|a, b| a.less_equal(b, self))?,
-                OpCode::Greater => self.binary_op(|a, b| a.greater(b, self))?,
-                #[cfg(feature = "extended_opcodes")]
-                OpCode::GreaterEqual => self.binary_op(|a, b| a.greater_equal(b, self))?,
-                OpCode::Add => self.binary_op(|a, b| a.add(b, self))?,
-                OpCode::Subtract => self.binary_op(|a, b| a.subtract(b, self))?,
-                OpCode::Multiply => self.binary_op(|a, b| a.multiply(b, self))?,
-                OpCode::Divide => self.binary_op(|a, b| a.divide(b, self))?,
-                OpCode::Negate => {
-                    let v = self.peek(0).negate(self)?;
+                    tracing::info!("{}", stack);
 
-                    self.pop();
-                    self.push(v);
+                    instruction.disassemble("", &chunk, *self.ip.borrow() - 1);
                 }
-                OpCode::Not => self.push(self.pop().is_falsey().into()),
-                OpCode::Pop => {
-                    self.pop();
-                }
-                OpCode::Print => println!("{}", self.pop()),
-                OpCode::Jump(offset) => *self.ip.borrow_mut() += *offset as usize - 1,
-                OpCode::JumpIfFalse(offset) => {
-                    if self.peek(0).is_falsey() {
-                        *self.ip.borrow_mut() += *offset as usize - 1;
+
+                match instruction {
+                    OpCode::Constant(idx) => {
+                        let constant = chunk.get_constant(*idx);
+                        self.push(constant.clone());
                     }
+                    OpCode::DefineGlobal(idx) => {
+                        // look up the variable name
+                        let (_, hash) = self.read_string(&chunk, *idx);
+
+                        // insert the variable into the globals
+                        // peek and then pop to avoid the GC missing the value mid-operation
+                        // Lox allows global overwrites
+                        self.globals.borrow_mut().insert(hash, self.peek(0));
+                        self.pop();
+                    }
+                    OpCode::GetLocal(idx) => {
+                        let v = self.stack.borrow()[*idx as usize].clone();
+                        self.push(v);
+                    }
+                    OpCode::SetLocal(idx) => self.stack.borrow_mut()[*idx as usize] = self.peek(0),
+                    OpCode::GetGlobal(idx) => {
+                        // look up the variable name
+                        let (name, hash) = self.read_string(&chunk, *idx);
+
+                        if let Some(value) = self.globals.borrow().get(&hash) {
+                            // copy the value to the stack
+                            self.push(value.clone());
+                        } else {
+                            self.runtime_error(format!("Undefined variable '{}'.", name));
+                            return Err(InterpretError::Runtime);
+                        }
+                    }
+                    OpCode::SetGlobal(idx) => {
+                        // look up the variable name
+                        let (name, hash) = self.read_string(&chunk, *idx);
+
+                        // variable values are not popped off the stack
+                        // since assignment is an expression
+                        if self
+                            .globals
+                            .borrow_mut()
+                            .insert(hash, self.peek(0))
+                            .is_none()
+                        {
+                            // if the variable didn't exist then it's undefined
+                            self.globals.borrow_mut().remove(&hash);
+                            self.runtime_error(format!("Undefined variable '{}'.", name));
+                            return Err(InterpretError::Runtime);
+                        }
+                    }
+                    OpCode::Nil => self.push(Value::Nil),
+                    OpCode::False => self.push(false.into()),
+                    OpCode::True => self.push(true.into()),
+                    OpCode::Equal => self.binary_op(|a, b| Ok(a.equals(b)))?,
+                    #[cfg(feature = "extended_opcodes")]
+                    OpCode::NotEqual => self.binary_op(|a, b| Ok(a.not_equals(b)))?,
+                    OpCode::Less => self.binary_op(|a, b| a.less(b, self))?,
+                    #[cfg(feature = "extended_opcodes")]
+                    OpCode::LessEqual => self.binary_op(|a, b| a.less_equal(b, self))?,
+                    OpCode::Greater => self.binary_op(|a, b| a.greater(b, self))?,
+                    #[cfg(feature = "extended_opcodes")]
+                    OpCode::GreaterEqual => self.binary_op(|a, b| a.greater_equal(b, self))?,
+                    OpCode::Add => self.binary_op(|a, b| a.add(b, self))?,
+                    OpCode::Subtract => self.binary_op(|a, b| a.subtract(b, self))?,
+                    OpCode::Multiply => self.binary_op(|a, b| a.multiply(b, self))?,
+                    OpCode::Divide => self.binary_op(|a, b| a.divide(b, self))?,
+                    OpCode::Negate => {
+                        let v = self.peek(0).negate(self)?;
+
+                        self.pop();
+                        self.push(v);
+                    }
+                    OpCode::Not => self.push(self.pop().is_falsey().into()),
+                    OpCode::Pop => {
+                        self.pop();
+                    }
+                    OpCode::Print => println!("{}", self.pop()),
+                    OpCode::Jump(offset) => *self.ip.borrow_mut() += *offset as usize - 1,
+                    OpCode::JumpIfFalse(offset) => {
+                        if self.peek(0).is_falsey() {
+                            *self.ip.borrow_mut() += *offset as usize - 1;
+                        }
+                    }
+                    OpCode::Loop(offset) => *self.ip.borrow_mut() -= *offset as usize + 1,
+                    OpCode::Return => return Ok(()),
                 }
-                OpCode::Loop(offset) => *self.ip.borrow_mut() -= *offset as usize + 1,
-                OpCode::Return => return Ok(()),
             }
         }
+
+        // TODO: should this actually be an error?
+        Ok(())
     }
 
     pub fn runtime_error(&self, message: impl AsRef<str>) {
         error!("{}", message.as_ref());
         error!(
             "[line {}] in script\n",
-            self.chunk.borrow().get_line(*self.ip.borrow() - 1)
+            self.func
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .get_chunk()
+                .borrow()
+                .get_line(*self.ip.borrow() - 1)
         );
     }
 }
@@ -352,6 +366,10 @@ mod tests {
         let mut chunk = Chunk::default();
         chunk.write(OpCode::Nil, 123);
         chunk.write(OpCode::Return, 123);
-        assert_eq!(vm.interpret(chunk).unwrap(), ());
+        assert_eq!(
+            vm.interpret(Object::from_chunk("main", 0, chunk, &vm).as_function())
+                .unwrap(),
+            ()
+        );
     }
 }

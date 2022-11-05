@@ -1,8 +1,11 @@
 //! Lox parser / compiler
 
+#![allow(dead_code)]
+
 // TODO: I would definitely prefer a better split between the parser and the compiler here
 
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use tracing::error;
 
@@ -82,9 +85,24 @@ struct Local<'a> {
     depth: Option<usize>,
 }
 
+/// Function types
+#[derive(Debug, PartialEq, Eq)]
+enum FunctionType {
+    Function,
+    Script,
+}
+
 /// Lox compiler state
 #[derive(Debug)]
 struct Compiler<'a> {
+    /// The current function being compiled
+    ///
+    /// This must be a Function Object
+    function: Rc<Object>,
+
+    /// The type of the current function being compiled
+    function_type: FunctionType,
+
     /// The current scope depth
     scope_depth: usize,
 
@@ -96,14 +114,17 @@ struct Compiler<'a> {
     local_count: usize,
 }
 
-impl<'a> Default for Compiler<'a> {
-    fn default() -> Self {
+impl<'a> Compiler<'a> {
+    fn new(vm: &VM) -> Self {
         #[cfg(feature = "dynamic_locals")]
         let locals = Locals::with_capacity(LOCALS_MAX);
         #[cfg(not(feature = "dynamic_locals"))]
         let locals = [(); LOCALS_MAX].map(|_| Local::default());
 
         Self {
+            function: Object::script(vm),
+            function_type: FunctionType::Script,
+
             scope_depth: 0,
             locals,
 
@@ -111,9 +132,7 @@ impl<'a> Default for Compiler<'a> {
             local_count: 0,
         }
     }
-}
 
-impl<'a> Compiler<'a> {
     /// Is this compiler currently in a local scope?
     #[inline]
     pub fn is_local_scope(&self) -> bool {
@@ -260,7 +279,6 @@ struct Parser<'a> {
     compiler: Compiler<'a>,
 
     scanner: Scanner<'a>,
-    chunk: &'a mut Chunk,
 
     current: RefCell<Token<'a>>,
     previous: RefCell<Token<'a>>,
@@ -270,15 +288,29 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn new(scanner: Scanner<'a>, chunk: &'a mut Chunk) -> Self {
+    fn new(scanner: Scanner<'a>, vm: &VM) -> Self {
         Self {
-            compiler: Compiler::default(),
+            compiler: Compiler::new(vm),
             scanner,
-            chunk,
             current: RefCell::new(Token::default()),
             previous: RefCell::new(Token::default()),
             had_error: RefCell::new(false),
             panic_mode: RefCell::new(false),
+        }
+    }
+
+    fn get_chunk_size(&self) -> usize {
+        match self.compiler.function.as_ref() {
+            Object::Function(f) => f.get_chunk().borrow().size(),
+            _ => unreachable!(),
+        }
+    }
+
+    #[cfg(any(feature = "debug_code", feature = "debug_trace"))]
+    fn disassemble_chunk(&self) {
+        match self.compiler.function.as_ref() {
+            Object::Function(f) => f.get_chunk().borrow().disassemble("code"),
+            _ => unreachable!(),
         }
     }
 
@@ -654,7 +686,7 @@ impl<'a> Parser<'a> {
     fn while_statement(&mut self, vm: &VM) {
         // while_statement -> "while" "(" expression ")" statement
 
-        let loop_start = self.chunk.size();
+        let loop_start = self.get_chunk_size();
 
         // condition
         self.consume(TokenType::LeftParen, "Expect '(' after 'while'.");
@@ -687,7 +719,7 @@ impl<'a> Parser<'a> {
             self.expression_statement(vm);
         }
 
-        let mut loop_start = self.chunk.size();
+        let mut loop_start = self.get_chunk_size();
 
         // condition
         let mut exit_idx = None;
@@ -705,7 +737,7 @@ impl<'a> Parser<'a> {
             // first pass jump to the body (no increment)
             let body_idx = self.emit_instruction(OpCode::Jump(0));
 
-            let increment_start = self.chunk.size();
+            let increment_start = self.get_chunk_size();
             self.expression(vm);
             self.emit_instruction(OpCode::Pop);
 
@@ -770,7 +802,7 @@ impl<'a> Parser<'a> {
                 self.emit_instruction(OpCode::NotEqual);
 
                 #[cfg(not(feature = "extended_opcodes"))]
-                self.emit_instructions(&[OpCode::Equal, OpCode::Not]);
+                self.emit_instructions([OpCode::Equal, OpCode::Not]);
             }
             TokenType::EqualEqual => {
                 self.emit_instruction(OpCode::Equal);
@@ -784,7 +816,7 @@ impl<'a> Parser<'a> {
 
                 // a >= b == !(a < b)
                 #[cfg(not(feature = "extended_opcodes"))]
-                self.emit_instructions(&[OpCode::Less, OpCode::Not]);
+                self.emit_instructions([OpCode::Less, OpCode::Not]);
             }
             TokenType::Less => {
                 self.emit_instruction(OpCode::Less);
@@ -795,7 +827,7 @@ impl<'a> Parser<'a> {
 
                 // a <= b == !(a > b)
                 #[cfg(not(feature = "extended_opcodes"))]
-                self.emit_instructions(&[OpCode::Greater, OpCode::Not]);
+                self.emit_instructions([OpCode::Greater, OpCode::Not]);
             }
             TokenType::Plus => {
                 self.emit_instruction(OpCode::Add);
@@ -970,7 +1002,11 @@ impl<'a> Parser<'a> {
     }
 
     fn emit_instruction(&mut self, instruction: OpCode) -> usize {
-        self.chunk.write(instruction, self.previous.borrow().line)
+        let line = self.previous.borrow().line;
+        match self.compiler.function.as_ref() {
+            Object::Function(f) => f.get_chunk().borrow_mut().write(instruction, line),
+            _ => unreachable!(),
+        }
     }
 
     fn emit_instructions(&mut self, instructions: impl AsRef<[OpCode]>) {
@@ -980,7 +1016,7 @@ impl<'a> Parser<'a> {
     }
 
     fn emit_loop(&mut self, idx: usize) {
-        let offset = self.chunk.size() - idx;
+        let offset = self.get_chunk_size() - idx;
         if offset > std::u16::MAX as usize {
             self.error("Loop body too large.");
         }
@@ -989,16 +1025,23 @@ impl<'a> Parser<'a> {
     }
 
     fn patch_jump(&mut self, idx: usize) {
-        let jump = self.chunk.size() - idx;
+        let jump = self.get_chunk_size() - idx;
         if jump > std::u16::MAX as usize {
             self.error("Too much code to jump over.");
         }
 
-        self.chunk.patch_jump(idx, jump as u16)
+        match self.compiler.function.as_ref() {
+            Object::Function(f) => f.get_chunk().borrow_mut().patch_jump(idx, jump as u16),
+            _ => unreachable!(),
+        }
     }
 
     fn make_constant(&mut self, value: Value) -> u8 {
-        let idx = self.chunk.add_constant(value);
+        let idx = match self.compiler.function.as_ref() {
+            Object::Function(f) => f.get_chunk().borrow_mut().add_constant(value),
+            _ => unreachable!(),
+        };
+
         if idx > u8::MAX as usize {
             self.error("Too many constants in one chunk.");
             return 0;
@@ -1015,12 +1058,18 @@ impl<'a> Parser<'a> {
         self.emit_instruction(OpCode::Return);
     }
 
-    fn end_compiler(&mut self) {
+    fn end_compiler(mut self) -> Result<Rc<Function>, InterpretError> {
         self.emit_return();
 
         #[cfg(feature = "debug_code")]
         if !self.had_error() {
-            self.chunk.disassemble("code");
+            self.disassemble_chunk();
+        }
+
+        if self.had_error() {
+            Err(InterpretError::Compile)
+        } else {
+            Ok(self.compiler.function.as_function())
         }
     }
 
@@ -1096,11 +1145,9 @@ impl<'a> Parser<'a> {
 }
 
 /// Compiles lox source
-pub fn compile(input: impl AsRef<str>, vm: &VM) -> Result<Chunk, InterpretError> {
-    let mut chunk = Chunk::default();
-
+pub fn compile(input: impl AsRef<str>, vm: &VM) -> Result<Rc<Function>, InterpretError> {
     let scanner = Scanner::new(input.as_ref());
-    let mut parser = Parser::new(scanner, &mut chunk);
+    let mut parser = Parser::new(scanner, vm);
 
     // prime the parser
     parser.advance();
@@ -1114,13 +1161,7 @@ pub fn compile(input: impl AsRef<str>, vm: &VM) -> Result<Chunk, InterpretError>
         parser.declaration(vm);
     }
 
-    parser.end_compiler();
-
-    if parser.had_error() {
-        Err(InterpretError::Compile)
-    } else {
-        Ok(chunk)
-    }
+    parser.end_compiler()
 }
 
 #[cfg(test)]
