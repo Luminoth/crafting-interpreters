@@ -115,7 +115,9 @@ impl VM {
 
         // TODO: we need a hash set or something for this to actually work
         // I'm pretty sure the object list itself is over-holding references
-        #[cfg(feature = "gc_leak_check")]
+        // TODO: this just does not work for leak checking
+        // because it runs as things drop (so it prints on *every* drop)
+        /*#[cfg(feature = "gc_leak_check")]
         {
             tracing::info!("checking for leaked objects");
             for object in self.objects.borrow().iter() {
@@ -129,7 +131,7 @@ impl VM {
                     tracing::warn!("leaking {} object weak references", count);
                 }
             }
-        }
+        }*/
 
         self.objects.borrow_mut().clear();
     }

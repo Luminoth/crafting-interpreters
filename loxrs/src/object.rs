@@ -196,7 +196,16 @@ pub struct Function {
 
 impl std::fmt::Display for Function {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<fn {}>", self.name)
+        let name = match self.name.as_ref() {
+            Object::String(name, _) => name.as_ref(),
+            _ => unreachable!(),
+        };
+
+        if name.is_empty() {
+            write!(f, "<script>")
+        } else {
+            write!(f, "<fn {}>", name)
+        }
     }
 }
 
@@ -228,6 +237,19 @@ impl Function {
                 name,
             },
             _ => panic!("Invalid function name!"),
+        }
+    }
+
+    pub fn get_name(&self) -> &str {
+        match self.name.as_ref() {
+            Object::String(name, _) => {
+                if name.as_ref().is_empty() {
+                    "<script>"
+                } else {
+                    name.as_ref()
+                }
+            }
+            _ => unreachable!(),
         }
     }
 

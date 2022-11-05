@@ -73,17 +73,17 @@ impl TokenType {
 
 const LOCALS_MAX: usize = std::u8::MAX as usize + 1;
 
-#[cfg(feature = "dynamic_locals")]
-type Locals<'a> = Vec<Local<'a>>;
-#[cfg(not(feature = "dynamic_locals"))]
-type Locals<'a> = [Local<'a>; LOCALS_MAX];
-
 /// Local variable state
 #[derive(Debug, Default)]
 struct Local<'a> {
     name: Token<'a>,
     depth: Option<usize>,
 }
+
+#[cfg(feature = "dynamic_locals")]
+type Locals<'a> = Vec<Local<'a>>;
+#[cfg(not(feature = "dynamic_locals"))]
+type Locals<'a> = [Local<'a>; LOCALS_MAX];
 
 /// Function types
 #[derive(Debug, PartialEq, Eq)]
@@ -115,22 +115,38 @@ struct Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
-    fn new(vm: &VM) -> Self {
+    fn new(function: Rc<Object>, function_type: FunctionType) -> Self {
         #[cfg(feature = "dynamic_locals")]
         let locals = Locals::with_capacity(LOCALS_MAX);
         #[cfg(not(feature = "dynamic_locals"))]
         let locals = [(); LOCALS_MAX].map(|_| Local::default());
 
-        Self {
-            function: Object::script(vm),
-            function_type: FunctionType::Script,
+        let mut this = Self {
+            function,
+            function_type,
 
             scope_depth: 0,
             locals,
 
             #[cfg(not(feature = "dynamic_locals"))]
             local_count: 0,
-        }
+        };
+
+        // local 0 is reserved for the VM
+        this.push_local(Token::default());
+        this.locals[0].depth = Some(0);
+
+        this
+    }
+
+    fn new_function(name: impl AsRef<str>, vm: &VM) -> Self {
+        let function = Object::function(name, vm);
+        Self::new(function, FunctionType::Function)
+    }
+
+    fn new_script(vm: &VM) -> Self {
+        let function = Object::script(vm);
+        Self::new(function, FunctionType::Script)
     }
 
     /// Is this compiler currently in a local scope?
@@ -290,12 +306,19 @@ struct Parser<'a> {
 impl<'a> Parser<'a> {
     fn new(scanner: Scanner<'a>, vm: &VM) -> Self {
         Self {
-            compiler: Compiler::new(vm),
+            compiler: Compiler::new_script(vm),
             scanner,
             current: RefCell::new(Token::default()),
             previous: RefCell::new(Token::default()),
             had_error: RefCell::new(false),
             panic_mode: RefCell::new(false),
+        }
+    }
+
+    fn get_name(&self) -> &str {
+        match self.compiler.function.as_ref() {
+            Object::Function(f) => f.get_name(),
+            _ => unreachable!(),
         }
     }
 
@@ -307,9 +330,9 @@ impl<'a> Parser<'a> {
     }
 
     #[cfg(any(feature = "debug_code", feature = "debug_trace"))]
-    fn disassemble_chunk(&self) {
+    fn disassemble_chunk(&self, name: impl AsRef<str>) {
         match self.compiler.function.as_ref() {
-            Object::Function(f) => f.get_chunk().borrow().disassemble("code"),
+            Object::Function(f) => f.get_chunk().borrow().disassemble(name),
             _ => unreachable!(),
         }
     }
@@ -1063,7 +1086,7 @@ impl<'a> Parser<'a> {
 
         #[cfg(feature = "debug_code")]
         if !self.had_error() {
-            self.disassemble_chunk();
+            self.disassemble_chunk(self.get_name());
         }
 
         if self.had_error() {
