@@ -150,9 +150,9 @@ impl Object {
     /// # Panics
     ///
     /// This will panic if the Object is not a Function Object
-    pub fn as_function(&self) -> Rc<Function> {
+    pub fn as_function(&self) -> &Rc<Function> {
         match self {
-            Self::Function(f) => f.clone(),
+            Self::Function(f) => f,
             _ => panic!("Invalid Object as Function"),
         }
     }

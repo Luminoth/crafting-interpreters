@@ -71,14 +71,14 @@ impl TokenType {
     }
 }
 
-const LOCALS_MAX: usize = std::u8::MAX as usize + 1;
-
 /// Local variable state
 #[derive(Debug, Default)]
 struct Local<'a> {
     name: Token<'a>,
     depth: Option<usize>,
 }
+
+pub const LOCALS_MAX: usize = u8::MAX as usize + 1;
 
 #[cfg(feature = "dynamic_locals")]
 type Locals<'a> = Vec<Local<'a>>;
@@ -106,7 +106,7 @@ struct Compiler<'a> {
     /// The current scope depth
     scope_depth: usize,
 
-    /// Local variable storage
+    /// Local variable stack
     locals: Locals<'a>,
 
     /// The local variable count
@@ -132,7 +132,8 @@ impl<'a> Compiler<'a> {
             local_count: 0,
         };
 
-        // local 0 is reserved for the VM
+        // stack slot 0 is reserved by the VM
+        // for the current function being called
         this.push_local(Token::default());
         this.locals[0].depth = Some(0);
 
@@ -231,7 +232,7 @@ impl<'a> Compiler<'a> {
     /// Is the given local name currently declared?
     pub fn is_local_declared(&self, name: impl AsRef<str>) -> bool {
         // current scope is at the end of the set
-        for idx in (0..self.local_count()).rev() {
+        for idx in (1..self.local_count()).rev() {
             let local = &self.locals[idx];
 
             // if we're outside the current scope, we're good
@@ -270,7 +271,7 @@ impl<'a> Compiler<'a> {
     /// Resolve the stack index of the given local
     pub fn resolve_local(&self, name: impl AsRef<str>) -> Result<Option<u8>, (u8, &'static str)> {
         // current scope is at the end of the set
-        for idx in (0..self.local_count()).rev() {
+        for idx in (1..self.local_count()).rev() {
             let local = &self.locals[idx];
             if name.as_ref() == local.name.lexeme.unwrap() {
                 if local.depth.is_none() {
@@ -474,7 +475,7 @@ impl<'a> Parser<'a> {
 
     fn end_scope(&mut self) {
         let local_count = self.compiler.end_scope();
-        for _ in 0..local_count {
+        for _ in 1..local_count {
             self.emit_instruction(OpCode::Pop);
         }
     }
@@ -1081,7 +1082,7 @@ impl<'a> Parser<'a> {
         self.emit_instruction(OpCode::Return);
     }
 
-    fn end_compiler(mut self) -> Result<Rc<Function>, InterpretError> {
+    fn end_compiler(mut self) -> Result<Rc<Object>, InterpretError> {
         self.emit_return();
 
         #[cfg(feature = "debug_code")]
@@ -1092,7 +1093,7 @@ impl<'a> Parser<'a> {
         if self.had_error() {
             Err(InterpretError::Compile)
         } else {
-            Ok(self.compiler.function.as_function())
+            Ok(self.compiler.function)
         }
     }
 
@@ -1168,7 +1169,7 @@ impl<'a> Parser<'a> {
 }
 
 /// Compiles lox source
-pub fn compile(input: impl AsRef<str>, vm: &VM) -> Result<Rc<Function>, InterpretError> {
+pub fn compile(input: impl AsRef<str>, vm: &VM) -> Result<Rc<Object>, InterpretError> {
     let scanner = Scanner::new(input.as_ref());
     let mut parser = Parser::new(scanner, vm);
 

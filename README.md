@@ -1,5 +1,7 @@
 # Crafting Interpreters
 
+Unfortunately the book club shut down after layoffs hit the owner and I don't have the time to finish things out.
+
 * https://github.com/munificent/craftinginterpreters
 * https://en.cppreference.com/w/c/language/operator_precedence
 * https://github.com/fsacer/FailLang

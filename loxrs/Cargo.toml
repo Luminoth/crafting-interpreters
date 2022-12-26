@@ -17,12 +17,13 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 [features]
-#default = ["allow_divide_by_zero"]
-#default = ["allow_divide_by_zero", "extended_string_concat"]
-default = ["allow_divide_by_zero", "extended_string_concat", "debug_code", "debug_trace", "gc_leak_check"]
+#default = ["dynamic_stack", "allow_divide_by_zero"]
+#default = ["dynamic_stack", "allow_divide_by_zero", "extended_string_concat"]
+default = ["dynamic_stack", "allow_divide_by_zero", "extended_string_concat", "debug_code", "debug_trace", "gc_leak_check"]
 debug_code = []
 debug_trace = []
 dynamic_stack = []
+dynamic_frames = []
 dynamic_locals = []
 native_print = []
 extended_opcodes = []

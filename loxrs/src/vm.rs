@@ -7,18 +7,12 @@ use std::fmt::Write;
 use std::rc::Rc;
 
 use thiserror::Error;
-use tracing::{error, warn};
+use tracing::{debug, error, warn};
 
 use crate::chunk::*;
+use crate::compiler::LOCALS_MAX;
 use crate::object::*;
 use crate::value::*;
-
-const STACK_MAX: usize = 256;
-
-#[cfg(feature = "dynamic_stack")]
-type Stack = Vec<Value>;
-#[cfg(not(feature = "dynamic_stack"))]
-type Stack = [Value; STACK_MAX];
 
 /// Errors returned by the VM interpreter
 #[derive(Error, Debug)]
@@ -33,17 +27,55 @@ pub enum InterpretError {
 
     /// A runtime error
     #[error("runtime error")]
-    Runtime,
+    Runtime(&'static str),
 }
+
+/// Lox function call stack frame
+#[derive(Debug, Default)]
+pub struct CallFrame {
+    /// The function being interpreted
+    func: Option<Rc<Function>>,
+
+    /// Pointer to the caller's instruction pointer
+    ip: usize,
+
+    /// The function's base pointer in the VM stack
+    bp: usize,
+}
+
+impl CallFrame {
+    /// Free all of the frame Objects
+    pub fn free_objects(&self) {
+        if let Some(func) = self.func.as_ref() {
+            let mut chunk = func.get_chunk().borrow_mut();
+            chunk.free_constants();
+        }
+    }
+}
+
+const FRAMES_MAX: usize = 64;
+
+#[cfg(feature = "dynamic_frames")]
+type CallFrames = Vec<CallFrame>;
+#[cfg(not(feature = "dynamic_frames"))]
+type CallFrames = [CallFrame; FRAMES_MAX];
+
+const STACK_MAX: usize = FRAMES_MAX * LOCALS_MAX;
+
+#[cfg(feature = "dynamic_stack")]
+type Stack = Vec<Value>;
+#[cfg(not(feature = "dynamic_stack"))]
+type Stack = [Value; STACK_MAX];
 
 /// The Lox Virtual Machine
 #[derive(Debug)]
 pub struct VM {
-    /// The function currently being processed
-    func: RefCell<Option<Rc<Function>>>,
+    /// Call frame stack
+    frames: RefCell<CallFrames>,
 
-    /// Instruction pointer / program counter
-    ip: RefCell<usize>,
+    /// Stack pointer
+    #[cfg(not(feature = "dynamic_frames"))]
+    frame_count: RefCell<usize>,
 
     /// Value stack
     stack: RefCell<Stack>,
@@ -71,14 +103,22 @@ impl Drop for VM {
 impl VM {
     /// Creates a new VM
     pub fn new() -> Self {
+        #[cfg(feature = "dynamic_frames")]
+        let frames = Frames::with_capacity(FRAMES_MAX);
+        #[cfg(not(feature = "dynamic_frames"))]
+        let frames = [(); FRAMES_MAX].map(|_| CallFrame::default());
+
         #[cfg(feature = "dynamic_stack")]
         let stack = Stack::with_capacity(STACK_MAX);
         #[cfg(not(feature = "dynamic_stack"))]
         let stack = [(); STACK_MAX].map(|_| Value::default());
 
         Self {
-            func: RefCell::new(None),
-            ip: RefCell::new(0),
+            frames: RefCell::new(frames),
+
+            #[cfg(not(feature = "dynamic_frames"))]
+            frame_count: RefCell::new(0),
+
             stack: RefCell::new(stack),
 
             #[cfg(not(feature = "dynamic_stack"))]
@@ -97,9 +137,8 @@ impl VM {
 
     /// Free all of the VM Objects
     pub fn free_objects(&self) {
-        if let Some(func) = self.func.borrow().as_ref() {
-            let mut chunk = func.get_chunk().borrow_mut();
-            chunk.free_constants();
+        for frame in self.frames.borrow().iter() {
+            frame.free_objects();
         }
 
         #[cfg(feature = "dynamic_stack")]
@@ -149,11 +188,24 @@ impl VM {
     }
 
     /// Compile and interpret a Lox program
-    pub fn interpret(&self, func: Rc<Function>) -> Result<(), InterpretError> {
-        *self.func.borrow_mut() = Some(func);
-        *self.ip.borrow_mut() = 0;
+    ///
+    /// # Panics
+    ///
+    /// This will panic if the Object is not a Function Object
+    pub fn interpret(&self, func: Rc<Object>) -> Result<(), InterpretError> {
+        debug!("Interpreting function: {}", func.as_function().get_name());
 
-        // TODO: reset the stack?
+        self.push(func.clone().into());
+
+        {
+            let fp = *self.frame_count.borrow();
+            let frame = &mut self.frames.borrow_mut()[fp];
+            frame.func = Some(func.as_function().clone());
+            frame.ip = 0;
+            frame.bp = 0;
+
+            *self.frame_count.borrow_mut() += 1;
+        }
 
         self.run()
     }
@@ -201,10 +253,9 @@ impl VM {
     }
 
     #[inline]
-    fn read_byte<'a>(&self, chunk: &'a Chunk) -> &'a OpCode {
-        let ip = *self.ip.borrow();
-        let ret = chunk.read(ip);
-        *self.ip.borrow_mut() += 1;
+    fn read_byte<'a>(&self, chunk: &'a Chunk, ip: &mut usize) -> &'a OpCode {
+        let ret = chunk.read(*ip);
+        *ip += 1;
 
         ret
     }
@@ -228,10 +279,15 @@ impl VM {
     }
 
     fn run(&self) -> Result<(), InterpretError> {
-        if let Some(func) = self.func.borrow().as_ref() {
+        debug!("Running ...");
+
+        let fp = *self.frame_count.borrow() - 1;
+        let frame = &mut self.frames.borrow_mut()[fp];
+
+        if let Some(func) = frame.func.as_ref() {
             let chunk = func.get_chunk().borrow();
             loop {
-                let instruction = self.read_byte(&chunk);
+                let instruction = self.read_byte(&chunk, &mut frame.ip);
 
                 #[cfg(feature = "debug_trace")]
                 {
@@ -247,7 +303,7 @@ impl VM {
                     }
                     tracing::info!("{}", stack);
 
-                    instruction.disassemble("", &chunk, *self.ip.borrow() - 1);
+                    instruction.disassemble("", &chunk, frame.ip - 1);
                 }
 
                 match instruction {
@@ -266,10 +322,12 @@ impl VM {
                         self.pop();
                     }
                     OpCode::GetLocal(idx) => {
-                        let v = self.stack.borrow()[*idx as usize].clone();
+                        let v = self.stack.borrow()[frame.bp + *idx as usize].clone();
                         self.push(v);
                     }
-                    OpCode::SetLocal(idx) => self.stack.borrow_mut()[*idx as usize] = self.peek(0),
+                    OpCode::SetLocal(idx) => {
+                        self.stack.borrow_mut()[frame.bp + *idx as usize] = self.peek(0)
+                    }
                     OpCode::GetGlobal(idx) => {
                         // look up the variable name
                         let (name, hash) = self.read_string(&chunk, *idx);
@@ -278,8 +336,8 @@ impl VM {
                             // copy the value to the stack
                             self.push(value.clone());
                         } else {
-                            self.runtime_error(format!("Undefined variable '{}'.", name));
-                            return Err(InterpretError::Runtime);
+                            self.runtime_error(frame, format!("Undefined variable '{}'.", name));
+                            return Err(InterpretError::Runtime("Undefined variable"));
                         }
                     }
                     OpCode::SetGlobal(idx) => {
@@ -296,8 +354,8 @@ impl VM {
                         {
                             // if the variable didn't exist then it's undefined
                             self.globals.borrow_mut().remove(&hash);
-                            self.runtime_error(format!("Undefined variable '{}'.", name));
-                            return Err(InterpretError::Runtime);
+                            self.runtime_error(frame, format!("Undefined variable '{}'.", name));
+                            return Err(InterpretError::Runtime("Undefined variable"));
                         }
                     }
                     OpCode::Nil => self.push(Value::Nil),
@@ -306,18 +364,21 @@ impl VM {
                     OpCode::Equal => self.binary_op(|a, b| Ok(a.equals(b)))?,
                     #[cfg(feature = "extended_opcodes")]
                     OpCode::NotEqual => self.binary_op(|a, b| Ok(a.not_equals(b)))?,
-                    OpCode::Less => self.binary_op(|a, b| a.less(b, self))?,
+
+                    // TODO: all of these no longer take self, but pass back the runtime error message in the Err
+                    // so we have to pull that out, call runtime_error() by hand, and then re-throw the error
+                    OpCode::Less => self.binary_op(|a, b| a.less(b))?,
                     #[cfg(feature = "extended_opcodes")]
                     OpCode::LessEqual => self.binary_op(|a, b| a.less_equal(b, self))?,
-                    OpCode::Greater => self.binary_op(|a, b| a.greater(b, self))?,
+                    OpCode::Greater => self.binary_op(|a, b| a.greater(b))?,
                     #[cfg(feature = "extended_opcodes")]
-                    OpCode::GreaterEqual => self.binary_op(|a, b| a.greater_equal(b, self))?,
+                    OpCode::GreaterEqual => self.binary_op(|a, b| a.greater_equal(b))?,
                     OpCode::Add => self.binary_op(|a, b| a.add(b, self))?,
-                    OpCode::Subtract => self.binary_op(|a, b| a.subtract(b, self))?,
-                    OpCode::Multiply => self.binary_op(|a, b| a.multiply(b, self))?,
-                    OpCode::Divide => self.binary_op(|a, b| a.divide(b, self))?,
+                    OpCode::Subtract => self.binary_op(|a, b| a.subtract(b))?,
+                    OpCode::Multiply => self.binary_op(|a, b| a.multiply(b))?,
+                    OpCode::Divide => self.binary_op(|a, b| a.divide(b))?,
                     OpCode::Negate => {
-                        let v = self.peek(0).negate(self)?;
+                        let v = self.peek(0).negate()?;
 
                         self.pop();
                         self.push(v);
@@ -327,13 +388,13 @@ impl VM {
                         self.pop();
                     }
                     OpCode::Print => println!("{}", self.pop()),
-                    OpCode::Jump(offset) => *self.ip.borrow_mut() += *offset as usize - 1,
+                    OpCode::Jump(offset) => frame.ip += *offset as usize - 1,
                     OpCode::JumpIfFalse(offset) => {
                         if self.peek(0).is_falsey() {
-                            *self.ip.borrow_mut() += *offset as usize - 1;
+                            frame.ip += *offset as usize - 1;
                         }
                     }
-                    OpCode::Loop(offset) => *self.ip.borrow_mut() -= *offset as usize + 1,
+                    OpCode::Loop(offset) => frame.ip -= *offset as usize + 1,
                     OpCode::Return => return Ok(()),
                 }
             }
@@ -343,17 +404,17 @@ impl VM {
         Ok(())
     }
 
-    pub fn runtime_error(&self, message: impl AsRef<str>) {
+    pub fn runtime_error(&self, frame: &CallFrame, message: impl AsRef<str>) {
         error!("{}", message.as_ref());
         error!(
             "[line {}] in script\n",
-            self.func
-                .borrow()
+            frame
+                .func
                 .as_ref()
                 .unwrap()
                 .get_chunk()
                 .borrow()
-                .get_line(*self.ip.borrow() - 1)
+                .get_line(frame.ip - 1)
         );
     }
 }
@@ -369,7 +430,7 @@ mod tests {
         chunk.write(OpCode::Nil, 123);
         chunk.write(OpCode::Return, 123);
         assert_eq!(
-            vm.interpret(Object::from_chunk("main", 0, chunk, &vm).as_function())
+            vm.interpret(Object::from_chunk("main", 0, chunk, &vm))
                 .unwrap(),
             ()
         );

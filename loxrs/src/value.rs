@@ -51,11 +51,11 @@ impl From<Rc<Object>> for Value {
 }
 
 impl Value {
-    /// Gets the value as a string object
+    /// Gets the value as a string Object
     ///
     /// # Panics
     ///
-    /// This will panic if the value is not a string object
+    /// This will panic if the value is not a string Object
     pub fn as_string(&self) -> (&String, u64) {
         match self {
             Self::Object(v) => v.as_string(),
@@ -75,33 +75,24 @@ impl Value {
 
     /// Negate a (number) value
     #[inline]
-    pub fn negate(&self, vm: &VM) -> Result<Self, InterpretError> {
+    pub fn negate(&self) -> Result<Self, InterpretError> {
         match self {
             Self::Number(v) => Ok((-v).into()),
-            _ => {
-                vm.runtime_error("Operand must be a number.");
-                Err(InterpretError::Runtime)
-            }
+            _ => Err(InterpretError::Runtime("Operand must be a number.")),
         }
     }
 
     #[inline]
-    fn number_op<C>(&self, b: Self, vm: &VM, op: C) -> Result<Self, InterpretError>
+    fn number_op<C>(&self, b: Self, op: C) -> Result<Self, InterpretError>
     where
         C: FnOnce(f64, f64) -> Result<Self, InterpretError>,
     {
         match self {
             Self::Number(a) => match b {
                 Self::Number(b) => Ok(op(*a, b)?),
-                _ => {
-                    vm.runtime_error("Operands must be numbers.");
-                    Err(InterpretError::Runtime)
-                }
+                _ => Err(InterpretError::Runtime("Operands must be numbers.")),
             },
-            _ => {
-                vm.runtime_error("Operands must be numbers.");
-                Err(InterpretError::Runtime)
-            }
+            _ => Err(InterpretError::Runtime("Operands must be numbers.")),
         }
     }
 
@@ -150,8 +141,8 @@ impl Value {
 
     /// Compare two (number) values - less than
     #[inline]
-    pub fn less(&self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok((a < b).into()))
+    pub fn less(&self, other: Self) -> Result<Self, InterpretError> {
+        self.number_op(other, |a, b| Ok((a < b).into()))
     }
 
     /// Compare two (number) values - less than or equal
@@ -163,8 +154,8 @@ impl Value {
 
     /// Compare two (number) values - greater than
     #[inline]
-    pub fn greater(&self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok((a > b).into()))
+    pub fn greater(&self, other: Self) -> Result<Self, InterpretError> {
+        self.number_op(other, |a, b| Ok((a > b).into()))
     }
 
     /// Compare two (number) values - less than or equal
@@ -191,10 +182,9 @@ impl Value {
                     }
                     _ => panic!("Invalid Object concat"),
                 },
-                _ => {
-                    vm.runtime_error("Operands must be two numbers or two strings.");
-                    Err(InterpretError::Runtime)
-                }
+                _ => Err(InterpretError::Runtime(
+                    "Operands must be two numbers or two strings.",
+                )),
             },
             #[cfg(feature = "extended_string_concat")]
             Self::Bool(a) => match other {
@@ -204,10 +194,9 @@ impl Value {
                     }
                     _ => panic!("Invalid Object concat"),
                 },
-                _ => {
-                    vm.runtime_error("Operands must be two numbers or two strings.");
-                    Err(InterpretError::Runtime)
-                }
+                _ => Err(InterpretError::Runtime(
+                    "Operands must be two numbers or two strings.",
+                )),
             },
             Self::Number(a) => match other {
                 Self::Number(b) => Ok((a + b).into()),
@@ -218,10 +207,9 @@ impl Value {
                     }
                     _ => panic!("Invalid Object concat"),
                 },
-                _ => {
-                    vm.runtime_error("Operands must be two numbers or two strings.");
-                    Err(InterpretError::Runtime)
-                }
+                _ => Err(InterpretError::Runtime(
+                    "Operands must be two numbers or two strings.",
+                )),
             },
             Self::Object(a) => match a.as_ref() {
                 Object::String(a, _) => {
@@ -238,42 +226,39 @@ impl Value {
                             }
                             _ => panic!("Invalid Object concat"),
                         },
-                        _ => {
-                            vm.runtime_error("Operands must be two numbers or two strings.");
-                            Err(InterpretError::Runtime)
-                        }
+                        _ => Err(InterpretError::Runtime(
+                            "Operands must be two numbers or two strings.",
+                        )),
                     }
                 }
                 _ => panic!("Invalid Object concat"),
             },
             #[cfg(not(feature = "extended_string_concat"))]
-            _ => {
-                vm.runtime_error("Operands must be two numbers or two strings.");
-                Err(InterpretError::Runtime)
-            }
+            _ => Err(InterpretError::Runtime(
+                "Operands must be two numbers or two strings.",
+            )),
         }
     }
 
     /// Subtract two (number) values
     #[inline]
-    pub fn subtract(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok((a - b).into()))
+    pub fn subtract(self, other: Self) -> Result<Self, InterpretError> {
+        self.number_op(other, |a, b| Ok((a - b).into()))
     }
 
     /// Multiply two (number) values
     #[inline]
-    pub fn multiply(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
-        self.number_op(other, vm, |a, b| Ok((a * b).into()))
+    pub fn multiply(self, other: Self) -> Result<Self, InterpretError> {
+        self.number_op(other, |a, b| Ok((a * b).into()))
     }
 
     /// Divide two (number) values
     #[inline]
-    pub fn divide(self, other: Self, vm: &VM) -> Result<Self, InterpretError> {
-        self.number_op(other, vm, |a, b| {
+    pub fn divide(self, other: Self) -> Result<Self, InterpretError> {
+        self.number_op(other, |a, b| {
             #[cfg(not(feature = "allow_divide_by_zero"))]
             if b == 0.0 {
-                vm.runtime_error("Illegal divide by zero.");
-                return Err(InterpretError::Runtime);
+                return Err(InterpretError::Runtime("Illegal divide by zero."));
             }
             Ok((a / b).into())
         })

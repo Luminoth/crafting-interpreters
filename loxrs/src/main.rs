@@ -92,7 +92,7 @@ async fn run_file(filepath: impl AsRef<Path>) -> anyhow::Result<()> {
         Err(err) => match err {
             InterpretError::Internal => std::process::exit(1),
             InterpretError::Compile => std::process::exit(65),
-            InterpretError::Runtime => std::process::exit(70),
+            InterpretError::Runtime(_) => std::process::exit(70),
         },
     }
 }
@@ -100,7 +100,7 @@ async fn run_file(filepath: impl AsRef<Path>) -> anyhow::Result<()> {
 async fn interpret(input: String) -> Result<(), InterpretError> {
     tokio::task::spawn_blocking(move || {
         let vm = VM::new();
-        let main = compile(&input, &vm)?;
+        let main = compile(input, &vm)?;
 
         vm.interpret(main)
     })
