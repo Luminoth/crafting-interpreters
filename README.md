@@ -1,6 +1,6 @@
 # Crafting Interpreters
 
-Unfortunately the book club shut down after layoffs hit the owner and I don't have the time to finish things out.
+Unfortunately the book club shut down after layoffs hit the owner and I don't have the time to finish things out. The last commit here is mid chapter 24 (24.3 or 24.4 I think), Calls and Functions.
 
 * https://github.com/munificent/craftinginterpreters
 * https://en.cppreference.com/w/c/language/operator_precedence
